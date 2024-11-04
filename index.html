@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Business</title>
     <style>
-        /* Basic styling for the page */
-        body {
-            font-family: Arial, sans-serif;
+        /* Reset some default styles */
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* General page styling */
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
         }
 
         /* Navbar styling */
@@ -18,6 +25,8 @@
             justify-content: center;
             background-color: #333;
             padding: 1em;
+            position: sticky;
+            top: 0;
         }
 
         .navbar a {
@@ -25,26 +34,56 @@
             padding: 0.5em 1em;
             text-decoration: none;
             margin: 0 0.5em;
+            transition: background-color 0.3s ease;
         }
 
         .navbar a:hover {
-            background-color: #575757;
-        }
-
-        /* Header and content styling */
-        .header {
             background-color: #4CAF50;
-            color: white;
-            padding: 1em;
+            border-radius: 4px;
+        }
+
+        /* Hero section with a pastel background */
+        .hero {
+            background-color: #f0e4d7; /* Soft pastel shade */
+            height: 70vh;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-        }
-
-        .content {
             padding: 2em;
-            max-width: 800px;
-            margin: auto;
         }
 
+        .hero h1 {
+            font-size: 2.5em;
+            color: #4CAF50; /* Accent color for the title */
+            margin-bottom: 0.5em;
+        }
+
+        .hero p {
+            font-size: 1.2em;
+            max-width: 600px;
+            color: #555;
+        }
+
+        .hero .button {
+            margin-top: 1.5em;
+            padding: 0.7em 2em;
+            font-size: 1em;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+        }
+
+        .hero .button:hover {
+            background-color: #45a049;
+        }
+
+        /* Footer styling */
         footer {
             background-color: #f1f1f1;
             text-align: center;
@@ -61,15 +100,16 @@
         <a href="contact.html">Contact</a>
     </div>
 
-    <!-- Main content for the homepage -->
-    <div class="header">
-        <h1>Welcome to My Business :)</h1>
-    </div>
-    <div class="content">
-        <h2>Home Page</h2>
-        <p>Hello bubby this is my website bubsy</p>
+    <!-- Hero section with pastel background color -->
+    <div class="hero">
+        <div>
+            <h1>Welcome to My Business</h1>
+            <p>Delivering top-notch services and products tailored just for you. Let’s make great things together.</p>
+            <a href="about.html" class="button">Learn More</a>
+        </div>
     </div>
 
+    <!-- Footer -->
     <footer>
         <p>© 2023 My Business</p>
     </footer>
