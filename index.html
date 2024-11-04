@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Business</title>
     <style>
-        /* Reset some default styles */
+        /* Resetting default styles */
         * {
             margin: 0;
             padding: 0;
@@ -16,102 +16,95 @@
         body {
             font-family: Arial, sans-serif;
             color: #333;
-            line-height: 1.6;
-        }
-
-        /* Navbar styling */
-        .navbar {
+            line-height: 1.8;
             display: flex;
             justify-content: center;
-            background-color: #333;
-            padding: 1em;
-            position: sticky;
-            top: 0;
         }
 
-        .navbar a {
-            color: white;
-            padding: 0.5em 1em;
-            text-decoration: none;
-            margin: 0 0.5em;
-            transition: background-color 0.3s ease;
+        /* Main content container */
+        .container {
+            width: 70%; /* Allows the container to take up 70% of the screen width */
+            margin: 40px 20px;
+            padding: 20px;
+            text-align: left;
         }
 
-        .navbar a:hover {
-            background-color: #4CAF50;
-            border-radius: 4px;
-        }
-
-        /* Hero section with a pastel background */
-        .hero {
-            background-color: #f0e4d7; /* Soft pastel shade */
-            height: 70vh;
-            color: #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 2em;
-        }
-
-        .hero h1 {
-            font-size: 2.5em;
-            color: #4CAF50; /* Accent color for the title */
+        /* Heading styles */
+        h1 {
+            font-size: 1.8em;
             margin-bottom: 0.5em;
         }
 
-        .hero p {
-            font-size: 1.2em;
-            max-width: 600px;
-            color: #555;
-        }
-
-        .hero .button {
+        h2 {
+            font-size: 1.4em;
             margin-top: 1.5em;
-            padding: 0.7em 2em;
-            font-size: 1em;
-            color: white;
-            background-color: #4CAF50;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            text-decoration: none;
         }
 
-        .hero .button:hover {
-            background-color: #45a049;
+        /* Paragraph styling */
+        p {
+            margin-bottom: 1em;
+        }
+
+        /* Subtle link styling */
+        a {
+            color: #333;
+            text-decoration: underline;
+        }
+
+        a:hover {
+            color: #555;
         }
 
         /* Footer styling */
         footer {
-            background-color: #f1f1f1;
+            margin-top: 40px;
+            font-size: 0.9em;
             text-align: center;
-            padding: 1em;
-            margin-top: 20px;
+            color: #888;
+        }
+
+        /* Navigation link styling */
+        .nav {
+            font-size: 0.9em;
+            margin-bottom: 2em;
+        }
+
+        .nav a {
+            margin-right: 1em;
         }
     </style>
 </head>
 <body>
-    <!-- Navbar for navigation links -->
-    <div class="navbar">
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-    </div>
-
-    <!-- Hero section with pastel background color -->
-    <div class="hero">
-        <div>
-            <h1>Welcome to My Business</h1>
-            <p>Delivering top-notch services and products tailored just for you. Let’s make great things together.</p>
-            <a href="about.html" class="button">Learn More</a>
+    <!-- Main content container -->
+    <div class="container">
+        <!-- Text-based navigation -->
+        <div class="nav">
+            <a href="index.html">Home</a> |
+            <a href="about.html">About</a> |
+            <a href="contact.html">Contact</a>
         </div>
-    </div>
 
-    <!-- Footer -->
-    <footer>
-        <p>© 2023 My Business</p>
-    </footer>
+        <!-- Main content text -->
+        <h1>Welcome to My Business</h1>
+        <p>
+            Welcome to our website. We pride ourselves on delivering quality services tailored to meet your needs. Our approach is simple and efficient, focusing on what truly matters for our clients.
+        </p>
+
+        <h2>About Us</h2>
+        <p>
+            Our business was founded on principles of trust, transparency, and customer satisfaction. Over the years, we have established ourselves as a reliable name in the industry, always aiming to exceed expectations.
+        </p>
+
+        <h2>Contact Information</h2>
+        <p>
+            If you’d like to learn more or get in touch, please reach out to us at <a href="mailto:contact@mybusiness.com">contact@mybusiness.com</a>. We look forward to connecting with you.
+        </p>
+
+        <!-- Footer -->
+        <footer>
+            <p>© 2023 My Business</p>
+        </footer>
+    </div>
 </body>
 </html>
+
