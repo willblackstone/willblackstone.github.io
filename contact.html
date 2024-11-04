@@ -4,23 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us - My Business</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.8;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 70%;
+            margin: 40px 20px;
+            padding: 20px;
+            text-align: left;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 0.5em;
+        }
+
+        p {
+            margin-bottom: 1em;
+        }
+
+        a {
+            color: #333;
+            text-decoration: underline;
+        }
+
+        a:hover {
+            color: #555;
+        }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            text-align: center;
+            color: #888;
+        }
+
+        .nav {
+            font-size: 0.9em;
+            margin-bottom: 2em;
+        }
+
+        .nav a {
+            margin-right: 1em;
+        }
+    </style>
 </head>
 <body>
-    <div class="navbar">
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-    </div>
-    <div class="header">
+    <div class="container">
+        <div class="nav">
+            <a href="index.html">Home</a> |
+            <a href="about.html">About</a> |
+            <a href="contact.html">Contact</a>
+        </div>
+
         <h1>Contact Us</h1>
+        <p>
+            We'd love to hear from you! Whether you have a question, feedback, or want to discuss a potential project, feel free to reach out.
+        </p>
+        <p>
+            <strong>Email:</strong> <a href="mailto:contact@mybusiness.com">contact@mybusiness.com</a><br>
+            <strong>Phone:</strong> (123) 456-7890<br>
+            <strong>Address:</strong> 123 Business St., City, Country
+        </p>
+
+        <footer>
+            <p>© 2023 My Business</p>
+        </footer>
     </div>
-    <div class="content">
-        <p>Email: contact@mybusiness.com</p>
-        <p>Phone: (123) 456-7890</p>
-        <p>Address: 123 Business St., City, Country</p>
-    </div>
-    <footer>
-        <p>© 2023 My Business</p>
-    </footer>
 </body>
 </html>

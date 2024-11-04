@@ -4,22 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About Us - My Business</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.8;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 70%;
+            margin: 40px 20px;
+            padding: 20px;
+            text-align: left;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 0.5em;
+        }
+
+        p {
+            margin-bottom: 1em;
+        }
+
+        a {
+            color: #333;
+            text-decoration: underline;
+        }
+
+        a:hover {
+            color: #555;
+        }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            text-align: center;
+            color: #888;
+        }
+
+        .nav {
+            font-size: 0.9em;
+            margin-bottom: 2em;
+        }
+
+        .nav a {
+            margin-right: 1em;
+        }
+    </style>
 </head>
 <body>
-    <div class="navbar">
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-    </div>
-    <div class="header">
+    <div class="container">
+        <div class="nav">
+            <a href="index.html">Home</a> |
+            <a href="about.html">About</a> |
+            <a href="contact.html">Contact</a>
+        </div>
+
         <h1>About Us</h1>
+        <p>
+            Our business was established with a clear goal: to provide quality and reliability in every service we offer. Over the years, we have focused on building a trusted relationship with our clients and continuously improving to meet their needs.
+        </p>
+        <p>
+            We believe in transparency, dedication, and the value of personal connections. Each project is approached with care, ensuring that every detail aligns with our clients' expectations.
+        </p>
+
+        <footer>
+            <p>© 2023 My Business</p>
+        </footer>
     </div>
-    <div class="content">
-        <p>Learn more about our business, mission, and what drives us. We’re passionate about providing the best service to our clients.</p>
-    </div>
-    <footer>
-        <p>© 2023 My Business</p>
-    </footer>
 </body>
 </html>
