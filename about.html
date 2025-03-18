@@ -7,14 +7,16 @@
     <style>
         .image-container {
         display: flex;
-        gap: 10px; /* Adds some space between images */
+        gap: 10px; /* Space between images */
+        flex-wrap: wrap; /* Allow images to wrap on small screens */
         }
 
         .image-container img {
-        width: 50%;  /* Adjust width as needed */
+        width: 100%;     /* Image takes full width of its container */
+        max-width: 250px; /* But never grows beyond 250px */
         height: auto;
-        object-fit: cover;  /* Keeps images well-proportioned */
         }
+
 
         * {
             margin: 0;
