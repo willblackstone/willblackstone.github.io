@@ -1,82 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sessions - Mindfulness4Creatives</title>
-    <style>
-        .banner {
-        width: 100%;
-        box-sizing: border-box;
-        background-color: #ffcc00; /* your chosen color */
-        padding: 20px;
-        text-align: center;
-        color: #ffffff;
-        font-size: 2em;
-        }
-
-
-        .content {
-        padding: 20px;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; color: #13312d; background-color: #ecced2; line-height: 1.8; display: flex; justify-content: center; }
-        
-        .container {
-        max-width: 786px;  /* or any width you prefer */
-        margin: 0 auto;    /* centers the container */
-        padding: 20px;
-        }
-        
-        h1 { font-size: 1.8em; margin-bottom: 0.5em; }
-        p { margin-bottom: 1em; }
-        a { color: #13312d; text-decoration: underline; }
-        a:hover { color: #2a574d; }
-        footer { margin-top: 40px; font-size: 0.9em; text-align: center; color: #2a574d; }
-        .nav { font-size: 0.9em; margin-bottom: 2em; }
-        .nav a { margin-right: 1em; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sessions - Mindfulness4Creatives</title>
+  <style>
+    /* Reset and global styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      color: #13312d;
+      background-color: #ecced2;
+      line-height: 1.8;
+      /* Removed flex display to avoid layout issues */
+    }
+    
+    /* Full-width banner at the top */
+    .banner {
+      width: 100%;
+      background-color: #ffcc00; /* your chosen banner color */
+      padding: 20px;
+      text-align: center;
+      color: #ffffff;
+      font-size: 2em;
+    }
+    
+    /* Main content container, centered on the page */
+    .container {
+      max-width: 786px;
+      margin: 20px auto;  /* centers the container and adds vertical margin */
+      padding: 20px;
+      background-color: #fff; /* optional, gives a white background to the content */
+    }
+    
+    /* Navigation styling - left aligned within the container */
+    .nav {
+      font-size: 0.9em;
+      margin-bottom: 2em;
+      text-align: left;
+    }
+    
+    .nav a {
+      margin-right: 1em;
+      color: #13312d;
+      text-decoration: underline;
+    }
+    
+    .nav a:hover {
+      color: #2a574d;
+    }
+    
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 0.5em;
+    }
+    
+    p {
+      margin-bottom: 1em;
+    }
+    
+    footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      text-align: center;
+      color: #2a574d;
+    }
+  </style>
 </head>
 <body>
-    <div class="banner">
-        <h1>Welcome to My Website!</h1>
-      </div>
+  <div class="banner">
+    <h1>Welcome to My Website!</h1>
+  </div>
 
-    <div class="container">
-        <div class="nav">
-            <a href="index.html">Home</a> |
-            <a href="about.html">About</a> |
-            <a href="sessions.html">Sessions</a> |
-            <a href="contact.html">Contact</a>
-        </div>
-
-        <h1>Mindfulness for people who create  stuff</h1>
-        <p>
-            Join us at one of our sunday sessions if you're interested in developing a mindfulness practice in a supportive environment with other creatives. It's a Pay As You Feel offering to all creatives curious about this stuff.
-        </p>
-        <p>
-            Sessions run at 1000 GMT for around 1 hour. Expect some meditation practice, a little time to share our experience, and an open and welcoming vibe. Beginners absolutely welcome.
-        </p>
-        <p>
-            Previous sessions have touched on topics such as:<br>
-            - Curiosity <br>
-            - Self-compassion <br>
-            - Presence (and being in the present)<br>
-            - Being in the body (awareness of the body)<br>
-            - Getting out of your own way <br>
-            - Simplicity <br>
-            - and many other things as well.... <br>
-
-            <form action="https://formspree.io/f/myzeyjao" method="POST">
-                <label for="email">- Join the list for mindfulness for people who create stuff:</label>
-                <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                <button type="submit">Subscribe</button>
-              </form>
-        </p>
-        <footer>
-            <p>© 2025 mindfulness4creatives</p>
-        </footer>
+  <div class="container">
+    <div class="nav">
+      <a href="index.html">Home</a> |
+      <a href="about.html">About</a> |
+      <a href="sessions.html">Sessions</a> |
+      <a href="contact.html">Contact</a>
     </div>
+
+    <h1>Mindfulness for people who create stuff</h1>
+    <p>
+      Join us at one of our Sunday sessions if you're interested in developing a mindfulness practice in a supportive environment with other creatives. It's a Pay As You Feel offering to all creatives curious about this stuff.
+    </p>
+    <p>
+      Sessions run at 1000 GMT for around 1 hour. Expect some meditation practice, a little time to share our experience, and an open and welcoming vibe. Beginners absolutely welcome.
+    </p>
+    <p>
+      Previous sessions have touched on topics such as:<br>
+      - Curiosity<br>
+      - Self-compassion<br>
+      - Presence (and being in the present)<br>
+      - Being in the body (awareness of the body)<br>
+      - Getting out of your own way<br>
+      - Simplicity<br>
+      - and many other things as well....
+    </p>
+    
+    <form action="https://formspree.io/f/myzeyjao" method="POST">
+      <label for="email">- Join the list for mindfulness for people who create stuff:</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      <button type="submit">Subscribe</button>
+    </form>
+    
+    <footer>
+      <p>© 2025 mindfulness4creatives</p>
+    </footer>
+  </div>
 </body>
 </html>
