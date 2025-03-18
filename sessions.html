@@ -23,6 +23,7 @@
     /* Full-width banner at the top */
     .banner {
     width: 100%;
+    height: 30px;
     background-color: #fcf5b4;
     display: flex;
     justify-content: center;
@@ -30,8 +31,15 @@
     text-align: center;
     color: #13312d;
     font-size: 1.4em;
-    padding: 5px 20px; /* minimal vertical padding */
+    overflow: hidden; /* hide any overflow */
     }
+
+    .banner h1 {
+    margin: 0;
+    line-height: 1;
+    transform: translateY(-2px); /* adjust this value as needed */
+    }
+
 
     
     /* Main content container, centered on the page */
