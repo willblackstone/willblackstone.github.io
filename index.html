@@ -5,169 +5,152 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mindfulness for people who create stuff</title>
     <style>
-        /* This makes all images responsive */
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
-
+        /* Reset and global styles */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+        /* Responsive images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            color: #0f2a26;
-            background: linear-gradient(135deg, #f4e4e7 0%, #e8d5d9 100%);
-            line-height: 1.7;
-            min-height: 100vh;
+            color: #1a1a1a;
+            background: #ffffff;
+            line-height: 1.875;
+            font-size: 16px;
         }
 
+        /* Main content container */
         .container {
-            width: 70%;
-            max-width: 786px;
-            margin: 40px auto;
-            padding: 32px;
-            text-align: left;
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(15, 42, 38, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 40px 20px;
         }
 
+        /* Navigation styling */
+        .nav {
+            font-size: 0.9rem;
+            margin-bottom: 3rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .nav a {
+            margin-right: 1.5rem;
+            color: #6c757d;
+            text-decoration: underline;
+            font-weight: 400;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+        }
+
+        .nav a:hover {
+            color: #1a1a1a;
+        }
+
+        /* Typography */
         h1 {
-            font-family: 'Crimson Text', Georgia, serif;
-            font-size: 2.2em;
+            font-family: 'EB Garamond', Georgia, serif;
+            font-size: 2.5rem;
             font-weight: 600;
-            margin-bottom: 0.7em;
-            color: #0a1f1c;
-            letter-spacing: -0.02em;
+            margin: 0 0 1.5rem 0;
+            color: #1a1a1a;
+            line-height: 1.2;
         }
 
         h2 {
-            font-size: 1.4em;
-            margin-top: 1.5em;
+            font-family: 'EB Garamond', Georgia, serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            color: #1a1a1a;
+            line-height: 1.3;
         }
 
         p {
-            margin-bottom: 1.2em;
-            color: #1a3530;
-            font-size: 1.05em;
+            margin: 0 0 1.5rem 0;
+            color: #1a1a1a;
+            font-size: 1rem;
+            line-height: 1.875;
         }
 
+        /* Links */
         a {
-            color: #0f2a26;
-            text-decoration: none;
-            border-bottom: 1px solid rgba(15, 42, 38, 0.3);
-            transition: all 0.2s ease;
+            color: #1a1a1a;
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
         }
 
         a:hover {
-            color: #2a574d;
-            border-bottom-color: #2a574d;
-        }
-
-        footer {
-            margin-top: 48px;
-            font-size: 0.9em;
-            text-align: center;
-            color: #4a6b61;
-            padding-top: 24px;
-            border-top: 1px solid rgba(15, 42, 38, 0.1);
+            color: #6c757d;
         }
 
         /* Form styling */
         form {
-            background: rgba(255, 255, 255, 0.4);
-            padding: 24px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            margin: 24px 0;
+            background: #f8f9fa;
+            padding: 2rem;
+            border: 1px solid #e9ecef;
+            margin: 2rem 0;
         }
 
         label {
             display: block;
-            margin-bottom: 12px;
+            margin-bottom: 0.5rem;
             font-weight: 500;
-            color: #0f2a26;
+            color: #1a1a1a;
+            font-size: 0.9rem;
         }
 
         input[type="email"] {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid rgba(15, 42, 38, 0.2);
-            border-radius: 8px;
-            font-size: 1em;
-            background: rgba(255, 255, 255, 0.8);
-            margin-bottom: 12px;
-            transition: border-color 0.2s ease;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            font-size: 1rem;
+            background: #ffffff;
+            margin-bottom: 1rem;
             font-family: inherit;
+            box-sizing: border-box;
         }
 
         input[type="email"]:focus {
-            outline: none;
-            border-color: #4a7c69;
-            box-shadow: 0 0 0 3px rgba(74, 124, 105, 0.1);
+            outline: 2px solid #007cba;
+            outline-offset: 2px;
+            border-color: #007cba;
         }
 
         button[type="submit"] {
-            background: linear-gradient(135deg, #2a574d 0%, #4a7c69 100%);
+            background: #1a1a1a;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
             font-family: inherit;
+            font-weight: 500;
         }
 
         button[type="submit"]:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(42, 87, 77, 0.3);
+            background: #333333;
         }
 
-        .nav {
-            font-size: 0.95em;
-            margin-bottom: 2.5em;
-            padding-bottom: 1.5em;
-            border-bottom: 1px solid rgba(15, 42, 38, 0.1);
-        }
-
-        .nav a {
-            margin-right: 1.5em;
-            color: #0f2a26;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            position: relative;
-            border: none;
-        }
-
-        .nav a:hover {
-            color: #2a574d;
-        }
-
-        .nav a:after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #2a574d, #4a7c69);
-            transition: width 0.2s ease;
-        }
-
-        .nav a:hover:after {
-            width: 100%;
+        /* Footer */
+        footer {
+            margin-top: 4rem;
+            font-size: 0.9rem;
+            text-align: center;
+            color: #6c757d;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
         }
     </style>
 </head>
@@ -184,7 +167,7 @@
         <img src="https://i.imgur.com/0uYENwp.jpeg" alt="will new pic" width="250"> <br>
 
         <p>
-            I'm Will Blackstone and this is <b>mindfulness4creatives</b>. 
+            I'm Will Blackstone and this is <b>mindfulness4creatives</b>.
             We run sessions on Zoom called "Mindfulness for People Who Create Stuff," and I post my thoughts on creativity and mindfulness on Instagram.
             <br><br>
             - <a href="https://www.instagram.com/mindfulness4creatives" target="_blank" rel="noopener noreferrer">
@@ -193,7 +176,7 @@
         </p>
 
         <form action="https://formspree.io/f/myzeyjao" method="POST">
-            <label for="email">- Join the list for mindfulness for people who create stuff:</label>
+            <label for="email">Join the list for mindfulness for people who create stuff:</label>
             <input type="email" id="email" name="email" placeholder="Enter your email" required>
             <button type="submit">Subscribe</button>
         </form>
