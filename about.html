@@ -23,53 +23,99 @@
             box-sizing: border-box;
         }
 
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
         body {
-            font-family: Arial, sans-serif;
-            color: #13312d;
-            background-color: #ecced2;
-            line-height: 1.8;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #0f2a26;
+            background: linear-gradient(135deg, #f4e4e7 0%, #e8d5d9 100%);
+            line-height: 1.7;
+            min-height: 100vh;
         }
 
         .container {
             width: 70%;
             max-width: 786px;
             margin: 40px auto;
-            padding: 20px;
+            padding: 32px;
             text-align: left;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(15, 42, 38, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         h1 {
-            font-size: 1.8em;
-            margin-bottom: 0.5em;
+            font-family: 'Crimson Text', Georgia, serif;
+            font-size: 2.2em;
+            font-weight: 600;
+            margin-bottom: 0.7em;
+            color: #0a1f1c;
+            letter-spacing: -0.02em;
         }
 
         p {
-            margin-bottom: 1em;
+            margin-bottom: 1.2em;
+            color: #1a3530;
+            font-size: 1.05em;
         }
 
         a {
-            color: #13312d;
-            text-decoration: underline;
+            color: #0f2a26;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(15, 42, 38, 0.3);
+            transition: all 0.2s ease;
         }
 
         a:hover {
             color: #2a574d;
+            border-bottom-color: #2a574d;
         }
 
         footer {
-            margin-top: 40px;
+            margin-top: 48px;
             font-size: 0.9em;
             text-align: center;
-            color: #2a574d;
+            color: #4a6b61;
+            padding-top: 24px;
+            border-top: 1px solid rgba(15, 42, 38, 0.1);
         }
 
         .nav {
-            font-size: 0.9em;
-            margin-bottom: 2em;
+            font-size: 0.95em;
+            margin-bottom: 2.5em;
+            padding-bottom: 1.5em;
+            border-bottom: 1px solid rgba(15, 42, 38, 0.1);
         }
 
         .nav a {
-            margin-right: 1em;
+            margin-right: 1.5em;
+            color: #0f2a26;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+            border: none;
+        }
+
+        .nav a:hover {
+            color: #2a574d;
+        }
+
+        .nav a:after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #2a574d, #4a7c69);
+            transition: width 0.2s ease;
+        }
+
+        .nav a:hover:after {
+            width: 100%;
         }
     </style>
 </head>
