@@ -173,6 +173,153 @@
             font-size: 0.85rem;
         }
 
+        /* Count-in styles */
+        .countin-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .countin-card .countin-beat {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #a29bfe;
+            text-align: center;
+            min-height: 1.5em;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .countin-card .countin-beat.active {
+            color: #fff;
+            text-shadow: 0 0 20px #a29bfe;
+        }
+
+        .countin-tempo-display {
+            font-size: 0.9rem;
+            color: #a29bfe;
+            text-align: center;
+            min-height: 1.5em;
+            margin-bottom: 0.5rem;
+        }
+
+        .countin-controls {
+            margin-bottom: 0.75rem;
+        }
+
+        .tempo-mode {
+            display: flex;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tempo-mode-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(162, 155, 254, 0.3);
+            color: #888;
+            padding: 0.3rem 0.75rem;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tempo-mode-btn:hover {
+            background: rgba(162, 155, 254, 0.1);
+            transform: none;
+        }
+
+        .tempo-mode-btn.active {
+            background: rgba(162, 155, 254, 0.2);
+            border-color: #a29bfe;
+            color: #a29bfe;
+        }
+
+        .tempo-input-row, .tempo-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tempo-input {
+            width: 70px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(162, 155, 254, 0.3);
+            border-radius: 4px;
+            color: #a29bfe;
+            font-size: 1.1rem;
+            padding: 0.3rem 0.5rem;
+            text-align: center;
+        }
+
+        .tempo-input:focus {
+            outline: none;
+            border-color: #a29bfe;
+        }
+
+        .tempo-label {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .tempo-display #next-tempo {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #a29bfe;
+        }
+
+        .btn-reroll {
+            background: none;
+            border: 1px solid rgba(162, 155, 254, 0.3);
+            color: #888;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reroll:hover {
+            background: rgba(162, 155, 254, 0.2);
+            color: #a29bfe;
+            border-color: #a29bfe;
+            transform: none;
+        }
+
+        .countin-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .btn-countin {
+            border-color: #a29bfe;
+            color: #a29bfe;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            min-width: 50px;
+        }
+        .btn-countin:hover {
+            background: rgba(162, 155, 254, 0.2);
+        }
+
+        .btn-stop {
+            border-color: #ff7675;
+            color: #ff7675;
+        }
+        .btn-stop:hover {
+            background: rgba(255, 118, 117, 0.2);
+        }
+
         kbd {
             background: rgba(255, 255, 255, 0.1);
             padding: 0.2rem 0.5rem;
@@ -327,7 +474,6 @@
 </head>
 <body>
     <div class="container">
-        <a href="webapps.html" style="display: inline-block; margin-bottom: 1.5rem; color: #888; text-decoration: none; font-size: 0.9rem;">← Back to Tools</a>
         <h1>Musical Parameters</h1>
         
         <div class="cards-container">
@@ -344,6 +490,33 @@
             <div class="card foa-card">
                 <div class="card-label">Focus of Attention</div>
                 <div class="card-value" id="foa">—</div>
+            </div>
+
+            <div class="card countin-card">
+                <div class="card-label">Count-In</div>
+                <div class="countin-beat" id="countin-beat">—</div>
+                <div class="countin-tempo" id="countin-tempo-display"></div>
+                
+                <div class="countin-controls">
+                    <div class="tempo-mode">
+                        <button class="tempo-mode-btn active" id="btn-random" onclick="setTempoMode('random')">Random</button>
+                        <button class="tempo-mode-btn" id="btn-fixed" onclick="setTempoMode('fixed')">Fixed</button>
+                    </div>
+                    <div class="tempo-input-row" id="tempo-input-row" style="display:none;">
+                        <input type="number" id="fixed-tempo" min="40" max="240" value="120" class="tempo-input">
+                        <span class="tempo-label">BPM</span>
+                    </div>
+                    <div class="tempo-display" id="tempo-random-display">
+                        <span id="next-tempo">—</span> <span class="tempo-label">BPM</span>
+                        <button class="btn-reroll" onclick="rerollTempo()" title="New tempo">↻</button>
+                    </div>
+                </div>
+
+                <div class="countin-buttons">
+                    <button class="btn-countin" onclick="startCountin(4)">4</button>
+                    <button class="btn-countin" onclick="startCountin(8)">8</button>
+                    <button class="btn-countin btn-stop" onclick="stopCountin(false)" id="btn-stop" style="display:none;">Stop</button>
+                </div>
             </div>
         </div>
         
@@ -595,6 +768,114 @@
                 randomizeFoA();
             }
         });
+
+        // Count-in functionality
+        let countinInterval = null;
+        let audioContext = null;
+        let tempoMode = 'random'; // 'random' or 'fixed'
+        let nextTempo = null;
+
+        function getRandomTempo() {
+            // Random tempo between 60 and 160 BPM
+            return Math.floor(Math.random() * 101) + 60;
+        }
+
+        function rerollTempo() {
+            nextTempo = getRandomTempo();
+            document.getElementById('next-tempo').textContent = nextTempo;
+        }
+
+        function setTempoMode(mode) {
+            tempoMode = mode;
+            document.getElementById('btn-random').classList.toggle('active', mode === 'random');
+            document.getElementById('btn-fixed').classList.toggle('active', mode === 'fixed');
+            document.getElementById('tempo-input-row').style.display = mode === 'fixed' ? 'flex' : 'none';
+            document.getElementById('tempo-random-display').style.display = mode === 'random' ? 'flex' : 'none';
+            
+            if (mode === 'random' && !nextTempo) {
+                rerollTempo();
+            }
+        }
+
+        function getCurrentTempo() {
+            if (tempoMode === 'fixed') {
+                return parseInt(document.getElementById('fixed-tempo').value) || 120;
+            } else {
+                return nextTempo || getRandomTempo();
+            }
+        }
+
+        function playClick(isDownbeat) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Higher pitch for downbeat
+            oscillator.frequency.value = isDownbeat ? 1000 : 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        function startCountin(beats) {
+            stopCountin(false); // Don't reroll when starting
+            
+            const tempo = getCurrentTempo();
+            const intervalMs = (60 / tempo) * 1000;
+            let currentBeat = 1;
+            
+            document.getElementById('countin-tempo-display').textContent = `♩ = ${tempo}`;
+            document.getElementById('btn-stop').style.display = 'inline-block';
+            
+            function tick() {
+                const beatDisplay = document.getElementById('countin-beat');
+                beatDisplay.textContent = currentBeat;
+                beatDisplay.classList.add('active');
+                
+                playClick(currentBeat === 1);
+                
+                setTimeout(() => {
+                    beatDisplay.classList.remove('active');
+                }, intervalMs * 0.3);
+                
+                currentBeat++;
+                if (currentBeat > beats) {
+                    stopCountin(true); // Reroll after finishing
+                }
+            }
+            
+            tick();
+            countinInterval = setInterval(tick, intervalMs);
+        }
+
+        function stopCountin(shouldReroll = true) {
+            if (countinInterval) {
+                clearInterval(countinInterval);
+                countinInterval = null;
+            }
+            document.getElementById('countin-beat').textContent = '—';
+            document.getElementById('countin-beat').classList.remove('active');
+            document.getElementById('countin-tempo-display').textContent = '';
+            document.getElementById('btn-stop').style.display = 'none';
+            
+            // Generate new random tempo for next time only if requested
+            if (shouldReroll && tempoMode === 'random') {
+                rerollTempo();
+            }
+        }
+
+        // Initialize tempo
+        rerollTempo();
 
         // Initialize with random values
         randomizeAll();
