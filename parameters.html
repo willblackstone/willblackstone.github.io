@@ -320,6 +320,256 @@
             background: rgba(255, 118, 117, 0.2);
         }
 
+        /* Review Panel */
+        .review-panel {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .review-panel.active {
+            display: block;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .review-header h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #888;
+            font-weight: 500;
+        }
+
+        .review-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        .review-close:hover {
+            color: #fff;
+            transform: none;
+        }
+
+        .review-params {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .review-params span {
+            margin-right: 1.5rem;
+        }
+
+        .review-params .param-label {
+            color: #666;
+        }
+
+        .review-params .dynamic-val { color: #ff6b6b; }
+        .review-params .style-val { color: #4ecdc4; }
+        .review-params .foa-val { color: #ffe66d; }
+        .review-params .tempo-val { color: #a29bfe; }
+
+        .review-sliders {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .review-slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .review-slider-group label {
+            font-size: 0.85rem;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .review-slider-group label span.score {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .review-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+
+        .review-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .review-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .review-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-foa::-webkit-slider-thumb { background: #ffe66d; }
+        .slider-foa::-moz-range-thumb { background: #ffe66d; }
+        
+        .slider-commitment::-webkit-slider-thumb { background: #4ecdc4; }
+        .slider-commitment::-moz-range-thumb { background: #4ecdc4; }
+        
+        .slider-accuracy::-webkit-slider-thumb { background: #ff6b6b; }
+        .slider-accuracy::-moz-range-thumb { background: #ff6b6b; }
+
+        .review-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn-log {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.8rem 2rem;
+        }
+
+        .btn-skip {
+            border-color: #666;
+            color: #666;
+        }
+
+        /* Log Section */
+        .log-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .log-header h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .btn-clear-log {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #666;
+            padding: 0.3rem 0.75rem;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-clear-log:hover {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+            transform: none;
+        }
+
+        .log-entries {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid #667eea;
+        }
+
+        .log-entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .log-entry-params {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 0.5rem;
+        }
+
+        .log-entry-params span {
+            margin-right: 1rem;
+        }
+
+        .log-entry-scores {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .log-entry-scores .score-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .log-entry-scores .score-label {
+            color: #666;
+        }
+
+        .log-entry-scores .score-foa { color: #ffe66d; }
+        .log-entry-scores .score-commitment { color: #4ecdc4; }
+        .log-entry-scores .score-accuracy { color: #ff6b6b; }
+
+        .log-empty {
+            color: #555;
+            font-style: italic;
+            text-align: center;
+            padding: 2rem;
+        }
+
         kbd {
             background: rgba(255, 255, 255, 0.1);
             padding: 0.2rem 0.5rem;
@@ -532,6 +782,44 @@
 
         <div class="buttons-container">
             <button class="btn-edit" onclick="openEditor()">Edit Parameters</button>
+        </div>
+
+        <!-- Review Panel -->
+        <div class="review-panel" id="review-panel">
+            <div class="review-header">
+                <h3>Review Your Take</h3>
+                <button class="review-close" onclick="closeReview()">&times;</button>
+            </div>
+            <div class="review-params" id="review-params"></div>
+            <div class="review-sliders">
+                <div class="review-slider-group">
+                    <label>Focus of Attention <span class="score" id="score-foa-display">5</span></label>
+                    <input type="range" min="1" max="10" value="5" class="review-slider slider-foa" id="score-foa" oninput="updateScoreDisplay('foa')">
+                </div>
+                <div class="review-slider-group">
+                    <label>Commitment <span class="score" id="score-commitment-display">5</span></label>
+                    <input type="range" min="1" max="10" value="5" class="review-slider slider-commitment" id="score-commitment" oninput="updateScoreDisplay('commitment')">
+                </div>
+                <div class="review-slider-group">
+                    <label>Accuracy <span class="score" id="score-accuracy-display">5</span></label>
+                    <input type="range" min="1" max="10" value="5" class="review-slider slider-accuracy" id="score-accuracy" oninput="updateScoreDisplay('accuracy')">
+                </div>
+            </div>
+            <div class="review-buttons">
+                <button class="btn-skip" onclick="closeReview()">Skip</button>
+                <button class="btn-log" onclick="logReview()">Log Review</button>
+            </div>
+        </div>
+
+        <!-- Log Section -->
+        <div class="log-section" id="log-section">
+            <div class="log-header">
+                <h3>Practice Log <span id="log-count"></span></h3>
+                <button class="btn-clear-log" onclick="clearLog()">Clear All</button>
+            </div>
+            <div class="log-entries" id="log-entries">
+                <div class="log-empty" id="log-empty">No entries yet. Complete a count-in and log your review.</div>
+            </div>
         </div>
         
         <div class="keyboard-hint">
@@ -850,7 +1138,7 @@
                 
                 currentBeat++;
                 if (currentBeat > beats) {
-                    stopCountin(true); // Reroll after finishing
+                    stopCountin(true, true); // Reroll after finishing, and show review
                 }
             }
             
@@ -858,7 +1146,9 @@
             countinInterval = setInterval(tick, intervalMs);
         }
 
-        function stopCountin(shouldReroll = true) {
+        function stopCountin(shouldReroll = true, completed = false) {
+            const tempo = getCurrentTempo();
+            
             if (countinInterval) {
                 clearInterval(countinInterval);
                 countinInterval = null;
@@ -868,6 +1158,11 @@
             document.getElementById('countin-tempo-display').textContent = '';
             document.getElementById('btn-stop').style.display = 'none';
             
+            // Show review panel if count-in completed
+            if (completed) {
+                showReview(tempo);
+            }
+            
             // Generate new random tempo for next time only if requested
             if (shouldReroll && tempoMode === 'random') {
                 rerollTempo();
@@ -876,6 +1171,115 @@
 
         // Initialize tempo
         rerollTempo();
+
+        // Review and Log functionality
+        let currentReviewData = null;
+        let practiceLog = JSON.parse(localStorage.getItem('practiceLog')) || [];
+
+        function showReview(tempo) {
+            const dynamic = document.getElementById('dynamic').textContent;
+            const style = document.getElementById('style').textContent;
+            const foa = document.getElementById('foa').textContent;
+            
+            currentReviewData = { dynamic, style, foa, tempo, timestamp: new Date().toISOString() };
+            
+            document.getElementById('review-params').innerHTML = `
+                <span><span class="param-label">Dynamic:</span> <span class="dynamic-val">${dynamic}</span></span>
+                <span><span class="param-label">Style:</span> <span class="style-val">${style}</span></span>
+                <span><span class="param-label">Focus:</span> <span class="foa-val">${foa}</span></span>
+                <span><span class="param-label">Tempo:</span> <span class="tempo-val">${tempo} BPM</span></span>
+            `;
+            
+            // Reset sliders to 5
+            document.getElementById('score-foa').value = 5;
+            document.getElementById('score-commitment').value = 5;
+            document.getElementById('score-accuracy').value = 5;
+            updateScoreDisplay('foa');
+            updateScoreDisplay('commitment');
+            updateScoreDisplay('accuracy');
+            
+            document.getElementById('review-panel').classList.add('active');
+        }
+
+        function closeReview() {
+            document.getElementById('review-panel').classList.remove('active');
+            currentReviewData = null;
+        }
+
+        function updateScoreDisplay(type) {
+            const value = document.getElementById(`score-${type}`).value;
+            document.getElementById(`score-${type}-display`).textContent = value;
+        }
+
+        function logReview() {
+            if (!currentReviewData) return;
+            
+            const entry = {
+                ...currentReviewData,
+                scores: {
+                    foa: parseInt(document.getElementById('score-foa').value),
+                    commitment: parseInt(document.getElementById('score-commitment').value),
+                    accuracy: parseInt(document.getElementById('score-accuracy').value)
+                }
+            };
+            
+            practiceLog.unshift(entry);
+            localStorage.setItem('practiceLog', JSON.stringify(practiceLog));
+            
+            renderLog();
+            closeReview();
+        }
+
+        function renderLog() {
+            const container = document.getElementById('log-entries');
+            const emptyMsg = document.getElementById('log-empty');
+            const countSpan = document.getElementById('log-count');
+            
+            if (practiceLog.length === 0) {
+                emptyMsg.style.display = 'block';
+                countSpan.textContent = '';
+                container.innerHTML = '<div class="log-empty" id="log-empty">No entries yet. Complete a count-in and log your review.</div>';
+                return;
+            }
+            
+            countSpan.textContent = `(${practiceLog.length})`;
+            
+            container.innerHTML = practiceLog.map((entry, index) => {
+                const date = new Date(entry.timestamp);
+                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                
+                return `
+                    <div class="log-entry">
+                        <div class="log-entry-header">
+                            <span>${dateStr} at ${timeStr}</span>
+                            <span>${entry.tempo} BPM</span>
+                        </div>
+                        <div class="log-entry-params">
+                            <span class="dynamic-val">${entry.dynamic}</span>
+                            <span class="style-val">${entry.style}</span>
+                            <span class="foa-val">${entry.foa}</span>
+                        </div>
+                        <div class="log-entry-scores">
+                            <div class="score-item"><span class="score-label">Focus:</span> <span class="score-foa">${entry.scores.foa}</span></div>
+                            <div class="score-item"><span class="score-label">Commit:</span> <span class="score-commitment">${entry.scores.commitment}</span></div>
+                            <div class="score-item"><span class="score-label">Accuracy:</span> <span class="score-accuracy">${entry.scores.accuracy}</span></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearLog() {
+            if (confirm('Clear all log entries? This cannot be undone.')) {
+                practiceLog = [];
+                localStorage.removeItem('practiceLog');
+                renderLog();
+            }
+        }
+
+        // Initialize log on page load
+        renderLog();
 
         // Initialize with random values
         randomizeAll();
