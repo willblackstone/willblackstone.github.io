@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Mindfulness4Creatives</title>
+    <title>Web Apps - Mindfulness4Creatives</title>
     <style>
         /* Reset and global styles */
         * {
@@ -67,15 +67,42 @@
             line-height: 1.875;
         }
 
-        ul {
-            margin: 0 0 1.5rem 1.5rem;
-            color: #1a1a1a;
-            font-size: 1rem;
-            line-height: 1.875;
+        /* App list styling */
+        .app-list {
+            list-style: none;
+            margin: 2rem 0;
         }
 
-        li {
-            margin-bottom: 0.5rem;
+        .app-item {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .app-item h2 {
+            font-family: 'EB Garamond', Georgia, serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+            color: #1a1a1a;
+        }
+
+        .app-item p {
+            margin-bottom: 0.75rem;
+            color: #495057;
+        }
+
+        .app-item a {
+            color: #1a1a1a;
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+            font-weight: 500;
+        }
+
+        .app-item a:hover {
+            color: #6c757d;
         }
 
         /* Links */
@@ -88,20 +115,6 @@
 
         a:hover {
             color: #6c757d;
-        }
-
-        /* Image container */
-        .image-container {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-        }
-
-        .image-container img {
-            width: 100%;
-            max-width: 250px;
-            height: auto;
         }
 
         /* Footer */
@@ -125,37 +138,17 @@
             <a href="webapps.html">Web Apps</a>
         </div>
 
-        <h1>About M4C</h1>
-        <div class="image-container">
-            <img src="images/about-1.jpg" alt="First image">
-            <img src="images/about-2.jpg" alt="Second image">
-        </div>
+        <h1>Web Apps</h1>
 
-        <p>
-            As a trained musician and mindfulness teacher, I've spent the last decade trying to understand how mindfulness can allow creatives not only to perform better but to become more resilient in facing the challenges presented on the creative path.
-        </p>
+        <p>Helpful tools and utilities for your creative practice.</p>
 
-        <p>
-            When we shift from struggling against present reality to curious inquiry into its feeling tone/mental landscape, we practice the simple power of mindfulness. With a more refined attention and a different attitude to experience, we can begin to see ourselves (and the ways in which we are obstructing ourselves) more clearly…
-        </p>
-
-        <p>
-            With mindfulness, we begin the intimately personal process of unbinding from our perceived attachments and limitations, not through changing who we are but through understanding who we are more deeply.
-        </p>
-
-        <p>When we practice mindfulness we develop the skills of:</p>
-        <ul>
-            <li>Self-compassion</li>
-            <li>Curiosity</li>
-            <li>Equanimity or Mental Balance</li>
-            <li>Concentration</li>
-            <li>Mental Clarity/Refinement</li>
-            <li>Ease and noticing ease</li>
+        <ul class="app-list">
+            <li class="app-item">
+                <h2>List Randomizer</h2>
+                <p>Randomize lists without consecutive duplicates. Perfect for creating practice schedules, workout routines, or any sequence where you want variety.</p>
+                <a href="list-randomizer.html">Launch App →</a>
+            </li>
         </ul>
-        <br>
-        <p>
-            Curious about developing these skills for yourself? Come to one of our <a href="sessions.html">Sunday sessions</a>.
-        </p>
 
         <footer>
             <p>© 2025 mindfulness4creatives</p>
