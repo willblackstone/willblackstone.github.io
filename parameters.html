@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Parameters Randomizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #e8e8e8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-weight: 300;
+            font-size: 2.5rem;
+            letter-spacing: 0.1em;
+            color: #f0f0f0;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #888;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 600;
+            min-height: 2.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.2;
+            transition: opacity 0.2s ease;
+        }
+
+        .card-value.changing {
+            opacity: 0.3;
+        }
+
+        .dynamic-card .card-value {
+            color: #ff6b6b;
+            font-size: 3rem;
+            font-weight: 700;
+            font-style: italic;
+        }
+
+        .style-card .card-value {
+            color: #4ecdc4;
+            font-size: 1.6rem;
+        }
+
+        .foa-card .card-value {
+            color: #ffe66d;
+            font-size: 1.4rem;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .randomize-all {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 1.2rem 3rem;
+            font-size: 1.1rem;
+        }
+
+        .randomize-all:hover {
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .individual-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .individual-buttons button {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-dynamic { border-color: #ff6b6b; color: #ff6b6b; }
+        .btn-dynamic:hover { background: rgba(255, 107, 107, 0.2); }
+        
+        .btn-style { border-color: #4ecdc4; color: #4ecdc4; }
+        .btn-style:hover { background: rgba(78, 205, 196, 0.2); }
+        
+        .btn-foa { border-color: #ffe66d; color: #ffe66d; }
+        .btn-foa:hover { background: rgba(255, 230, 109, 0.2); }
+
+        .btn-edit {
+            margin-top: 1.5rem;
+            border-color: #aaa;
+            color: #aaa;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.85rem;
+        }
+        .btn-edit:hover { background: rgba(170, 170, 170, 0.2); }
+
+        .keyboard-hint {
+            text-align: center;
+            margin-top: 2rem;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 0 0.2rem;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .modal-overlay.active {
+            display: block;
+        }
+
+        .modal {
+            background: #1a1a2e;
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal h2 {
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+            transform: none;
+        }
+
+        .edit-section {
+            margin-bottom: 2rem;
+        }
+
+        .edit-section h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .edit-section h3 .count {
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .edit-section.dynamic h3 { color: #ff6b6b; }
+        .edit-section.style h3 { color: #4ecdc4; }
+        .edit-section.foa h3 { color: #ffe66d; }
+
+        .edit-section textarea {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #e8e8e8;
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        .edit-section textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .edit-hint {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+
+        .btn-reset {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+        .btn-reset:hover {
+            background: rgba(255, 107, 107, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .card-value {
+                font-size: 1.5rem !important;
+            }
+            
+            .dynamic-card .card-value {
+                font-size: 2.5rem !important;
+            }
+
+            .modal {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="webapps.html" style="display: inline-block; margin-bottom: 1.5rem; color: #888; text-decoration: none; font-size: 0.9rem;">← Back to Tools</a>
+        <h1>Musical Parameters</h1>
+        
+        <div class="cards-container">
+            <div class="card dynamic-card">
+                <div class="card-label">Dynamic</div>
+                <div class="card-value" id="dynamic">—</div>
+            </div>
+            
+            <div class="card style-card">
+                <div class="card-label">Style</div>
+                <div class="card-value" id="style">—</div>
+            </div>
+            
+            <div class="card foa-card">
+                <div class="card-label">Focus of Attention</div>
+                <div class="card-value" id="foa">—</div>
+            </div>
+        </div>
+        
+        <div class="buttons-container">
+            <button class="randomize-all" onclick="randomizeAll()">Randomize All</button>
+        </div>
+        
+        <div class="individual-buttons">
+            <button class="btn-dynamic" onclick="randomizeDynamic()">Dynamic</button>
+            <button class="btn-style" onclick="randomizeStyle()">Style</button>
+            <button class="btn-foa" onclick="randomizeFoA()">Focus</button>
+        </div>
+
+        <div class="buttons-container">
+            <button class="btn-edit" onclick="openEditor()">Edit Parameters</button>
+        </div>
+        
+        <div class="keyboard-hint">
+            Press <kbd>Space</kbd> to randomize all, or <kbd>D</kbd> <kbd>S</kbd> <kbd>F</kbd> for individual parameters
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2>
+                Edit Parameters
+                <button class="modal-close" onclick="closeEditor()">&times;</button>
+            </h2>
+
+            <div class="edit-section dynamic">
+                <h3>Dynamics <span class="count" id="dynamic-count"></span></h3>
+                <textarea id="edit-dynamics"></textarea>
+                <div class="edit-hint">One item per line</div>
+            </div>
+
+            <div class="edit-section style">
+                <h3>Styles <span class="count" id="style-count"></span></h3>
+                <textarea id="edit-styles"></textarea>
+                <div class="edit-hint">One item per line</div>
+            </div>
+
+            <div class="edit-section foa">
+                <h3>Focus of Attention <span class="count" id="foa-count"></span></h3>
+                <textarea id="edit-foa"></textarea>
+                <div class="edit-hint">One item per line</div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-reset" onclick="resetToDefaults()">Reset to Defaults</button>
+                <button class="btn-save" onclick="saveChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default values
+        const defaultDynamics = [
+            'ppp', 'pp', 'p', 'mp', 'mf', 'f', 'ff', 'fff'
+        ];
+
+        const defaultStyles = [
+            // Articulation & Attack
+            'Legato', 'Staccato', 'Marcato', 'Tenuto',
+            'Accented', 'Detached', 'Connected', 'Punchy', 'Crisp',
+            
+            // Emotional/Expressive
+            'Lyrical', 'Singing', 'Expressive', 'Passionate', 'Tender',
+            'Melancholic', 'Joyful', 'Triumphant', 'Mysterious', 'Playful',
+            'Serene', 'Agitated', 'Nostalgic', 'Hopeful', 'Yearning',
+            'Defiant', 'Contemplative', 'Exuberant', 'Wistful', 'Urgent',
+            
+            // Character/Quality
+            'Warm', 'Bright', 'Dark', 'Round', 'Focused',
+            'Broad', 'Narrow', 'Rich', 'Thin', 'Full',
+            'Hollow', 'Brilliant', 'Mellow', 'Edgy', 'Smooth',
+            'Rough', 'Silky', 'Velvety', 'Metallic', 'Wooden',
+            
+            // Movement/Energy
+            'Flowing', 'Driving', 'Floating', 'Grounded', 'Suspended',
+            'Propulsive', 'Relaxed', 'Tense', 'Released', 'Weighted',
+            'Light', 'Heavy', 'Buoyant', 'Dragging', 'Pushing',
+            
+            // Jazz/Contemporary
+            'Swinging', 'Laid-back', 'On top', 'Behind the beat', 'In the pocket',
+            'Conversational', 'Bluesy', 'Angular', 'Sparse', 'Dense',
+            'Cool', 'Hot', 'Earthy', 'Ethereal', 'Gutsy'
+        ];
+
+        const defaultFocusOfAttention = [
+            // Sound Production
+            'Pitch center', 'Tone quality', 'Beginning of note', 'End of note',
+            'Middle of note', 'Note transitions', 'Release of sound',
+            'Resonance', 'Overtones', 'Core of sound', 'Projection',
+            
+            // Physical Awareness
+            'Weight of body', 'Softness of eyes', 'Relaxed jaw',
+            'Open throat', 'Low shoulders', 'Grounded feet',
+            'Balanced posture', 'Free neck', 'Soft hands',
+            'Breath support', 'Back expansion',
+            
+            // Spatial/Environmental
+            'Sound of room', 'Space around you', 'Sound traveling outward',
+            'Sound returning', 'Filling the space', 'Intimate projection',
+            
+            // Musical Elements
+            'Rhythmic placement', 'Melodic shape', 'Harmonic color',
+            'Dynamic contour', 'Phrase direction', 'Musical line',
+            'Breath rhythm', 'Pulse feeling', 'Groove center',
+            
+            // Mindfulness/Internal
+            'Place of ease', 'Center of calm', 'Inner stillness',
+            'Present moment', 'Letting go', 'Non-judgment',
+            'Curious observation', 'Acceptance', 'Effortlessness',
+            'Joy in sound', 'Connection to music', 'Listening deeply'
+        ];
+
+        // Current active values (load from localStorage or use defaults)
+        let dynamics = JSON.parse(localStorage.getItem('dynamics')) || [...defaultDynamics];
+        let styles = JSON.parse(localStorage.getItem('styles')) || [...defaultStyles];
+        let focusOfAttention = JSON.parse(localStorage.getItem('focusOfAttention')) || [...defaultFocusOfAttention];
+
+        function getRandomItem(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function animateChange(elementId, newValue) {
+            const element = document.getElementById(elementId);
+            element.classList.add('changing');
+            setTimeout(() => {
+                element.textContent = newValue;
+                element.classList.remove('changing');
+            }, 150);
+        }
+
+        function randomizeDynamic() {
+            animateChange('dynamic', getRandomItem(dynamics));
+        }
+
+        function randomizeStyle() {
+            animateChange('style', getRandomItem(styles));
+        }
+
+        function randomizeFoA() {
+            animateChange('foa', getRandomItem(focusOfAttention));
+        }
+
+        function randomizeAll() {
+            randomizeDynamic();
+            setTimeout(randomizeStyle, 50);
+            setTimeout(randomizeFoA, 100);
+        }
+
+        // Editor functions
+        function openEditor() {
+            document.getElementById('edit-dynamics').value = dynamics.join('\n');
+            document.getElementById('edit-styles').value = styles.join('\n');
+            document.getElementById('edit-foa').value = focusOfAttention.join('\n');
+            updateCounts();
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeEditor() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function updateCounts() {
+            const dynamicLines = document.getElementById('edit-dynamics').value.split('\n').filter(l => l.trim()).length;
+            const styleLines = document.getElementById('edit-styles').value.split('\n').filter(l => l.trim()).length;
+            const foaLines = document.getElementById('edit-foa').value.split('\n').filter(l => l.trim()).length;
+            
+            document.getElementById('dynamic-count').textContent = `(${dynamicLines} items)`;
+            document.getElementById('style-count').textContent = `(${styleLines} items)`;
+            document.getElementById('foa-count').textContent = `(${foaLines} items)`;
+        }
+
+        function saveChanges() {
+            dynamics = document.getElementById('edit-dynamics').value
+                .split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+            
+            styles = document.getElementById('edit-styles').value
+                .split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+            
+            focusOfAttention = document.getElementById('edit-foa').value
+                .split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            // Save to localStorage
+            localStorage.setItem('dynamics', JSON.stringify(dynamics));
+            localStorage.setItem('styles', JSON.stringify(styles));
+            localStorage.setItem('focusOfAttention', JSON.stringify(focusOfAttention));
+
+            closeEditor();
+            randomizeAll();
+        }
+
+        function resetToDefaults() {
+            if (confirm('Reset all parameters to defaults? Your custom changes will be lost.')) {
+                dynamics = [...defaultDynamics];
+                styles = [...defaultStyles];
+                focusOfAttention = [...defaultFocusOfAttention];
+
+                localStorage.removeItem('dynamics');
+                localStorage.removeItem('styles');
+                localStorage.removeItem('focusOfAttention');
+
+                document.getElementById('edit-dynamics').value = dynamics.join('\n');
+                document.getElementById('edit-styles').value = styles.join('\n');
+                document.getElementById('edit-foa').value = focusOfAttention.join('\n');
+                updateCounts();
+            }
+        }
+
+        // Update counts on textarea input
+        document.getElementById('edit-dynamics').addEventListener('input', updateCounts);
+        document.getElementById('edit-styles').addEventListener('input', updateCounts);
+        document.getElementById('edit-foa').addEventListener('input', updateCounts);
+
+        // Close modal on overlay click
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeEditor();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger if modal is open or if typing in textarea
+            if (document.getElementById('modal').classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    closeEditor();
+                }
+                return;
+            }
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                randomizeAll();
+            } else if (e.key.toLowerCase() === 'd') {
+                randomizeDynamic();
+            } else if (e.key.toLowerCase() === 's') {
+                randomizeStyle();
+            } else if (e.key.toLowerCase() === 'f') {
+                randomizeFoA();
+            }
+        });
+
+        // Initialize with random values
+        randomizeAll();
+    </script>
+</body>
+</html>
