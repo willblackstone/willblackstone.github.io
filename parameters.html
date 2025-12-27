@@ -54,6 +54,10 @@
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
         }
 
+        .dynamic-card, .style-card, .foa-card {
+            cursor: pointer;
+        }
+
         .card-label {
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -632,9 +636,10 @@
             color: #666;
         }
 
-        .log-entry-scores .score-foa { color: #ffe66d; }
-        .log-entry-scores .score-commitment { color: #4ecdc4; }
-        .log-entry-scores .score-accuracy { color: #ff6b6b; }
+        .log-entry-scores .score-value {
+            color: #a29bfe;
+            font-weight: 600;
+        }
 
         .log-empty {
             color: #555;
@@ -724,6 +729,7 @@
         .edit-section.dynamic h3 { color: #ff6b6b; }
         .edit-section.style h3 { color: #4ecdc4; }
         .edit-section.foa h3 { color: #ffe66d; }
+        .edit-section.review h3 { color: #a29bfe; }
 
         .edit-section textarea {
             width: 100%;
@@ -800,17 +806,17 @@
         <h1>Musical Parameters</h1>
         
         <div class="cards-container">
-            <div class="card dynamic-card">
+            <div class="card dynamic-card" onclick="randomizeDynamic()">
                 <div class="card-label">Dynamic</div>
                 <div class="card-value" id="dynamic">—</div>
             </div>
             
-            <div class="card style-card">
+            <div class="card style-card" onclick="randomizeStyle()">
                 <div class="card-label">Style</div>
                 <div class="card-value" id="style">—</div>
             </div>
             
-            <div class="card foa-card">
+            <div class="card foa-card" onclick="randomizeFoA()">
                 <div class="card-label">Focus of Attention</div>
                 <div class="card-value" id="foa">—</div>
             </div>
@@ -872,20 +878,9 @@
                 <button class="review-close" onclick="closeReview()">&times;</button>
             </div>
             <div class="review-params" id="review-params"></div>
-            <div class="review-sliders">
-                <div class="review-slider-group">
-                    <label>Focus of Attention <span class="score" id="score-foa-display">5</span></label>
-                    <input type="range" min="1" max="10" value="5" class="review-slider slider-foa" id="score-foa" oninput="updateScoreDisplay('foa')">
+            <div class="review-sliders" id="review-sliders">
+                <!-- Sliders generated dynamically -->
                 </div>
-                <div class="review-slider-group">
-                    <label>Commitment <span class="score" id="score-commitment-display">5</span></label>
-                    <input type="range" min="1" max="10" value="5" class="review-slider slider-commitment" id="score-commitment" oninput="updateScoreDisplay('commitment')">
-                </div>
-                <div class="review-slider-group">
-                    <label>Accuracy <span class="score" id="score-accuracy-display">5</span></label>
-                    <input type="range" min="1" max="10" value="5" class="review-slider slider-accuracy" id="score-accuracy" oninput="updateScoreDisplay('accuracy')">
-                </div>
-            </div>
             <div class="review-buttons">
                 <button class="btn-skip" onclick="closeReview()">Skip</button>
                 <button class="btn-log" onclick="logReview()">Log Review</button>
@@ -933,6 +928,12 @@
                 <h3>Focus of Attention <span class="count" id="foa-count"></span></h3>
                 <textarea id="edit-foa"></textarea>
                 <div class="edit-hint">One item per line</div>
+            </div>
+
+            <div class="edit-section review">
+                <h3>Review Parameters <span class="count" id="review-params-count"></span></h3>
+                <textarea id="edit-review-params"></textarea>
+                <div class="edit-hint">One item per line — these are the sliders shown after each take</div>
             </div>
 
             <div class="modal-buttons">
@@ -1009,6 +1010,13 @@
         let styles = JSON.parse(localStorage.getItem('styles')) || [...defaultStyles];
         let focusOfAttention = JSON.parse(localStorage.getItem('focusOfAttention')) || [...defaultFocusOfAttention];
 
+        // Review parameters
+        const defaultReviewParams = [
+            'Focus of attention',
+            'Hearing ahead'
+        ];
+        let reviewParams = JSON.parse(localStorage.getItem('reviewParams')) || [...defaultReviewParams];
+
         function getRandomItem(array) {
             return array[Math.floor(Math.random() * array.length)];
         }
@@ -1045,6 +1053,7 @@
             document.getElementById('edit-dynamics').value = dynamics.join('\n');
             document.getElementById('edit-styles').value = styles.join('\n');
             document.getElementById('edit-foa').value = focusOfAttention.join('\n');
+            document.getElementById('edit-review-params').value = reviewParams.join('\n');
             updateCounts();
             document.getElementById('modal').classList.add('active');
         }
@@ -1057,10 +1066,12 @@
             const dynamicLines = document.getElementById('edit-dynamics').value.split('\n').filter(l => l.trim()).length;
             const styleLines = document.getElementById('edit-styles').value.split('\n').filter(l => l.trim()).length;
             const foaLines = document.getElementById('edit-foa').value.split('\n').filter(l => l.trim()).length;
+            const reviewLines = document.getElementById('edit-review-params').value.split('\n').filter(l => l.trim()).length;
             
             document.getElementById('dynamic-count').textContent = `(${dynamicLines} items)`;
             document.getElementById('style-count').textContent = `(${styleLines} items)`;
             document.getElementById('foa-count').textContent = `(${foaLines} items)`;
+            document.getElementById('review-params-count').textContent = `(${reviewLines} items)`;
         }
 
         function saveChanges() {
@@ -1079,10 +1090,16 @@
                 .map(s => s.trim())
                 .filter(s => s.length > 0);
 
+            reviewParams = document.getElementById('edit-review-params').value
+                .split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
             // Save to localStorage
             localStorage.setItem('dynamics', JSON.stringify(dynamics));
             localStorage.setItem('styles', JSON.stringify(styles));
             localStorage.setItem('focusOfAttention', JSON.stringify(focusOfAttention));
+            localStorage.setItem('reviewParams', JSON.stringify(reviewParams));
 
             closeEditor();
             randomizeAll();
@@ -1093,14 +1110,17 @@
                 dynamics = [...defaultDynamics];
                 styles = [...defaultStyles];
                 focusOfAttention = [...defaultFocusOfAttention];
+                reviewParams = [...defaultReviewParams];
 
                 localStorage.removeItem('dynamics');
                 localStorage.removeItem('styles');
                 localStorage.removeItem('focusOfAttention');
+                localStorage.removeItem('reviewParams');
 
                 document.getElementById('edit-dynamics').value = dynamics.join('\n');
                 document.getElementById('edit-styles').value = styles.join('\n');
                 document.getElementById('edit-foa').value = focusOfAttention.join('\n');
+                document.getElementById('edit-review-params').value = reviewParams.join('\n');
                 updateCounts();
             }
         }
@@ -1109,6 +1129,7 @@
         document.getElementById('edit-dynamics').addEventListener('input', updateCounts);
         document.getElementById('edit-styles').addEventListener('input', updateCounts);
         document.getElementById('edit-foa').addEventListener('input', updateCounts);
+        document.getElementById('edit-review-params').addEventListener('input', updateCounts);
 
         // Close modal on overlay click
         document.getElementById('modal').addEventListener('click', (e) => {
@@ -1347,13 +1368,18 @@
                 <span><span class="param-label">Tempo:</span> <span class="tempo-val">${tempo} BPM</span></span>
             `;
             
-            // Reset sliders to 5
-            document.getElementById('score-foa').value = 5;
-            document.getElementById('score-commitment').value = 5;
-            document.getElementById('score-accuracy').value = 5;
-            updateScoreDisplay('foa');
-            updateScoreDisplay('commitment');
-            updateScoreDisplay('accuracy');
+            // Generate sliders dynamically
+            const slidersContainer = document.getElementById('review-sliders');
+            slidersContainer.innerHTML = reviewParams.map((param, index) => {
+                const paramId = `score-${index}`;
+                return `
+                    <div class="review-slider-group">
+                        <label>${param} <span class="score" id="${paramId}-display">5</span></label>
+                        <input type="range" min="1" max="10" value="5" class="review-slider" id="${paramId}" 
+                               oninput="document.getElementById('${paramId}-display').textContent = this.value">
+                    </div>
+                `;
+            }).join('');
             
             document.getElementById('review-overlay').classList.add('active');
         }
@@ -1371,13 +1397,16 @@
         function logReview() {
             if (!currentReviewData) return;
             
+            // Collect scores dynamically
+            const scores = {};
+            reviewParams.forEach((param, index) => {
+                const slider = document.getElementById(`score-${index}`);
+                scores[param] = slider ? parseInt(slider.value) : 5;
+            });
+            
             const entry = {
                 ...currentReviewData,
-                scores: {
-                    foa: parseInt(document.getElementById('score-foa').value),
-                    commitment: parseInt(document.getElementById('score-commitment').value),
-                    accuracy: parseInt(document.getElementById('score-accuracy').value)
-                }
+                scores
             };
             
             practiceLog.unshift(entry);
@@ -1406,6 +1435,11 @@
                 const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
                 
+                // Generate score items dynamically
+                const scoreItems = Object.entries(entry.scores).map(([label, value]) => 
+                    `<div class="score-item"><span class="score-label">${label}:</span> <span class="score-value">${value}</span></div>`
+                ).join('');
+                
                 return `
                     <div class="log-entry">
                         <div class="log-entry-header">
@@ -1418,9 +1452,7 @@
                             <span class="foa-val">${entry.foa}</span>
                         </div>
                         <div class="log-entry-scores">
-                            <div class="score-item"><span class="score-label">Focus:</span> <span class="score-foa">${entry.scores.foa}</span></div>
-                            <div class="score-item"><span class="score-label">Commit:</span> <span class="score-commitment">${entry.scores.commitment}</span></div>
-                            <div class="score-item"><span class="score-label">Accuracy:</span> <span class="score-accuracy">${entry.scores.accuracy}</span></div>
+                            ${scoreItems}
                         </div>
                     </div>
                 `;
