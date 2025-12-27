@@ -1142,22 +1142,40 @@
         // Count-in functionality
         let countinInterval = null;
         let audioContext = null;
+        let isAudioUnlocked = false;
         let tempoMode = 'random'; // 'random' or 'fixed'
         let nextTempo = null;
 
-        // Initialize audio context on first user interaction (required for iOS)
-        function initAudio() {
+        // Create and unlock audio context for iOS
+        function unlockAudio() {
+            if (isAudioUnlocked) return Promise.resolve();
+            
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
+            
+            // Resume if suspended
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
+            
+            // Create and play a silent buffer to unlock iOS audio
+            const buffer = audioContext.createBuffer(1, 1, 22050);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+            
+            isAudioUnlocked = true;
+            console.log('Audio unlocked, state:', audioContext.state);
+            
+            return audioContext.resume();
         }
 
-        // Pre-warm audio on any touch/click (iOS requirement)
-        document.addEventListener('touchstart', initAudio, { once: true });
-        document.addEventListener('click', initAudio, { once: true });
+        // Unlock audio on any user interaction
+        ['touchstart', 'touchend', 'click', 'mousedown'].forEach(event => {
+            document.addEventListener(event, unlockAudio, { once: false, passive: true });
+        });
 
         function getRandomTempo() {
             // Random tempo between 60 and 160 BPM
@@ -1190,28 +1208,37 @@
         }
 
         function playClick(isDownbeat) {
-            initAudio();
+            if (!audioContext || audioContext.state !== 'running') {
+                console.log('Audio not ready, state:', audioContext?.state);
+                return;
+            }
             
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            // Higher pitch for downbeat
-            oscillator.frequency.value = isDownbeat ? 1000 : 800;
-            oscillator.type = 'sine';
-            
-            const now = audioContext.currentTime;
-            gainNode.gain.setValueAtTime(0.3, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-            
-            oscillator.start(now);
-            oscillator.stop(now + 0.1);
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Higher pitch for downbeat
+                oscillator.frequency.value = isDownbeat ? 1000 : 800;
+                oscillator.type = 'sine';
+                
+                const now = audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0.5, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.15);
+            } catch (e) {
+                console.error('Audio error:', e);
+            }
         }
 
-        function startCountin(beats) {
-            initAudio(); // Ensure audio is ready
+        async function startCountin(beats) {
+            // Ensure audio is unlocked before starting
+            await unlockAudio();
+            
             stopCountin(false); // Don't reroll when starting
             
             const tempo = getCurrentTempo();
