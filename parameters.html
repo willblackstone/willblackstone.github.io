@@ -1145,6 +1145,20 @@
         let tempoMode = 'random'; // 'random' or 'fixed'
         let nextTempo = null;
 
+        // Initialize audio context on first user interaction (required for iOS)
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+
+        // Pre-warm audio on any touch/click (iOS requirement)
+        document.addEventListener('touchstart', initAudio, { once: true });
+        document.addEventListener('click', initAudio, { once: true });
+
         function getRandomTempo() {
             // Random tempo between 60 and 160 BPM
             return Math.floor(Math.random() * 101) + 60;
@@ -1176,9 +1190,7 @@
         }
 
         function playClick(isDownbeat) {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            initAudio();
             
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -1190,14 +1202,16 @@
             oscillator.frequency.value = isDownbeat ? 1000 : 800;
             oscillator.type = 'sine';
             
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
             
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.1);
+            oscillator.start(now);
+            oscillator.stop(now + 0.1);
         }
 
         function startCountin(beats) {
+            initAudio(); // Ensure audio is ready
             stopCountin(false); // Don't reroll when starting
             
             const tempo = getCurrentTempo();
