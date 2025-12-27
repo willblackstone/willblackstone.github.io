@@ -320,19 +320,92 @@
             background: rgba(255, 118, 117, 0.2);
         }
 
-        /* Review Panel */
-        .review-panel {
+        .review-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .toggle-label {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+            border-radius: 20px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #666;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: rgba(162, 155, 254, 0.3);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(16px);
+            background-color: #a29bfe;
+        }
+
+        /* Review Panel - Modal Popup */
+        .review-overlay {
             display: none;
-            background: rgba(255, 255, 255, 0.05);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 900;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .review-overlay.active {
+            display: flex;
+        }
+
+        .review-panel {
+            background: #1a1a2e;
             backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 1.5rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .review-panel.active {
-            display: block;
+            max-width: 500px;
+            width: 100%;
         }
 
         .review-header {
@@ -767,6 +840,13 @@
                     <button class="btn-countin" onclick="startCountin(8)">8</button>
                     <button class="btn-countin btn-stop" onclick="stopCountin(false)" id="btn-stop" style="display:none;">Stop</button>
                 </div>
+                <div class="review-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="review-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Review after</span>
+                </div>
             </div>
         </div>
         
@@ -784,8 +864,9 @@
             <button class="btn-edit" onclick="openEditor()">Edit Parameters</button>
         </div>
 
-        <!-- Review Panel -->
-        <div class="review-panel" id="review-panel">
+        <!-- Review Panel Popup -->
+        <div class="review-overlay" id="review-overlay">
+            <div class="review-panel" id="review-panel">
             <div class="review-header">
                 <h3>Review Your Take</h3>
                 <button class="review-close" onclick="closeReview()">&times;</button>
@@ -808,6 +889,7 @@
             <div class="review-buttons">
                 <button class="btn-skip" onclick="closeReview()">Skip</button>
                 <button class="btn-log" onclick="logReview()">Log Review</button>
+            </div>
             </div>
         </div>
 
@@ -1158,8 +1240,8 @@
             document.getElementById('countin-tempo-display').textContent = '';
             document.getElementById('btn-stop').style.display = 'none';
             
-            // Show review panel if count-in completed
-            if (completed) {
+            // Show review panel if count-in completed and toggle is on
+            if (completed && document.getElementById('review-toggle').checked) {
                 showReview(tempo);
             }
             
@@ -1198,11 +1280,11 @@
             updateScoreDisplay('commitment');
             updateScoreDisplay('accuracy');
             
-            document.getElementById('review-panel').classList.add('active');
+            document.getElementById('review-overlay').classList.add('active');
         }
 
         function closeReview() {
-            document.getElementById('review-panel').classList.remove('active');
+            document.getElementById('review-overlay').classList.remove('active');
             currentReviewData = null;
         }
 
@@ -1277,6 +1359,13 @@
                 renderLog();
             }
         }
+
+        // Close review on overlay click
+        document.getElementById('review-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'review-overlay') {
+                closeReview();
+            }
+        });
 
         // Initialize log on page load
         renderLog();
