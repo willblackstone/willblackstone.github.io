@@ -816,7 +816,7 @@
             </div>
 
             <div class="card countin-card">
-                <div class="card-label">Count-In</div>
+                <div class="card-label">Count-In <span id="audio-status" title="Tap to enable audio">🔇</span></div>
                 <div class="countin-beat" id="countin-beat">—</div>
                 <div class="countin-tempo" id="countin-tempo-display"></div>
                 
@@ -1145,36 +1145,73 @@
         let isAudioUnlocked = false;
         let tempoMode = 'random'; // 'random' or 'fixed'
         let nextTempo = null;
+        let clickBuffer = null;
+        let accentBuffer = null;
 
-        // Create and unlock audio context for iOS
-        function unlockAudio() {
-            if (isAudioUnlocked) return Promise.resolve();
+        // Create click sound buffers
+        function createClickBuffer(frequency, duration) {
+            const sampleRate = audioContext.sampleRate;
+            const length = sampleRate * duration;
+            const buffer = audioContext.createBuffer(1, length, sampleRate);
+            const data = buffer.getChannelData(0);
             
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            for (let i = 0; i < length; i++) {
+                const t = i / sampleRate;
+                const envelope = Math.exp(-t * 30); // Quick decay
+                data[i] = Math.sin(2 * Math.PI * frequency * t) * envelope * 0.5;
             }
-            
-            // Resume if suspended
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-            
-            // Create and play a silent buffer to unlock iOS audio
-            const buffer = audioContext.createBuffer(1, 1, 22050);
-            const source = audioContext.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioContext.destination);
-            source.start(0);
-            
-            isAudioUnlocked = true;
-            console.log('Audio unlocked, state:', audioContext.state);
-            
-            return audioContext.resume();
+            return buffer;
         }
 
-        // Unlock audio on any user interaction
-        ['touchstart', 'touchend', 'click', 'mousedown'].forEach(event => {
-            document.addEventListener(event, unlockAudio, { once: false, passive: true });
+        // Create and unlock audio context for iOS
+        async function unlockAudio() {
+            if (isAudioUnlocked && audioContext?.state === 'running') {
+                return true;
+            }
+            
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // Resume if suspended
+                await audioContext.resume();
+                
+                // Create buffers for click sounds
+                clickBuffer = createClickBuffer(800, 0.1);
+                accentBuffer = createClickBuffer(1200, 0.1);
+                
+                // Play silent buffer to fully unlock
+                const silentBuffer = audioContext.createBuffer(1, 1, 22050);
+                const source = audioContext.createBufferSource();
+                source.buffer = silentBuffer;
+                source.connect(audioContext.destination);
+                source.start();
+                
+                isAudioUnlocked = true;
+                
+                // Update UI to show audio is ready
+                const audioStatus = document.getElementById('audio-status');
+                if (audioStatus) {
+                    audioStatus.textContent = '🔊';
+                    audioStatus.title = 'Audio enabled';
+                }
+                
+                console.log('Audio unlocked successfully, state:', audioContext.state);
+                return true;
+            } catch (e) {
+                console.error('Failed to unlock audio:', e);
+                return false;
+            }
+        }
+
+        // Unlock audio on user interaction
+        async function handleUserInteraction() {
+            await unlockAudio();
+        }
+        
+        ['touchstart', 'touchend', 'click'].forEach(event => {
+            document.addEventListener(event, handleUserInteraction, { passive: true });
         });
 
         function getRandomTempo() {
@@ -1208,36 +1245,33 @@
         }
 
         function playClick(isDownbeat) {
-            if (!audioContext || audioContext.state !== 'running') {
-                console.log('Audio not ready, state:', audioContext?.state);
+            if (!audioContext || audioContext.state !== 'running' || !clickBuffer) {
+                console.log('Audio not ready');
                 return;
             }
             
             try {
-                const oscillator = audioContext.createOscillator();
+                const source = audioContext.createBufferSource();
+                source.buffer = isDownbeat ? accentBuffer : clickBuffer;
+                
                 const gainNode = audioContext.createGain();
+                gainNode.gain.value = 1.0;
                 
-                oscillator.connect(gainNode);
+                source.connect(gainNode);
                 gainNode.connect(audioContext.destination);
-                
-                // Higher pitch for downbeat
-                oscillator.frequency.value = isDownbeat ? 1000 : 800;
-                oscillator.type = 'sine';
-                
-                const now = audioContext.currentTime;
-                gainNode.gain.setValueAtTime(0.5, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                
-                oscillator.start(now);
-                oscillator.stop(now + 0.15);
+                source.start(0);
             } catch (e) {
-                console.error('Audio error:', e);
+                console.error('Playback error:', e);
             }
         }
 
         async function startCountin(beats) {
             // Ensure audio is unlocked before starting
-            await unlockAudio();
+            const unlocked = await unlockAudio();
+            if (!unlocked) {
+                alert('Please tap the screen first to enable audio');
+                return;
+            }
             
             stopCountin(false); // Don't reroll when starting
             
