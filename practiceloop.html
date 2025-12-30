@@ -701,7 +701,6 @@
     <button class="edit-toggle" onclick="openEditModal()">⚙️</button>
 
     <div class="container">
-        <a href="webapps.html" style="display: inline-block; margin-bottom: 1rem; color: #888; text-decoration: none; font-size: 0.9rem;">← Back to Tools</a>
         <h1>Recording Loop</h1>
         <p class="subtitle">Count-in → Record → Playback → Review</p>
 
@@ -1192,6 +1191,8 @@
                     const arrayBuffer = await recordedBlob.arrayBuffer();
                     try {
                         recordedAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                        // Clear the time-stretched cache since we have a new recording
+                        clearStretchedCache();
                     } catch (e) {
                         console.error('Could not decode audio:', e);
                     }
@@ -1212,22 +1213,88 @@
         }
 
         // === PLAYBACK ===
-        function playRecording(speed) {
+        // Cache for time-stretched buffers
+        const stretchedBufferCache = {};
+
+        async function playRecording(speed) {
             stopPlayback();
             currentPhase = 'playback';
-            updateDisplay('playback', speed === 1 ? '▶' : `▶ ${speed}×`, `Playing at ${speed}× speed`);
             
             // Update active button
             document.querySelectorAll('.btn-playback').forEach(btn => btn.classList.remove('active'));
-            
-            playRecordingInternal(speed);
+            event.target.classList.add('active');
+
+            if (speed === 1) {
+                updateDisplay('playback', '▶', 'Playing at 1× speed');
+                playRecordingInternal(1);
+            } else {
+                updateDisplay('playback', '⏳', `Preparing ${speed}× playback...`);
+                
+                // Check cache first
+                const cacheKey = speed.toString();
+                let stretchedBuffer = stretchedBufferCache[cacheKey];
+                
+                if (!stretchedBuffer) {
+                    // Time-stretch with pitch correction using phase vocoder approach
+                    stretchedBuffer = await timeStretch(recordedAudioBuffer, speed);
+                    stretchedBufferCache[cacheKey] = stretchedBuffer;
+                }
+                
+                updateDisplay('playback', `▶ ${speed}×`, `Playing at ${speed}× speed (pitch corrected)`);
+                playRecordingInternal(1, null, stretchedBuffer);
+            }
         }
 
-        function playRecordingInternal(speed, onEnded) {
-            if (!recordedAudioBuffer) return;
+        async function timeStretch(buffer, speed) {
+            // Simple granular time-stretch with crossfade
+            // This preserves pitch while changing duration
+            
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const inputLength = buffer.length;
+            const outputLength = Math.floor(inputLength / speed);
+            
+            // Grain parameters (in samples)
+            const grainSize = Math.floor(sampleRate * 0.05); // 50ms grains
+            const hopIn = Math.floor(grainSize * speed); // Input hop
+            const hopOut = grainSize; // Output hop (no overlap for simplicity, we'll crossfade)
+            const overlapSize = Math.floor(grainSize * 0.5); // 50% overlap for crossfade
+            
+            // Create output buffer
+            const outputBuffer = audioContext.createBuffer(numChannels, outputLength, sampleRate);
+            
+            for (let channel = 0; channel < numChannels; channel++) {
+                const inputData = buffer.getChannelData(channel);
+                const outputData = outputBuffer.getChannelData(channel);
+                
+                let inputPos = 0;
+                let outputPos = 0;
+                
+                while (outputPos < outputLength && inputPos < inputLength - grainSize) {
+                    // Copy grain with fade in/out
+                    for (let i = 0; i < grainSize && outputPos + i < outputLength; i++) {
+                        // Hann window for smooth crossfade
+                        const windowVal = 0.5 * (1 - Math.cos(2 * Math.PI * i / grainSize));
+                        const inputIdx = Math.floor(inputPos) + i;
+                        
+                        if (inputIdx < inputLength) {
+                            outputData[outputPos + i] += inputData[inputIdx] * windowVal;
+                        }
+                    }
+                    
+                    inputPos += hopIn;
+                    outputPos += hopOut - overlapSize; // Overlap grains
+                }
+            }
+            
+            return outputBuffer;
+        }
+
+        function playRecordingInternal(speed, onEnded, bufferOverride) {
+            if (!recordedAudioBuffer && !bufferOverride) return;
 
             playbackSource = audioContext.createBufferSource();
-            playbackSource.buffer = recordedAudioBuffer;
+            playbackSource.buffer = bufferOverride || recordedAudioBuffer;
             playbackSource.playbackRate.value = speed;
             playbackSource.connect(audioContext.destination);
             
@@ -1244,6 +1311,12 @@
                     playbackSource.stop();
                 } catch (e) {}
                 playbackSource = null;
+            }
+        }
+        
+        function clearStretchedCache() {
+            for (const key in stretchedBufferCache) {
+                delete stretchedBufferCache[key];
             }
         }
 
