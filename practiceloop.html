@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recording Loop Practice</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 1.5rem;
+            color: #e8e8e8;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-weight: 300;
+            font-size: 2rem;
+            letter-spacing: 0.1em;
+            color: #f0f0f0;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .settings-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .setting-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #888;
+        }
+
+        .setting-value {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .setting-value select,
+        .setting-value input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            color: #fff;
+            font-size: 1rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .setting-value select {
+            cursor: pointer;
+        }
+
+        .setting-value input[type="number"] {
+            width: 80px;
+            text-align: center;
+        }
+
+        .setting-value select:focus,
+        .setting-value input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+
+        /* Mic selector */
+        .mic-selector {
+            grid-column: 1 / -1;
+        }
+
+        .mic-selector select {
+            width: 100%;
+        }
+
+        /* Main Display */
+        .main-display {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .phase-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+
+        .beat-display {
+            font-size: 8rem;
+            font-weight: 200;
+            line-height: 1;
+            margin-bottom: 1rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .beat-display.count-in { color: #ff6b6b; }
+        .beat-display.recording { color: #4ecdc4; }
+        .beat-display.playback { color: #a29bfe; }
+
+        .bar-indicator {
+            font-size: 1.2rem;
+            color: #888;
+        }
+
+        .bar-indicator span {
+            color: #fff;
+        }
+
+        /* Level Meter */
+        .level-meter-container {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 1.5rem;
+        }
+
+        .level-meter {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .level-meter-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4ecdc4, #ffe66d, #ff6b6b);
+            border-radius: 4px;
+            transition: width 0.05s ease;
+        }
+
+        /* Idle State */
+        .idle-message {
+            font-size: 1.5rem;
+            color: #666;
+            font-weight: 300;
+        }
+
+        /* Control Buttons */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: #fff;
+            min-width: 200px;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: #fff;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        /* Playback Controls */
+        .playback-controls {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .playback-controls.visible {
+            display: block;
+        }
+
+        .playback-controls h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #888;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .playback-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-playback {
+            padding: 0.75rem 1.25rem;
+            background: rgba(162, 155, 254, 0.2);
+            border: 1px solid rgba(162, 155, 254, 0.4);
+            border-radius: 10px;
+            color: #a29bfe;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-playback:hover:not(:disabled) {
+            background: rgba(162, 155, 254, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-playback.active {
+            background: rgba(162, 155, 254, 0.4);
+            border-color: #a29bfe;
+        }
+
+        .btn-playback:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Review Panel */
+        .review-panel {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .review-panel.visible {
+            display: block;
+        }
+
+        .review-panel h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #888;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .review-sliders {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .review-slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .review-slider-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .review-slider-group .score {
+            color: #a29bfe;
+            font-weight: 600;
+        }
+
+        .review-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .review-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #a29bfe;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .review-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .review-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #a29bfe;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .review-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .btn-review {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-skip {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+        }
+
+        .btn-skip:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #aaa;
+        }
+
+        .btn-log {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: #fff;
+        }
+
+        .btn-log:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #a29bfe, #8b7cf7);
+            color: #fff;
+        }
+
+        .btn-next:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(162, 155, 254, 0.3);
+        }
+
+        /* Notes textarea */
+        .notes-group {
+            margin-bottom: 1rem;
+        }
+
+        .notes-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+
+        .notes-group textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .notes-group textarea:focus {
+            outline: none;
+            border-color: #a29bfe;
+        }
+
+        /* Practice Log */
+        .log-toggle {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .log-toggle button {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            transition: color 0.2s ease;
+        }
+
+        .log-toggle button:hover {
+            color: #888;
+        }
+
+        .practice-log {
+            display: none;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .practice-log.visible {
+            display: block;
+        }
+
+        .log-entry {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry-time {
+            color: #666;
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .log-entry-settings {
+            color: #888;
+            margin-bottom: 0.25rem;
+        }
+
+        .log-entry-scores {
+            color: #a29bfe;
+        }
+
+        .log-entry-notes {
+            color: #4ecdc4;
+            font-style: italic;
+            margin-top: 0.25rem;
+        }
+
+        .log-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-actions button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #888;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .log-actions button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #aaa;
+        }
+
+        /* Audio Ready Indicator */
+        .audio-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            opacity: 0.7;
+        }
+
+        /* Edit Button */
+        .edit-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #888;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .edit-toggle:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #aaa;
+        }
+
+        /* Edit Modal */
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .edit-modal.visible {
+            display: block;
+        }
+
+        .edit-content {
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(30, 30, 50, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .edit-content h2 {
+            text-align: center;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+
+        .edit-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .edit-section h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            color: #a29bfe;
+        }
+
+        .edit-section textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .edit-section textarea:focus {
+            outline: none;
+            border-color: #a29bfe;
+        }
+
+        .edit-hint {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .edit-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .beat-display {
+                font-size: 6rem;
+            }
+
+            .settings-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="audio-status" id="audio-status">🔇</div>
+    <button class="edit-toggle" onclick="openEditModal()">⚙️</button>
+
+    <div class="container">
+        <a href="webapps.html" style="display: inline-block; margin-bottom: 1rem; color: #888; text-decoration: none; font-size: 0.9rem;">← Back to Tools</a>
+        <h1>Recording Loop</h1>
+        <p class="subtitle">Count-in → Record → Playback → Review</p>
+
+        <!-- Settings -->
+        <div class="settings-panel">
+            <div class="settings-row">
+                <div class="setting-group">
+                    <span class="setting-label">Tempo (BPM)</span>
+                    <div class="setting-value">
+                        <input type="number" id="tempo" value="100" min="40" max="240" step="1">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <span class="setting-label">Time Signature</span>
+                    <div class="setting-value">
+                        <select id="time-signature">
+                            <option value="4">4/4</option>
+                            <option value="3">3/4</option>
+                            <option value="6">6/8</option>
+                            <option value="5">5/4</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <span class="setting-label">Count-In</span>
+                    <div class="setting-value">
+                        <select id="count-in">
+                            <option value="4">4 beats</option>
+                            <option value="8">8 beats</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <span class="setting-label">Record Bars</span>
+                    <div class="setting-value">
+                        <select id="record-bars">
+                            <option value="1">1 bar</option>
+                            <option value="2">2 bars</option>
+                            <option value="4" selected>4 bars</option>
+                            <option value="8">8 bars</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="setting-group mic-selector">
+                    <span class="setting-label">Microphone</span>
+                    <div class="setting-value">
+                        <select id="mic-select">
+                            <option value="">Select microphone...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Display -->
+        <div class="main-display" id="main-display">
+            <p class="idle-message">Press START to begin</p>
+        </div>
+
+        <!-- Main Controls -->
+        <div class="controls">
+            <button class="btn btn-start" id="btn-start" onclick="startLoop()">Start</button>
+            <button class="btn btn-stop" id="btn-stop" onclick="stopLoop()" disabled>Stop</button>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="playback-controls" id="playback-controls">
+            <h3>Playback Controls</h3>
+            <div class="playback-buttons">
+                <button class="btn-playback" onclick="playRecording(1)" id="play-1x">▶ 1× Speed</button>
+                <button class="btn-playback" onclick="playRecording(0.75)">▶ 0.75×</button>
+                <button class="btn-playback" onclick="playRecording(0.5)">▶ 0.5× Speed</button>
+                <button class="btn-playback" onclick="stopPlayback()">⏹ Stop</button>
+            </div>
+        </div>
+
+        <!-- Review Panel -->
+        <div class="review-panel" id="review-panel">
+            <h3>Review Your Take</h3>
+            <div class="review-sliders" id="review-sliders">
+                <!-- Generated dynamically -->
+            </div>
+            <div class="notes-group">
+                <label>Notes (optional)</label>
+                <textarea id="review-notes" placeholder="What did you notice?"></textarea>
+            </div>
+            <div class="review-buttons">
+                <button class="btn-review btn-skip" onclick="skipReview()">Skip</button>
+                <button class="btn-review btn-log" onclick="logReview()">Log & Continue</button>
+                <button class="btn-review btn-next" onclick="nextTake()">Next Take</button>
+            </div>
+        </div>
+
+        <!-- Practice Log -->
+        <div class="log-toggle">
+            <button onclick="toggleLog()">📋 Practice Log (<span id="log-count">0</span>)</button>
+        </div>
+        <div class="practice-log" id="practice-log">
+            <!-- Log entries appear here -->
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="edit-modal" id="edit-modal">
+        <div class="edit-content">
+            <h2>Edit Review Parameters</h2>
+            <div class="edit-section">
+                <h3>Review Sliders</h3>
+                <textarea id="edit-review-params"></textarea>
+                <div class="edit-hint">One parameter per line — these appear as sliders after each take</div>
+            </div>
+            <div class="edit-buttons">
+                <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-save" onclick="saveEditModal()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === STATE ===
+        let audioContext = null;
+        let audioReady = false;
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordedBlob = null;
+        let recordedAudioBuffer = null;
+        let playbackSource = null;
+        let isRunning = false;
+        let currentPhase = 'idle'; // idle, count-in, recording, playback, review
+
+        // Metronome
+        let clickBufferHigh = null;
+        let clickBufferLow = null;
+        let nextBeatTime = 0;
+        let currentBeat = 0;
+        let currentBar = 0;
+        let schedulerTimer = null;
+
+        // Review parameters (editable)
+        const defaultReviewParams = [
+            'Focus of attention',
+            'Hearing ahead',
+            'Tone quality',
+            'Time feel'
+        ];
+        let reviewParams = JSON.parse(localStorage.getItem('recordingLoopReviewParams')) || [...defaultReviewParams];
+
+        // Practice log
+        let practiceLog = JSON.parse(localStorage.getItem('recordingLoopLog')) || [];
+
+        // === INITIALIZATION ===
+        async function init() {
+            // Populate mic list
+            await populateMicList();
+            
+            // Update log count
+            updateLogCount();
+
+            // Listen for audio unlock
+            document.addEventListener('click', unlockAudio, { once: true });
+            document.addEventListener('touchstart', unlockAudio, { once: true });
+        }
+
+        async function unlockAudio() {
+            if (audioReady) return;
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
+                // Create click sounds
+                await createClickBuffers();
+                
+                audioReady = true;
+                document.getElementById('audio-status').textContent = '🔊';
+            } catch (e) {
+                console.error('Audio unlock failed:', e);
+            }
+        }
+
+        async function createClickBuffers() {
+            // High click (downbeat)
+            clickBufferHigh = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
+            const highData = clickBufferHigh.getChannelData(0);
+            for (let i = 0; i < highData.length; i++) {
+                const t = i / audioContext.sampleRate;
+                const env = Math.exp(-t * 60);
+                highData[i] = Math.sin(2 * Math.PI * 1200 * t) * env * 0.5;
+            }
+
+            // Low click (other beats)
+            clickBufferLow = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
+            const lowData = clickBufferLow.getChannelData(0);
+            for (let i = 0; i < lowData.length; i++) {
+                const t = i / audioContext.sampleRate;
+                const env = Math.exp(-t * 60);
+                lowData[i] = Math.sin(2 * Math.PI * 800 * t) * env * 0.3;
+            }
+        }
+
+        async function populateMicList() {
+            const micSelect = document.getElementById('mic-select');
+            
+            // Check if we're in a secure context
+            if (!window.isSecureContext) {
+                micSelect.innerHTML = '<option value="">⚠️ HTTPS required for mic access</option>';
+                console.warn('Microphone access requires HTTPS or localhost');
+                return;
+            }
+
+            // Don't request permission on load - just show default option
+            // Permission will be requested when user clicks Start
+            micSelect.innerHTML = '<option value="">Default microphone</option>';
+            
+            // Try to enumerate without requesting permission first
+            // (will only show labels if permission was previously granted)
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioInputs = devices.filter(d => d.kind === 'audioinput');
+                
+                // If we have labels, permission was already granted
+                if (audioInputs.some(d => d.label)) {
+                    audioInputs.forEach((device, i) => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.textContent = device.label || `Microphone ${i + 1}`;
+                        micSelect.appendChild(option);
+                    });
+                }
+            } catch (e) {
+                console.log('Device enumeration not available yet');
+            }
+        }
+
+        async function refreshMicList() {
+            // Called after permission is granted to update the list with labels
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const micSelect = document.getElementById('mic-select');
+                const currentValue = micSelect.value;
+                
+                micSelect.innerHTML = '<option value="">Default microphone</option>';
+                
+                devices.filter(d => d.kind === 'audioinput').forEach((device, i) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `Microphone ${i + 1}`;
+                    micSelect.appendChild(option);
+                });
+                
+                // Restore selection if possible
+                if (currentValue) {
+                    micSelect.value = currentValue;
+                }
+            } catch (e) {
+                console.error('Could not refresh mic list:', e);
+            }
+        }
+
+        // === MAIN LOOP ===
+        async function startLoop() {
+            if (!audioReady) {
+                alert('Please tap anywhere first to enable audio');
+                return;
+            }
+
+            isRunning = true;
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-stop').disabled = false;
+            document.getElementById('playback-controls').classList.remove('visible');
+            document.getElementById('review-panel').classList.remove('visible');
+
+            // Start recording stream
+            const streamOk = await startMediaStream();
+            if (!streamOk) return;
+
+            // Begin count-in
+            await countIn();
+
+            if (!isRunning) return;
+
+            // Record
+            await record();
+
+            if (!isRunning) return;
+
+            // Process recording
+            await processRecording();
+
+            if (!isRunning) return;
+
+            // Auto-playback at full speed
+            await autoPlayback();
+
+            // Show review
+            showReview();
+        }
+
+        function stopLoop() {
+            isRunning = false;
+            currentPhase = 'idle';
+
+            // Stop scheduler
+            if (schedulerTimer) {
+                clearTimeout(schedulerTimer);
+                schedulerTimer = null;
+            }
+
+            // Stop media recorder
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+
+            // Stop media stream
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            // Stop playback
+            stopPlayback();
+
+            // Reset UI
+            document.getElementById('btn-start').disabled = false;
+            document.getElementById('btn-stop').disabled = true;
+            showIdleState();
+        }
+
+        async function startMediaStream() {
+            // Check secure context first
+            if (!window.isSecureContext) {
+                alert('Microphone access requires HTTPS.\n\nTo use this app:\n• Host on a local server (localhost)\n• Or use a service like GitHub Pages\n• Or use a local file server with HTTPS');
+                stopLoop();
+                return false;
+            }
+
+            const micId = document.getElementById('mic-select').value;
+            const constraints = {
+                audio: micId ? { deviceId: { exact: micId } } : true
+            };
+
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                // Now that we have permission, refresh mic list to show all devices
+                await refreshMicList();
+                return true;
+            } catch (e) {
+                console.error('Could not get media stream:', e);
+                if (e.name === 'NotAllowedError') {
+                    alert('Microphone permission denied.\n\nPlease allow microphone access and try again.');
+                } else if (e.name === 'NotFoundError') {
+                    alert('No microphone found.\n\nPlease connect a microphone and try again.');
+                } else {
+                    alert('Could not access microphone: ' + e.message);
+                }
+                stopLoop();
+                return false;
+            }
+        }
+
+        // === COUNT-IN PHASE ===
+        async function countIn() {
+            currentPhase = 'count-in';
+            const countInBeats = parseInt(document.getElementById('count-in').value);
+            const tempo = parseInt(document.getElementById('tempo').value);
+            const beatDuration = 60 / tempo;
+            const beatsPerBar = parseInt(document.getElementById('time-signature').value);
+
+            updateDisplay('count-in', '', 'Get ready...');
+
+            // Schedule metronome
+            nextBeatTime = audioContext.currentTime + 0.1;
+            currentBeat = 0;
+
+            return new Promise((resolve) => {
+                function scheduleBeat() {
+                    if (!isRunning || currentPhase !== 'count-in') {
+                        resolve();
+                        return;
+                    }
+
+                    while (nextBeatTime < audioContext.currentTime + 0.1) {
+                        if (currentBeat >= countInBeats) {
+                            resolve();
+                            return;
+                        }
+
+                        // Play click
+                        const isDownbeat = currentBeat % beatsPerBar === 0;
+                        playClick(nextBeatTime, isDownbeat);
+
+                        // Update display
+                        const displayBeat = (currentBeat % beatsPerBar) + 1;
+                        const displayBar = Math.floor(currentBeat / beatsPerBar) + 1;
+                        updateDisplay('count-in', displayBeat, `Count-in: ${displayBar}`);
+
+                        currentBeat++;
+                        nextBeatTime += beatDuration;
+                    }
+
+                    schedulerTimer = setTimeout(scheduleBeat, 25);
+                }
+
+                scheduleBeat();
+            });
+        }
+
+        // === RECORDING PHASE ===
+        async function record() {
+            currentPhase = 'recording';
+            const bars = parseInt(document.getElementById('record-bars').value);
+            const beatsPerBar = parseInt(document.getElementById('time-signature').value);
+            const totalBeats = bars * beatsPerBar;
+            const tempo = parseInt(document.getElementById('tempo').value);
+            const beatDuration = 60 / tempo;
+
+            // Start recording
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(mediaStream, {
+                mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+            });
+            
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    recordedChunks.push(e.data);
+                }
+            };
+
+            mediaRecorder.start();
+            currentBeat = 0;
+            currentBar = 0;
+
+            // Start level meter
+            startLevelMeter();
+
+            return new Promise((resolve) => {
+                function scheduleBeat() {
+                    if (!isRunning || currentPhase !== 'recording') {
+                        resolve();
+                        return;
+                    }
+
+                    while (nextBeatTime < audioContext.currentTime + 0.1) {
+                        if (currentBeat >= totalBeats) {
+                            mediaRecorder.stop();
+                            stopLevelMeter();
+                            resolve();
+                            return;
+                        }
+
+                        // Play click
+                        const isDownbeat = currentBeat % beatsPerBar === 0;
+                        playClick(nextBeatTime, isDownbeat);
+
+                        // Update display
+                        const displayBeat = (currentBeat % beatsPerBar) + 1;
+                        const displayBar = Math.floor(currentBeat / beatsPerBar) + 1;
+                        updateDisplay('recording', displayBeat, `Recording: Bar ${displayBar} of ${bars}`);
+
+                        currentBeat++;
+                        nextBeatTime += beatDuration;
+                    }
+
+                    schedulerTimer = setTimeout(scheduleBeat, 25);
+                }
+
+                scheduleBeat();
+            });
+        }
+
+        // === PROCESS RECORDING ===
+        async function processRecording() {
+            updateDisplay('playback', '...', 'Processing...');
+
+            return new Promise((resolve) => {
+                // Wait a bit for all chunks
+                setTimeout(async () => {
+                    recordedBlob = new Blob(recordedChunks, { 
+                        type: mediaRecorder.mimeType 
+                    });
+
+                    // Decode to AudioBuffer for variable speed playback
+                    const arrayBuffer = await recordedBlob.arrayBuffer();
+                    try {
+                        recordedAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    } catch (e) {
+                        console.error('Could not decode audio:', e);
+                    }
+
+                    resolve();
+                }, 100);
+            });
+        }
+
+        // === AUTO PLAYBACK ===
+        async function autoPlayback() {
+            currentPhase = 'playback';
+            updateDisplay('playback', '▶', 'Playing back...');
+
+            return new Promise((resolve) => {
+                playRecordingInternal(1, resolve);
+            });
+        }
+
+        // === PLAYBACK ===
+        function playRecording(speed) {
+            stopPlayback();
+            currentPhase = 'playback';
+            updateDisplay('playback', speed === 1 ? '▶' : `▶ ${speed}×`, `Playing at ${speed}× speed`);
+            
+            // Update active button
+            document.querySelectorAll('.btn-playback').forEach(btn => btn.classList.remove('active'));
+            
+            playRecordingInternal(speed);
+        }
+
+        function playRecordingInternal(speed, onEnded) {
+            if (!recordedAudioBuffer) return;
+
+            playbackSource = audioContext.createBufferSource();
+            playbackSource.buffer = recordedAudioBuffer;
+            playbackSource.playbackRate.value = speed;
+            playbackSource.connect(audioContext.destination);
+            
+            playbackSource.onended = () => {
+                if (onEnded) onEnded();
+            };
+            
+            playbackSource.start();
+        }
+
+        function stopPlayback() {
+            if (playbackSource) {
+                try {
+                    playbackSource.stop();
+                } catch (e) {}
+                playbackSource = null;
+            }
+        }
+
+        // === REVIEW ===
+        function showReview() {
+            currentPhase = 'review';
+            document.getElementById('btn-start').disabled = false;
+            document.getElementById('btn-stop').disabled = true;
+            document.getElementById('playback-controls').classList.add('visible');
+            document.getElementById('review-panel').classList.add('visible');
+
+            // Generate review sliders
+            generateReviewSliders();
+
+            // Clear notes
+            document.getElementById('review-notes').value = '';
+
+            updateDisplay('playback', '✓', 'Review your take');
+        }
+
+        function generateReviewSliders() {
+            const container = document.getElementById('review-sliders');
+            container.innerHTML = '';
+
+            reviewParams.forEach((param, i) => {
+                const group = document.createElement('div');
+                group.className = 'review-slider-group';
+                group.innerHTML = `
+                    <label>
+                        ${param}
+                        <span class="score" id="score-${i}-display">5</span>
+                    </label>
+                    <input type="range" min="1" max="10" value="5" 
+                           class="review-slider" id="score-${i}"
+                           oninput="updateScoreDisplay(${i})">
+                `;
+                container.appendChild(group);
+            });
+        }
+
+        function updateScoreDisplay(index) {
+            const slider = document.getElementById(`score-${index}`);
+            const display = document.getElementById(`score-${index}-display`);
+            display.textContent = slider.value;
+        }
+
+        function skipReview() {
+            document.getElementById('playback-controls').classList.remove('visible');
+            document.getElementById('review-panel').classList.remove('visible');
+            showIdleState();
+        }
+
+        function logReview() {
+            const tempo = document.getElementById('tempo').value;
+            const bars = document.getElementById('record-bars').value;
+            const notes = document.getElementById('review-notes').value.trim();
+
+            // Collect scores
+            const scores = {};
+            reviewParams.forEach((param, i) => {
+                const slider = document.getElementById(`score-${i}`);
+                if (slider) {
+                    scores[param] = parseInt(slider.value);
+                }
+            });
+
+            const entry = {
+                timestamp: new Date().toISOString(),
+                tempo: tempo,
+                bars: bars,
+                scores: scores,
+                notes: notes
+            };
+
+            practiceLog.unshift(entry);
+            localStorage.setItem('recordingLoopLog', JSON.stringify(practiceLog));
+            updateLogCount();
+            renderLog();
+
+            // Continue to next take
+            nextTake();
+        }
+
+        function nextTake() {
+            document.getElementById('playback-controls').classList.remove('visible');
+            document.getElementById('review-panel').classList.remove('visible');
+            stopPlayback();
+            startLoop();
+        }
+
+        // === DISPLAY HELPERS ===
+        function updateDisplay(phase, beat, info) {
+            const display = document.getElementById('main-display');
+            display.innerHTML = `
+                <p class="phase-label">${currentPhase.toUpperCase()}</p>
+                <div class="beat-display ${phase}">${beat}</div>
+                <p class="bar-indicator">${info}</p>
+                ${phase === 'recording' ? '<div class="level-meter-container"><div class="level-meter"><div class="level-meter-fill" id="level-fill"></div></div></div>' : ''}
+            `;
+        }
+
+        function showIdleState() {
+            document.getElementById('main-display').innerHTML = '<p class="idle-message">Press START to begin</p>';
+        }
+
+        // === METRONOME ===
+        function playClick(time, isDownbeat) {
+            const source = audioContext.createBufferSource();
+            source.buffer = isDownbeat ? clickBufferHigh : clickBufferLow;
+            source.connect(audioContext.destination);
+            source.start(time);
+        }
+
+        // === LEVEL METER ===
+        let analyser = null;
+        let levelAnimationId = null;
+
+        function startLevelMeter() {
+            if (!mediaStream) return;
+
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+
+            const source = audioContext.createMediaStreamSource(mediaStream);
+            source.connect(analyser);
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            function updateMeter() {
+                if (currentPhase !== 'recording') return;
+
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                const level = Math.min(100, (average / 128) * 100);
+
+                const fill = document.getElementById('level-fill');
+                if (fill) {
+                    fill.style.width = level + '%';
+                }
+
+                levelAnimationId = requestAnimationFrame(updateMeter);
+            }
+
+            updateMeter();
+        }
+
+        function stopLevelMeter() {
+            if (levelAnimationId) {
+                cancelAnimationFrame(levelAnimationId);
+                levelAnimationId = null;
+            }
+        }
+
+        // === PRACTICE LOG ===
+        function updateLogCount() {
+            document.getElementById('log-count').textContent = practiceLog.length;
+        }
+
+        function toggleLog() {
+            const log = document.getElementById('practice-log');
+            log.classList.toggle('visible');
+            if (log.classList.contains('visible')) {
+                renderLog();
+            }
+        }
+
+        function renderLog() {
+            const container = document.getElementById('practice-log');
+            
+            if (practiceLog.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 1rem;">No entries yet</p>';
+                return;
+            }
+
+            let html = '';
+            practiceLog.forEach((entry, i) => {
+                const time = new Date(entry.timestamp).toLocaleString();
+                const scoresStr = Object.entries(entry.scores)
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join(' | ');
+
+                html += `
+                    <div class="log-entry">
+                        <div class="log-entry-time">${time}</div>
+                        <div class="log-entry-settings">${entry.tempo} BPM • ${entry.bars} bars</div>
+                        <div class="log-entry-scores">${scoresStr}</div>
+                        ${entry.notes ? `<div class="log-entry-notes">"${entry.notes}"</div>` : ''}
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="log-actions">
+                    <button onclick="exportLog()">Export CSV</button>
+                    <button onclick="clearLog()">Clear All</button>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function exportLog() {
+            if (practiceLog.length === 0) return;
+
+            // Build CSV
+            const headers = ['Timestamp', 'Tempo', 'Bars', ...reviewParams, 'Notes'];
+            let csv = headers.join(',') + '\n';
+
+            practiceLog.forEach(entry => {
+                const row = [
+                    entry.timestamp,
+                    entry.tempo,
+                    entry.bars,
+                    ...reviewParams.map(p => entry.scores[p] || ''),
+                    `"${(entry.notes || '').replace(/"/g, '""')}"`
+                ];
+                csv += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `practice-log-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearLog() {
+            if (confirm('Clear all practice log entries?')) {
+                practiceLog = [];
+                localStorage.setItem('recordingLoopLog', JSON.stringify(practiceLog));
+                updateLogCount();
+                renderLog();
+            }
+        }
+
+        // === EDIT MODAL ===
+        function openEditModal() {
+            document.getElementById('edit-review-params').value = reviewParams.join('\n');
+            document.getElementById('edit-modal').classList.add('visible');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('visible');
+        }
+
+        function saveEditModal() {
+            const text = document.getElementById('edit-review-params').value;
+            reviewParams = text.split('\n').map(s => s.trim()).filter(s => s);
+            
+            if (reviewParams.length === 0) {
+                reviewParams = [...defaultReviewParams];
+            }
+
+            localStorage.setItem('recordingLoopReviewParams', JSON.stringify(reviewParams));
+            
+            // Regenerate sliders if review panel is visible
+            if (document.getElementById('review-panel').classList.contains('visible')) {
+                generateReviewSliders();
+            }
+
+            closeEditModal();
+        }
+
+        // === INIT ===
+        init();
+    </script>
+</body>
+</html>
