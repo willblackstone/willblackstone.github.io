@@ -381,6 +381,110 @@
         
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        
+        .sound-settings-btn {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .sound-settings-btn:hover { border-color: var(--accent-warm); }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-overlay.open { display: flex; }
+        
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            max-width: 450px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-header h3 {
+            font-family: 'Instrument Serif', serif;
+            font-size: 1.5rem;
+            color: var(--accent-warm);
+            margin: 0;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        .modal-close:hover { color: var(--text-primary); background: var(--bg-elevated); }
+        
+        .modal-section {
+            margin-bottom: 1.5rem;
+        }
+        .modal-section h4 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+        
+        .voice-sliders { display: flex; flex-direction: column; gap: 0.75rem; }
+        .voice-slider {
+            display: grid;
+            grid-template-columns: 50px 1fr 50px;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .voice-slider label { font-size: 0.9rem; color: var(--text-primary); }
+        .voice-slider input[type="range"] { width: 100%; }
+        .slider-value { font-size: 0.85rem; color: var(--text-secondary); text-align: right; }
+        
+        .waveform-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        .waveform-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-elevated);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+        .waveform-option:hover { background: var(--bg-dark); }
+        .waveform-option input { accent-color: var(--accent-warm); }
+        .waveform-option.selected { background: rgba(232, 168, 124, 0.15); }
+        .wave-icon { font-size: 1.1rem; opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -428,6 +532,9 @@
                             <input type="range" id="tempo" min="40" max="120" value="60">
                             <span class="range-value" id="tempo-value">60</span>
                         </div>
+                    </div>
+                    <div class="settings-group">
+                        <button class="sound-settings-btn" id="open-sound-settings">🎛️ Sound Settings</button>
                     </div>
                     <div class="settings-group">
                         <label class="settings-label">Options</label>
@@ -511,6 +618,68 @@
                     </div>
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Sound Settings Modal -->
+    <div class="modal-overlay" id="sound-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Sound Settings</h3>
+                <button class="modal-close" id="close-sound-settings">×</button>
+            </div>
+            
+            <div class="modal-section">
+                <h4>Voice Balance</h4>
+                <div class="voice-sliders">
+                    <div class="voice-slider">
+                        <label>Root</label>
+                        <input type="range" id="voice-root" min="0" max="100" value="100">
+                        <span class="slider-value" id="voice-root-value">100%</span>
+                    </div>
+                    <div class="voice-slider">
+                        <label>3rd</label>
+                        <input type="range" id="voice-third" min="0" max="100" value="80">
+                        <span class="slider-value" id="voice-third-value">80%</span>
+                    </div>
+                    <div class="voice-slider">
+                        <label>5th</label>
+                        <input type="range" id="voice-fifth" min="0" max="100" value="50">
+                        <span class="slider-value" id="voice-fifth-value">50%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-section">
+                <h4>Waveform</h4>
+                <div class="waveform-options">
+                    <label class="waveform-option">
+                        <input type="checkbox" id="wave-triangle" checked>
+                        <span class="wave-icon">△</span> Triangle
+                    </label>
+                    <label class="waveform-option">
+                        <input type="checkbox" id="wave-sine">
+                        <span class="wave-icon">∿</span> Sine
+                    </label>
+                    <label class="waveform-option">
+                        <input type="checkbox" id="wave-square">
+                        <span class="wave-icon">⊓</span> Square
+                    </label>
+                    <label class="waveform-option">
+                        <input type="checkbox" id="wave-sawtooth">
+                        <span class="wave-icon">⩘</span> Sawtooth
+                    </label>
+                </div>
+                <div class="checkbox-row" style="margin-top: 1rem;">
+                    <input type="checkbox" id="randomize-waveform">
+                    <label for="randomize-waveform">Randomize waveform each progression</label>
+                </div>
+            </div>
+            
+            <div class="modal-section">
+                <h4>Test Sound</h4>
+                <button class="control-btn" id="test-sound-btn">▶ Play Test Chord</button>
+            </div>
         </div>
     </div>
 
@@ -601,22 +770,61 @@
 
         function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 
-        function playChord(rootMidi, isMinor, startTime, duration, arpeggiate = false, doubleRoot = false) {
+        function getEnabledWaveforms() {
+            const waves = [];
+            if (document.getElementById('wave-triangle').checked) waves.push('triangle');
+            if (document.getElementById('wave-sine').checked) waves.push('sine');
+            if (document.getElementById('wave-square').checked) waves.push('square');
+            if (document.getElementById('wave-sawtooth').checked) waves.push('sawtooth');
+            return waves.length ? waves : ['triangle']; // fallback
+        }
+        
+        function getCurrentWaveform() {
+            const waves = getEnabledWaveforms();
+            if (document.getElementById('randomize-waveform').checked) {
+                return waves[Math.floor(Math.random() * waves.length)];
+            }
+            return waves[0];
+        }
+
+        function playChord(rootMidi, isMinor, startTime, duration, arpeggiate = false, doubleRoot = false, waveform = null) {
             const ctx = getAudioContext();
             const third = isMinor ? 3 : 4;
-            const notes = doubleRoot ? [rootMidi - 12, rootMidi, rootMidi + third, rootMidi + 7] : [rootMidi, rootMidi + third, rootMidi + 7];
+            const notes = doubleRoot 
+                ? [rootMidi - 12, rootMidi, rootMidi + third, rootMidi + 7] 
+                : [rootMidi, rootMidi + third, rootMidi + 7];
+            
+            const rootVol = parseInt(document.getElementById('voice-root').value) / 100;
+            const thirdVol = parseInt(document.getElementById('voice-third').value) / 100;
+            const fifthVol = parseInt(document.getElementById('voice-fifth').value) / 100;
+            
+            const baseVoiceGains = doubleRoot 
+                ? [0.15 * rootVol, 0.15 * rootVol, 0.15 * thirdVol, 0.15 * fifthVol]
+                : [0.15 * rootVol, 0.15 * thirdVol, 0.15 * fifthVol];
+            
+            const wave = waveform || getCurrentWaveform();
+            
             notes.forEach((midi, i) => {
-                const osc = ctx.createOscillator(), gain = ctx.createGain();
-                osc.type = 'triangle';
+                const osc = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                osc.type = wave;
                 osc.frequency.value = midiToFreq(midi);
+                
                 const noteStart = arpeggiate ? startTime + i * 0.1 : startTime;
                 const noteDuration = arpeggiate ? duration - i * 0.1 : duration;
-                gain.gain.setValueAtTime(0, noteStart);
-                gain.gain.linearRampToValueAtTime(0.15, noteStart + 0.02);
-                gain.gain.setValueAtTime(0.15, noteStart + noteDuration - 0.1);
-                gain.gain.linearRampToValueAtTime(0, noteStart + noteDuration);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
+                const voiceGain = baseVoiceGains[i] || 0.1;
+                
+                // Reduce gain for harsher waveforms
+                const waveGainMod = (wave === 'square' || wave === 'sawtooth') ? 0.5 : 1;
+                
+                gainNode.gain.setValueAtTime(0, noteStart);
+                gainNode.gain.linearRampToValueAtTime(voiceGain * waveGainMod, noteStart + 0.02);
+                gainNode.gain.setValueAtTime(voiceGain * waveGainMod, noteStart + noteDuration - 0.1);
+                gainNode.gain.linearRampToValueAtTime(0, noteStart + noteDuration);
+                
+                osc.connect(gainNode);
+                gainNode.connect(ctx.destination);
                 osc.start(noteStart);
                 osc.stop(noteStart + noteDuration);
             });
@@ -801,6 +1009,42 @@
                 renderGroups();
             }));
             document.getElementById('tempo').addEventListener('input', (e) => { document.getElementById('tempo-value').textContent = e.target.value; });
+            
+            // Sound settings modal
+            document.getElementById('open-sound-settings').addEventListener('click', () => {
+                document.getElementById('sound-modal').classList.add('open');
+            });
+            document.getElementById('close-sound-settings').addEventListener('click', () => {
+                document.getElementById('sound-modal').classList.remove('open');
+            });
+            document.getElementById('sound-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('sound-modal')) {
+                    document.getElementById('sound-modal').classList.remove('open');
+                }
+            });
+            
+            // Voice sliders
+            ['root', 'third', 'fifth'].forEach(voice => {
+                document.getElementById(`voice-${voice}`).addEventListener('input', (e) => {
+                    document.getElementById(`voice-${voice}-value`).textContent = e.target.value + '%';
+                });
+            });
+            
+            // Waveform checkboxes - update visual state
+            document.querySelectorAll('.waveform-option input').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    cb.closest('.waveform-option').classList.toggle('selected', cb.checked);
+                });
+                // Set initial state
+                cb.closest('.waveform-option').classList.toggle('selected', cb.checked);
+            });
+            
+            // Test sound button
+            document.getElementById('test-sound-btn').addEventListener('click', () => {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                playChord(60, false, now, 1.5, false, false);
+            });
             document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => {
                 document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
