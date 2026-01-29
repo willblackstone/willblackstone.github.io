@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triad Progression Ear Trainer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+        
+        :root {
+            --bg-dark: #0a0a0c;
+            --bg-card: #141418;
+            --bg-elevated: #1c1c22;
+            --accent-warm: #e8a87c;
+            --accent-cool: #7cb8e8;
+            --accent-muted: #8b7355;
+            --text-primary: #f5f3f0;
+            --text-secondary: #9a9590;
+            --text-muted: #5a5550;
+            --border: #2a2a30;
+            --success: #7ce8a8;
+            --error: #e87c7c;
+            --uncertain: #e8d87c;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h1 {
+            font-family: 'Instrument Serif', serif;
+            font-size: 3rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-warm) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle { font-size: 1rem; color: var(--text-secondary); font-style: italic; }
+        
+        .main-grid { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+        
+        .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .card-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--accent-warm);
+        }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center; }
+        .stat-value { font-size: 1.75rem; font-weight: 500; color: var(--text-primary); }
+        .stat-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        .category-filters { display: flex; flex-direction: column; gap: 0.75rem; }
+        
+        .category-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .category-btn:hover { border-color: var(--accent-warm); }
+        .category-btn.active { background: var(--accent-warm); color: var(--bg-dark); border-color: var(--accent-warm); }
+        
+        .category-badge {
+            margin-left: auto;
+            background: var(--bg-dark);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+        .category-btn.active .category-badge { background: rgba(0,0,0,0.2); color: var(--bg-dark); }
+        
+        .training-area { display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        .player-card {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .player-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-warm), var(--accent-cool));
+        }
+        
+        .progression-display {
+            font-family: 'Instrument Serif', serif;
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            min-height: 2.5rem;
+            color: var(--text-secondary);
+        }
+        .progression-display.revealed { color: var(--text-primary); }
+        
+        .play-btn {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-muted));
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            transition: all 0.3s;
+            box-shadow: 0 8px 32px rgba(232, 168, 124, 0.3);
+        }
+        .play-btn:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(232, 168, 124, 0.4); }
+        .play-btn:active { transform: scale(0.98); }
+        .play-btn svg { width: 32px; height: 32px; fill: var(--bg-dark); margin-left: 4px; }
+        
+        .control-row { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+        
+        .control-btn {
+            padding: 0.6rem 1.25rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .control-btn:hover { border-color: var(--accent-cool); color: var(--accent-cool); }
+        .control-btn.primary { background: var(--accent-cool); color: var(--bg-dark); border-color: var(--accent-cool); }
+        .control-btn.primary:hover { background: #9acbf0; }
+        
+        .answer-section { display: flex; flex-direction: column; gap: 1rem; }
+        .answer-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+        @media (max-width: 600px) { .answer-row { grid-template-columns: repeat(2, 1fr); } }
+        
+        .answer-field { display: flex; flex-direction: column; gap: 0.35rem; }
+        .answer-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        .answer-select {
+            padding: 0.75rem 1rem;
+            background: var(--bg-elevated);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239a9590' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+        .answer-select:hover { border-color: var(--accent-warm); }
+        .answer-select:focus { outline: none; border-color: var(--accent-warm); }
+        .answer-select.correct { border-color: var(--success); background-color: rgba(124, 232, 168, 0.1); }
+        .answer-select.incorrect { border-color: var(--error); background-color: rgba(232, 124, 124, 0.1); }
+        
+        .submit-row { display: flex; justify-content: center; gap: 1rem; margin-top: 0.5rem; }
+        
+        .submit-btn {
+            padding: 0.9rem 2.5rem;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-muted));
+            border: none;
+            border-radius: 8px;
+            color: var(--bg-dark);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(232, 168, 124, 0.3); }
+        
+        .groups-section { margin-top: 1rem; }
+        
+        .group-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .group-item:hover { border-color: var(--accent-warm); }
+        .group-item.active { border-color: var(--accent-warm); background: rgba(232, 168, 124, 0.1); }
+        
+        .group-name { flex: 1; font-size: 0.9rem; }
+        .group-count { font-size: 0.75rem; color: var(--text-muted); background: var(--bg-dark); padding: 0.2rem 0.5rem; border-radius: 4px; }
+        .group-actions { display: flex; gap: 0.25rem; }
+        
+        .group-action-btn {
+            padding: 0.3rem 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 4px;
+        }
+        .group-action-btn:hover { background: var(--bg-dark); color: var(--text-primary); }
+        .group-action-btn.delete:hover { color: var(--error); }
+        
+        .new-group-form { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        
+        .new-group-input {
+            flex: 1;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+        .new-group-input:focus { outline: none; border-color: var(--accent-warm); }
+        
+        .new-group-btn {
+            padding: 0.6rem 1rem;
+            background: var(--accent-cool);
+            border: none;
+            border-radius: 6px;
+            color: var(--bg-dark);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .picker-title { font-size: 0.9rem; color: var(--text-secondary); }
+        .picker-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        
+        .picker-action {
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+        .picker-action:hover { border-color: var(--accent-cool); color: var(--accent-cool); }
+        
+        .progression-picker {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-dark);
+            border-radius: 8px;
+        }
+        
+        .picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.5rem; }
+        
+        .picker-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-elevated);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .picker-item:hover { background: var(--bg-card); }
+        .picker-item input { accent-color: var(--accent-warm); }
+        .picker-item.selected { background: rgba(232, 168, 124, 0.15); }
+        
+        .settings-group { margin-bottom: 1.5rem; }
+        .settings-label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .settings-row { display: flex; align-items: center; gap: 1rem; }
+        input[type="range"] { flex: 1; accent-color: var(--accent-warm); }
+        .range-value { min-width: 40px; text-align: right; font-size: 0.9rem; }
+        
+        .checkbox-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+        .checkbox-row input { accent-color: var(--accent-warm); width: 18px; height: 18px; }
+        
+        .mode-toggle { display: flex; background: var(--bg-dark); border-radius: 8px; padding: 4px; margin-bottom: 1rem; }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .mode-btn.active { background: var(--accent-warm); color: var(--bg-dark); }
+        
+        .feedback-message {
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .feedback-message.success { background: rgba(124, 232, 168, 0.15); border: 1px solid var(--success); color: var(--success); }
+        .feedback-message.error { background: rgba(232, 124, 124, 0.15); border: 1px solid var(--error); color: var(--error); }
+        
+        .quick-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+        
+        .quick-action {
+            padding: 0.4rem 0.8rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .quick-action:hover { border-color: var(--accent-cool); color: var(--accent-cool); }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        
+        .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.9rem; }
+        
+        .status-indicator { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .status-indicator.known { background: var(--success); }
+        .status-indicator.uncertain { background: var(--uncertain); }
+        .status-indicator.unknown { background: var(--error); }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Triad Progression Ear Trainer</h1>
+            <p class="subtitle">Based on Ran Blake's "Primacy of the Ear" methodology</p>
+        </header>
+        
+        <div class="main-grid">
+            <aside class="sidebar">
+                <div class="card">
+                    <h2 class="card-title">Session Stats</h2>
+                    <div class="stats-grid">
+                        <div><div class="stat-value" id="correct-count">0</div><div class="stat-label">Correct</div></div>
+                        <div><div class="stat-value" id="total-count">0</div><div class="stat-label">Total</div></div>
+                        <div><div class="stat-value" id="accuracy">—</div><div class="stat-label">Accuracy</div></div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-title">Training Source</h2>
+                    <div class="category-filters">
+                        <button class="category-btn" data-category="unknown"><span class="status-indicator unknown"></span>Unknown Sounds<span class="category-badge" id="unknown-count">0</span></button>
+                        <button class="category-btn" data-category="uncertain"><span class="status-indicator uncertain"></span>Uncertain Sounds<span class="category-badge" id="uncertain-count">0</span></button>
+                        <button class="category-btn" data-category="known"><span class="status-indicator known"></span>Known Sounds<span class="category-badge" id="known-count">0</span></button>
+                        <button class="category-btn active" data-category="all">All Progressions<span class="category-badge">88</span></button>
+                    </div>
+                    
+                    <div class="groups-section">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin: 1rem 0 0.5rem; text-transform: uppercase;">Custom Groups</div>
+                        <div id="groups-list"></div>
+                        <div class="new-group-form">
+                            <input type="text" class="new-group-input" id="new-group-name" placeholder="New group name...">
+                            <button class="new-group-btn" id="create-group-btn">+</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-title">Settings</h2>
+                    <div class="settings-group">
+                        <label class="settings-label">Tempo (BPM)</label>
+                        <div class="settings-row">
+                            <input type="range" id="tempo" min="40" max="120" value="60">
+                            <span class="range-value" id="tempo-value">60</span>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">Options</label>
+                        <div class="checkbox-row"><input type="checkbox" id="arpeggiate"><label for="arpeggiate">Arpeggiate chords</label></div>
+                        <div class="checkbox-row"><input type="checkbox" id="disguise-melody"><label for="disguise-melody">Disguise melody (double root)</label></div>
+                        <div class="checkbox-row"><input type="checkbox" id="auto-advance" checked><label for="auto-advance">Auto-advance after correct</label></div>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="quick-action" id="export-progress">Export All</button>
+                        <button class="quick-action" id="import-progress">Import</button>
+                    </div>
+                </div>
+            </aside>
+            
+            <main class="training-area">
+                <div class="card">
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" data-mode="train">Train</button>
+                        <button class="mode-btn" data-mode="manage">Manage Groups</button>
+                    </div>
+                    
+                    <div id="train-mode" class="tab-content active">
+                        <div class="player-card">
+                            <div class="progression-display" id="progression-display">Press play to begin</div>
+                            <button class="play-btn" id="play-btn"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></button>
+                            <div class="control-row">
+                                <button class="control-btn" id="repeat-btn">Repeat</button>
+                                <button class="control-btn" id="reveal-btn">Reveal</button>
+                                <button class="control-btn primary" id="next-btn">Next</button>
+                            </div>
+                            <div id="feedback-area"></div>
+                        </div>
+                        
+                        <div class="card">
+                            <h2 class="card-title">Your Answer</h2>
+                            <div class="answer-section">
+                                <div class="answer-row">
+                                    <div class="answer-field">
+                                        <label class="answer-label">Starting Chord</label>
+                                        <select class="answer-select" id="answer-from"><option value="">—</option><option value="major">Major</option><option value="minor">Minor</option></select>
+                                    </div>
+                                    <div class="answer-field">
+                                        <label class="answer-label">Direction</label>
+                                        <select class="answer-select" id="answer-direction"><option value="">—</option><option value="ascending">↑ Ascending</option><option value="descending">↓ Descending</option></select>
+                                    </div>
+                                    <div class="answer-field">
+                                        <label class="answer-label">Interval</label>
+                                        <select class="answer-select" id="answer-interval">
+                                            <option value="">—</option>
+                                            <option value="1">m2</option><option value="2">M2</option><option value="3">m3</option><option value="4">M3</option>
+                                            <option value="5">P4</option><option value="6">TT</option><option value="7">P5</option>
+                                            <option value="8">m6</option><option value="9">M6</option><option value="10">m7</option><option value="11">M7</option>
+                                        </select>
+                                    </div>
+                                    <div class="answer-field">
+                                        <label class="answer-label">Landing Chord</label>
+                                        <select class="answer-select" id="answer-to"><option value="">—</option><option value="major">Major</option><option value="minor">Minor</option></select>
+                                    </div>
+                                </div>
+                                <div class="submit-row"><button class="submit-btn" id="submit-btn">Submit Answer</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="manage-mode" class="tab-content">
+                        <div id="manage-content">
+                            <div class="empty-state" id="no-group-selected">Select a custom group from the sidebar to edit it, or create a new one.</div>
+                            <div id="group-editor" style="display: none;">
+                                <div class="picker-header">
+                                    <span class="picker-title">Editing: <strong id="editing-group-name"></strong></span>
+                                    <div class="picker-actions">
+                                        <button class="picker-action" id="select-all-picker">Select All</button>
+                                        <button class="picker-action" id="select-none-picker">Select None</button>
+                                        <button class="picker-action" id="select-ascending">↑ Ascending</button>
+                                        <button class="picker-action" id="select-descending">↓ Descending</button>
+                                    </div>
+                                </div>
+                                <div class="progression-picker"><div class="picker-grid" id="picker-grid"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        function getAudioContext() {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            return audioContext;
+        }
+
+        const INTERVALS = [
+            { semitones: 1, name: 'm2', fullName: 'Minor 2nd' },
+            { semitones: 2, name: 'M2', fullName: 'Major 2nd' },
+            { semitones: 3, name: 'm3', fullName: 'Minor 3rd' },
+            { semitones: 4, name: 'M3', fullName: 'Major 3rd' },
+            { semitones: 5, name: 'P4', fullName: 'Perfect 4th' },
+            { semitones: 6, name: 'TT', fullName: 'Tritone' },
+            { semitones: 7, name: 'P5', fullName: 'Perfect 5th' },
+            { semitones: 8, name: 'm6', fullName: 'Minor 6th' },
+            { semitones: 9, name: 'M6', fullName: 'Major 6th' },
+            { semitones: 10, name: 'm7', fullName: 'Minor 7th' },
+            { semitones: 11, name: 'M7', fullName: 'Major 7th' },
+        ];
+
+        function generateAllProgressions() {
+            const progressions = [];
+            let id = 0;
+            for (const interval of INTERVALS) {
+                for (const fromQ of ['major', 'minor']) {
+                    for (const toQ of ['major', 'minor']) {
+                        for (const dir of ['ascending', 'descending']) {
+                            progressions.push({ id: id++, interval, fromQuality: fromQ, toQuality: toQ, direction: dir, status: 'unknown', correctCount: 0, totalCount: 0 });
+                        }
+                    }
+                }
+            }
+            return progressions;
+        }
+
+        let allProgressions = [], trainingGroups = [], currentProgression = null;
+        let sessionStats = { correct: 0, total: 0 };
+        let activeFilter = { type: 'category', value: 'all' };
+        let editingGroupId = null, answered = false;
+
+        function init() {
+            loadData();
+            setupEventListeners();
+            updateCategoryCounts();
+            renderGroups();
+        }
+
+        function loadData() {
+            const savedP = localStorage.getItem('triadProgressions_v2');
+            allProgressions = savedP ? JSON.parse(savedP) : generateAllProgressions();
+            const savedG = localStorage.getItem('triadGroups');
+            trainingGroups = savedG ? JSON.parse(savedG) : [];
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem('triadProgressions_v2', JSON.stringify(allProgressions));
+            localStorage.setItem('triadGroups', JSON.stringify(trainingGroups));
+        }
+
+        function getFilteredProgressions() {
+            if (activeFilter.type === 'category') {
+                return activeFilter.value === 'all' ? [...allProgressions] : allProgressions.filter(p => p.status === activeFilter.value);
+            } else if (activeFilter.type === 'group') {
+                const group = trainingGroups.find(g => g.id === activeFilter.value);
+                return group ? allProgressions.filter(p => group.progressionIds.includes(p.id)) : [];
+            }
+            return [];
+        }
+
+        function getRandomProgression() {
+            const filtered = getFilteredProgressions();
+            return filtered.length ? filtered[Math.floor(Math.random() * filtered.length)] : null;
+        }
+
+        function formatProgressionName(p) {
+            const dir = p.direction === 'ascending' ? '↑' : '↓';
+            return `${p.fromQuality === 'major' ? 'Maj' : 'min'} ${dir}${p.interval.name} ${p.toQuality === 'major' ? 'Maj' : 'min'}`;
+        }
+
+        function formatProgressionLong(p) {
+            return `${p.fromQuality === 'major' ? 'Major' : 'Minor'} → ${p.toQuality === 'major' ? 'Major' : 'Minor'} (${p.direction} ${p.interval.fullName})`;
+        }
+
+        function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+        function playChord(rootMidi, isMinor, startTime, duration, arpeggiate = false, doubleRoot = false) {
+            const ctx = getAudioContext();
+            const third = isMinor ? 3 : 4;
+            const notes = doubleRoot ? [rootMidi - 12, rootMidi, rootMidi + third, rootMidi + 7] : [rootMidi, rootMidi + third, rootMidi + 7];
+            notes.forEach((midi, i) => {
+                const osc = ctx.createOscillator(), gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = midiToFreq(midi);
+                const noteStart = arpeggiate ? startTime + i * 0.1 : startTime;
+                const noteDuration = arpeggiate ? duration - i * 0.1 : duration;
+                gain.gain.setValueAtTime(0, noteStart);
+                gain.gain.linearRampToValueAtTime(0.15, noteStart + 0.02);
+                gain.gain.setValueAtTime(0.15, noteStart + noteDuration - 0.1);
+                gain.gain.linearRampToValueAtTime(0, noteStart + noteDuration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(noteStart);
+                osc.stop(noteStart + noteDuration);
+            });
+        }
+
+        function playProgression(p) {
+            if (!p) return;
+            const ctx = getAudioContext();
+            const tempo = parseInt(document.getElementById('tempo').value);
+            const beatDuration = 60 / tempo;
+            const arpeggiate = document.getElementById('arpeggiate').checked;
+            const disguise = document.getElementById('disguise-melody').checked;
+            const rootMidi = 60;
+            const secondRootMidi = p.direction === 'ascending' ? rootMidi + p.interval.semitones : rootMidi - p.interval.semitones;
+            const now = ctx.currentTime;
+            playChord(rootMidi, p.fromQuality === 'minor', now, beatDuration * 1.5, arpeggiate, false);
+            playChord(secondRootMidi, p.toQuality === 'minor', now + beatDuration * 2, beatDuration * 1.5, arpeggiate, disguise);
+        }
+
+        function updateCategoryCounts() {
+            const counts = { known: 0, uncertain: 0, unknown: 0 };
+            allProgressions.forEach(p => counts[p.status]++);
+            document.getElementById('known-count').textContent = counts.known;
+            document.getElementById('uncertain-count').textContent = counts.uncertain;
+            document.getElementById('unknown-count').textContent = counts.unknown;
+        }
+
+        function updateStats() {
+            document.getElementById('correct-count').textContent = sessionStats.correct;
+            document.getElementById('total-count').textContent = sessionStats.total;
+            document.getElementById('accuracy').textContent = sessionStats.total > 0 ? Math.round(sessionStats.correct / sessionStats.total * 100) + '%' : '—';
+        }
+
+        function renderGroups() {
+            const container = document.getElementById('groups-list');
+            container.innerHTML = '';
+            trainingGroups.forEach(group => {
+                const item = document.createElement('div');
+                item.className = `group-item ${activeFilter.type === 'group' && activeFilter.value === group.id ? 'active' : ''}`;
+                item.innerHTML = `<span class="group-name">${group.name}</span><span class="group-count">${group.progressionIds.length}</span><div class="group-actions"><button class="group-action-btn edit-group" data-id="${group.id}">edit</button><button class="group-action-btn delete delete-group" data-id="${group.id}">×</button></div>`;
+                item.addEventListener('click', (e) => { if (!e.target.classList.contains('edit-group') && !e.target.classList.contains('delete-group')) selectGroup(group.id); });
+                container.appendChild(item);
+            });
+            container.querySelectorAll('.edit-group').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); openGroupEditor(btn.dataset.id); }));
+            container.querySelectorAll('.delete-group').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); deleteGroup(btn.dataset.id); }));
+        }
+
+        function selectGroup(groupId) {
+            activeFilter = { type: 'group', value: groupId };
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            renderGroups();
+        }
+
+        function createGroup(name) {
+            if (!name.trim()) return;
+            const group = { id: Date.now().toString(), name: name.trim(), progressionIds: [] };
+            trainingGroups.push(group);
+            saveData();
+            renderGroups();
+            document.getElementById('new-group-name').value = '';
+            openGroupEditor(group.id);
+        }
+
+        function deleteGroup(groupId) {
+            if (!confirm('Delete this group?')) return;
+            trainingGroups = trainingGroups.filter(g => g.id !== groupId);
+            if (activeFilter.type === 'group' && activeFilter.value === groupId) {
+                activeFilter = { type: 'category', value: 'all' };
+                document.querySelector('[data-category="all"]').classList.add('active');
+            }
+            if (editingGroupId === groupId) {
+                editingGroupId = null;
+                document.getElementById('group-editor').style.display = 'none';
+                document.getElementById('no-group-selected').style.display = 'block';
+            }
+            saveData();
+            renderGroups();
+        }
+
+        function openGroupEditor(groupId) {
+            editingGroupId = groupId;
+            const group = trainingGroups.find(g => g.id === groupId);
+            if (!group) return;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-mode="manage"]').classList.add('active');
+            document.getElementById('train-mode').classList.remove('active');
+            document.getElementById('manage-mode').classList.add('active');
+            document.getElementById('no-group-selected').style.display = 'none';
+            document.getElementById('group-editor').style.display = 'block';
+            document.getElementById('editing-group-name').textContent = group.name;
+            renderPickerGrid();
+        }
+
+        function renderPickerGrid() {
+            const group = trainingGroups.find(g => g.id === editingGroupId);
+            if (!group) return;
+            const grid = document.getElementById('picker-grid');
+            grid.innerHTML = '';
+            allProgressions.forEach(p => {
+                const item = document.createElement('label');
+                item.className = `picker-item ${group.progressionIds.includes(p.id) ? 'selected' : ''}`;
+                item.innerHTML = `<input type="checkbox" ${group.progressionIds.includes(p.id) ? 'checked' : ''} data-id="${p.id}">${formatProgressionName(p)}`;
+                item.querySelector('input').addEventListener('change', (e) => {
+                    if (e.target.checked) { group.progressionIds.push(p.id); item.classList.add('selected'); }
+                    else { group.progressionIds = group.progressionIds.filter(id => id !== p.id); item.classList.remove('selected'); }
+                    saveData();
+                    renderGroups();
+                });
+                grid.appendChild(item);
+            });
+        }
+
+        function showFeedback(correct, answer) {
+            document.getElementById('feedback-area').innerHTML = correct 
+                ? `<div class="feedback-message success">Correct! ${formatProgressionLong(answer)}</div>`
+                : `<div class="feedback-message error">The answer was: ${formatProgressionLong(answer)}</div>`;
+        }
+
+        function clearAnswerSelects() {
+            ['answer-from', 'answer-direction', 'answer-interval', 'answer-to'].forEach(id => {
+                const el = document.getElementById(id);
+                el.value = '';
+                el.classList.remove('correct', 'incorrect');
+            });
+        }
+
+        function handleSubmit() {
+            if (!currentProgression || answered) return;
+            const fromVal = document.getElementById('answer-from').value;
+            const dirVal = document.getElementById('answer-direction').value;
+            const intVal = document.getElementById('answer-interval').value;
+            const toVal = document.getElementById('answer-to').value;
+            if (!fromVal || !dirVal || !intVal || !toVal) { alert('Please select all four fields'); return; }
+            answered = true;
+            const isCorrect = fromVal === currentProgression.fromQuality && dirVal === currentProgression.direction && parseInt(intVal) === currentProgression.interval.semitones && toVal === currentProgression.toQuality;
+            sessionStats.total++;
+            if (isCorrect) sessionStats.correct++;
+            updateStats();
+            currentProgression.totalCount++;
+            if (isCorrect) currentProgression.correctCount++;
+            if (isCorrect && currentProgression.correctCount >= 3 && currentProgression.status === 'unknown') currentProgression.status = 'uncertain';
+            if (isCorrect && currentProgression.correctCount >= 5 && currentProgression.status === 'uncertain') currentProgression.status = 'known';
+            if (!isCorrect && currentProgression.status === 'known') currentProgression.status = 'uncertain';
+            saveData();
+            updateCategoryCounts();
+            document.getElementById('answer-from').classList.add(fromVal === currentProgression.fromQuality ? 'correct' : 'incorrect');
+            document.getElementById('answer-direction').classList.add(dirVal === currentProgression.direction ? 'correct' : 'incorrect');
+            document.getElementById('answer-interval').classList.add(parseInt(intVal) === currentProgression.interval.semitones ? 'correct' : 'incorrect');
+            document.getElementById('answer-to').classList.add(toVal === currentProgression.toQuality ? 'correct' : 'incorrect');
+            showFeedback(isCorrect, currentProgression);
+            if (isCorrect && document.getElementById('auto-advance').checked) setTimeout(nextProgression, 1500);
+        }
+
+        function nextProgression() {
+            currentProgression = getRandomProgression();
+            answered = false;
+            clearAnswerSelects();
+            document.getElementById('feedback-area').innerHTML = '';
+            const display = document.getElementById('progression-display');
+            display.classList.remove('revealed');
+            if (currentProgression) { display.textContent = 'Listen and identify...'; playProgression(currentProgression); }
+            else { display.textContent = 'No progressions in this selection'; }
+        }
+
+        function revealAnswer() {
+            if (!currentProgression) return;
+            document.getElementById('progression-display').textContent = formatProgressionLong(currentProgression);
+            document.getElementById('progression-display').classList.add('revealed');
+            answered = true;
+        }
+
+        function setupEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', () => { if (!currentProgression) nextProgression(); else playProgression(currentProgression); });
+            document.getElementById('repeat-btn').addEventListener('click', () => { if (currentProgression) playProgression(currentProgression); });
+            document.getElementById('reveal-btn').addEventListener('click', revealAnswer);
+            document.getElementById('next-btn').addEventListener('click', nextProgression);
+            document.getElementById('submit-btn').addEventListener('click', handleSubmit);
+            document.querySelectorAll('.category-btn').forEach(btn => btn.addEventListener('click', () => {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeFilter = { type: 'category', value: btn.dataset.category };
+                renderGroups();
+            }));
+            document.getElementById('tempo').addEventListener('input', (e) => { document.getElementById('tempo-value').textContent = e.target.value; });
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(btn.dataset.mode + '-mode').classList.add('active');
+            }));
+            document.getElementById('create-group-btn').addEventListener('click', () => createGroup(document.getElementById('new-group-name').value));
+            document.getElementById('new-group-name').addEventListener('keypress', (e) => { if (e.key === 'Enter') createGroup(e.target.value); });
+            document.getElementById('select-all-picker').addEventListener('click', () => {
+                const group = trainingGroups.find(g => g.id === editingGroupId);
+                if (group) { group.progressionIds = allProgressions.map(p => p.id); saveData(); renderGroups(); renderPickerGrid(); }
+            });
+            document.getElementById('select-none-picker').addEventListener('click', () => {
+                const group = trainingGroups.find(g => g.id === editingGroupId);
+                if (group) { group.progressionIds = []; saveData(); renderGroups(); renderPickerGrid(); }
+            });
+            document.getElementById('select-ascending').addEventListener('click', () => {
+                const group = trainingGroups.find(g => g.id === editingGroupId);
+                if (group) { group.progressionIds = [...new Set([...group.progressionIds, ...allProgressions.filter(p => p.direction === 'ascending').map(p => p.id)])]; saveData(); renderGroups(); renderPickerGrid(); }
+            });
+            document.getElementById('select-descending').addEventListener('click', () => {
+                const group = trainingGroups.find(g => g.id === editingGroupId);
+                if (group) { group.progressionIds = [...new Set([...group.progressionIds, ...allProgressions.filter(p => p.direction === 'descending').map(p => p.id)])]; saveData(); renderGroups(); renderPickerGrid(); }
+            });
+            document.getElementById('export-progress').addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify({ progressions: allProgressions, groups: trainingGroups }, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'triad-trainer-data.json'; a.click();
+            });
+            document.getElementById('import-progress').addEventListener('click', () => {
+                const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+                input.onchange = (e) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const data = JSON.parse(ev.target.result);
+                            if (data.progressions) allProgressions = data.progressions;
+                            if (data.groups) trainingGroups = data.groups;
+                            saveData(); updateCategoryCounts(); renderGroups(); alert('Data imported successfully!');
+                        } catch (err) { alert('Error importing file'); }
+                    };
+                    reader.readAsText(e.target.files[0]);
+                };
+                input.click();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                if (e.code === 'Space') { e.preventDefault(); if (!currentProgression) nextProgression(); else playProgression(currentProgression); }
+                else if (e.code === 'Enter') { e.preventDefault(); handleSubmit(); }
+                else if (e.code === 'KeyN') nextProgression();
+                else if (e.code === 'KeyR') revealAnswer();
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
