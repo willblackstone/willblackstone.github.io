@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trumpet Practice Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        h2 {
+            color: #34495e;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            font-size: 1.5em;
+        }
+
+        h3 {
+            color: #34495e;
+            margin: 20px 0 10px 0;
+            font-size: 1.2em;
+        }
+
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .nav button {
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .nav button:hover {
+            background: #2980b9;
+        }
+
+        .nav button.active {
+            background: #2c3e50;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #229954;
+        }
+
+        button.secondary {
+            background: #95a5a6;
+        }
+
+        button.secondary:hover {
+            background: #7f8c8d;
+        }
+
+        button.danger {
+            background: #e74c3c;
+        }
+
+        button.danger:hover {
+            background: #c0392b;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .tally {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .tally-mark {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            cursor: pointer;
+            background: white;
+            transition: background 0.3s;
+        }
+
+        .tally-mark.active {
+            background: #3498db;
+        }
+
+        .session-list {
+            margin-top: 20px;
+        }
+
+        .session-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+
+        .session-card h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .session-card p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #27ae60;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .slider-container {
+            margin: 20px 0;
+        }
+
+        .slider {
+            width: 100%;
+            height: 40px;
+            background: linear-gradient(to right, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+            border-radius: 20px;
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .slider-marker {
+            position: absolute;
+            top: -5px;
+            width: 20px;
+            height: 50px;
+            background: #2c3e50;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .export-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert.warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+
+        @media print {
+            .nav, button, .export-section {
+                display: none;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+
+        .quick-ref-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .ref-card {
+            background: #fff9e6;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #f39c12;
+        }
+
+        .ref-card h4 {
+            color: #e67e22;
+            margin-bottom: 10px;
+        }
+
+        .ref-card pre {
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .help-toggle {
+            background: #fff3cd;
+            border: 2px solid #f39c12;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin: 15px 0;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s;
+        }
+
+        .help-toggle:hover {
+            background: #ffe8a1;
+        }
+
+        .help-toggle h4 {
+            margin: 0;
+            color: #e67e22;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .help-toggle .arrow {
+            transition: transform 0.3s;
+            font-weight: bold;
+        }
+
+        .help-toggle.active .arrow {
+            transform: rotate(90deg);
+        }
+
+        .help-content {
+            background: #fffef5;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin: 10px 0 20px 0;
+            border-radius: 5px;
+            display: none;
+            line-height: 1.8;
+        }
+
+        .help-content.active {
+            display: block;
+        }
+
+        .help-content ol, .help-content ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .help-content li {
+            margin: 8px 0;
+        }
+
+        .help-content strong {
+            color: #e67e22;
+        }
+
+        .help-tip {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            padding: 12px;
+            margin: 10px 0;
+        }
+
+        .help-tip::before {
+            content: "💡 ";
+            font-size: 1.2em;
+        }
+
+        .error-log {
+            background: #fff5f5;
+            border: 1px solid #fc8181;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .error-log h4 {
+            color: #c53030;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎺 Trumpet Practice Tracker</h1>
+        <p style="color: #7f8c8d; margin-bottom: 20px;">Track your practice sessions, monitor progress, and eliminate errors systematically</p>
+
+        <!-- QUICK ACCESS TALLY -->
+        <div style="background: #e8f4f8; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #3498db;">
+            <h3 style="margin-top: 0; color: #2c3e50;">⚡ Quick Tally - 168 Process (64 daily reps)</h3>
+            <p style="margin-bottom: 10px; color: #555;">Click each square when you do a quick 10-second drill throughout the day</p>
+            <div class="form-group">
+                <label for="quick-drill-select">Current drill I'm doing:</label>
+                <select id="quick-drill-select" onchange="saveQuickDrill()" style="max-width: 400px;">
+                    <option value="">Select drill...</option>
+                    <option value="finger">Finger between teeth (throat open)</option>
+                    <option value="turnaround">Turnaround breath (no grab at top)</option>
+                    <option value="meerkat">No-meerkat check (ribs only)</option>
+                    <option value="elbow">Elbow independence</option>
+                    <option value="balloon">Passive release balloon</option>
+                    <option value="custom">Custom drill</option>
+                </select>
+                <input type="text" id="quick-drill-custom" placeholder="Describe your custom drill..." style="max-width: 400px; margin-top: 5px; display: none;">
+            </div>
+            <div class="form-group">
+                <label for="quick-message">My message each time:</label>
+                <input type="text" id="quick-message" onchange="saveQuickMessage()" placeholder="Playing feels like..." style="max-width: 400px;">
+            </div>
+            <div class="tally" id="quick-tally"></div>
+            <p style="margin-top: 10px; font-size: 1.2em;"><strong>Today's count: <span id="quick-tally-count" style="color: #3498db; font-size: 1.3em;">0</span>/64</strong></p>
+            <div class="progress-bar" style="margin-top: 10px;">
+                <div class="progress-fill" id="quick-progress" style="width: 0%;">0%</div>
+            </div>
+            <button type="button" class="secondary" onclick="resetQuickTally()" style="margin-top: 10px;">Reset Today's Tally</button>
+        </div>
+
+        <div class="nav">
+            <button onclick="showSection('howto')" class="active">📖 How to Use</button>
+            <button onclick="showSection('daily')">Daily Practice</button>
+            <button onclick="showSection('weekly')">Weekly Review</button>
+            <button onclick="showSection('errors')">Error Trilogy</button>
+            <button onclick="showSection('progress')">Progress & Stats</button>
+            <button onclick="showSection('reference')">Quick Reference</button>
+            <button onclick="showSection('export')">Export/Import</button>
+        </div>
+
+        <!-- HOW TO USE SECTION -->
+        <div id="howto" class="section active">
+            <h2>📖 How to Use This Tracker</h2>
+            
+            <div class="alert">
+                <strong>🎯 Core Principle:</strong> You're learning through FEELING, not thinking. This tracker helps you stay systematic, track patterns, and build new neural pathways through repetition and clear messaging.
+            </div>
+
+            <h3>🌅 Every Morning (5 minutes)</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #27ae60;">
+                <ol style="line-height: 2;">
+                    <li><strong>Open the Daily Practice section</strong></li>
+                    <li><strong>Check today's date is set</strong> (should auto-fill)</li>
+                    <li><strong>Choose ONE primary focus</strong> - Don't try to fix everything!
+                        <ul style="margin-top: 10px;">
+                            <li>Throat grab at turnaround</li>
+                            <li>Meerkat/elevation</li>
+                            <li>Passive release</li>
+                            <li>Arm independence</li>
+                        </ul>
+                    </li>
+                    <li><strong>Write your one-sentence intention</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>Example: "Today I'm eliminating throat grab at the turnaround"</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <h3>🧠 During Practice Session (30-45 min)</h3>
+            <div style="background: #fff9e6; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #f39c12;">
+                
+                <h4 style="color: #e67e22;">Left-Brain Block #1 (15 min) - EYES CLOSED WORK</h4>
+                <ol style="line-height: 2;">
+                    <li><strong>Fill in "What am I working on"</strong> - Your ONE focus for today</li>
+                    <li><strong>Step 1 - Intention:</strong> What do you want to achieve?
+                        <ul><li>Example: "I want throat to stay open through the turnaround"</li></ul>
+                    </li>
+                    <li><strong>Step 2 - Call Out the Error:</strong> What's the possible error?
+                        <ul><li>Example: "Throat/back of tongue locks at top of breath"</li></ul>
+                    </li>
+                    <li><strong>Step 3 - The Drill:</strong> What's the opposing feeling?
+                        <ul><li>Example: "Finger between teeth - breathe to top - turnaround - throat STAYS open - passive drop"</li></ul>
+                    </li>
+                    <li><strong>Step 4 - Messaging:</strong> Create your mantra
+                        <ul><li>Example: "Next time I reach the top of breath, I will keep throat open like the drill"</li></ul>
+                    </li>
+                    <li><strong>NOW DO THE DRILL:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li><strong>EYES CLOSED</strong> for most reps</li>
+                            <li>Spotlight on the area (throat, belly, etc.)</li>
+                            <li>After each rep: Did I get what I want?</li>
+                            <li>YES → Repeat (green loop)</li>
+                            <li>NO → Back to Step 1 (diagnostic)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Track your reps</strong> - How many did you do?</li>
+                    <li><strong>Success ratio</strong> - How many were correct? (e.g., 7/10)</li>
+                    <li><strong>Notes</strong> - Any observations or breakthroughs</li>
+                </ol>
+
+                <h4 style="color: #e67e22; margin-top: 25px;">Right-Brain Block #1 (15 min) - JUST PLAY</h4>
+                <ol style="line-height: 2;">
+                    <li><strong>Put the process aside</strong> - Time to make music</li>
+                    <li><strong>Play scales, tunes, exercises</strong> - Whatever you want</li>
+                    <li><strong>OBSERVE ONLY</strong> - Don't fix errors during this block
+                        <ul style="margin-top: 10px;">
+                            <li>Did the error from left-brain appear?</li>
+                            <li>When did it happen?</li>
+                            <li>What triggered it?</li>
+                        </ul>
+                    </li>
+                    <li><strong>Note what felt good</strong> - These are wins to celebrate!</li>
+                    <li><strong>Log it in the form</strong></li>
+                </ol>
+
+                <p style="margin-top: 20px; padding: 15px; background: white; border-radius: 5px; border: 2px solid #e67e22;">
+                    <strong>💡 Key Insight:</strong> The right-brain block is your REALITY CHECK. It tells you whether the left-brain work is transferring. If the error still happens, that's OK - it means you need more left-brain drilling. This is the assessment phase.
+                </p>
+            </div>
+
+            <h3>☀️ Throughout the Day - The 168 Process</h3>
+            <div style="background: #e8f4f8; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #3498db;">
+                <p><strong>Goal: 64 reps spread throughout your waking hours (16 hours awake ÷ 4 = every 15 minutes)</strong></p>
+                
+                <h4>How to use the Quick Tally (at top of page):</h4>
+                <ol style="line-height: 2;">
+                    <li><strong>Select your drill</strong> from the dropdown (should match what you're working on)</li>
+                    <li><strong>Write your message</strong> (your mantra for the day)</li>
+                    <li><strong>Set a timer or reminder</strong> for every 15-20 minutes</li>
+                    <li><strong>When the reminder goes off:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>Stop what you're doing (10 seconds only)</li>
+                            <li>Do your quick drill (e.g., finger between teeth, feel openness)</li>
+                            <li>Say your message mentally ("Playing feels like THIS")</li>
+                            <li>Click one square in the tally</li>
+                            <li>Continue with your day</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <p style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px;">
+                    <strong>🧠 Why this works:</strong> You're showing your brain the correct feeling 64 times. Combined with your message, this builds new neural pathways OVERNIGHT. Tomorrow when you practice, your brain has already been primed.
+                </p>
+            </div>
+
+            <h3>🌙 End of Day (5 minutes)</h3>
+            <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #34495e;">
+                <ol style="line-height: 2;">
+                    <li><strong>Scroll to "End of Day Review"</strong> in Daily Practice</li>
+                    <li><strong>Describe the main error</strong> you experienced</li>
+                    <li><strong>How it FELT</strong> (be specific - this is crucial)</li>
+                    <li><strong>The drill that fixes it</strong></li>
+                    <li><strong>The correct feeling</strong> (what you want instead)</li>
+                    <li><strong>Tomorrow's message</strong> to your brain</li>
+                    <li><strong>Click "Save Daily Session"</strong></li>
+                </ol>
+
+                <p style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px;">
+                    <strong>Before bed:</strong> Mentally review the correct feeling one more time. Your brain consolidates learning during sleep - give it the right information to work with!
+                </p>
+            </div>
+
+            <h3>📅 Weekly (Sunday evening, 15 minutes)</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #9b59b6;">
+                <ol style="line-height: 2;">
+                    <li><strong>Go to Weekly Review section</strong></li>
+                    <li><strong>Set the week date</strong> (Monday of that week)</li>
+                    <li><strong>What was your main issue?</strong> (The ONE thing you focused on)</li>
+                    <li><strong>Fill in the daily tracking table:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>Check boxes for intention/error/drill each day</li>
+                            <li>Add success rates</li>
+                            <li>Quick notes</li>
+                        </ul>
+                    </li>
+                    <li><strong>Choose your progress level</strong> (worse → eliminated)</li>
+                    <li><strong>Update the "I Know" sliders:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>Drag each slider to show where you are</li>
+                            <li>Left = Unaware/struggling</li>
+                            <li>Right = "I know" (locked in, automatic)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Write reflections</strong> - What worked? What didn't?</li>
+                    <li><strong>Save it!</strong></li>
+                </ol>
+
+                <p style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px;">
+                    <strong>📊 Decision time:</strong> If your slider moved right AND success rate improved → Move to next issue. If not → Continue with same issue next week. Don't move on too early!
+                </p>
+            </div>
+
+            <h3>🎯 When You Discover a New Error</h3>
+            <div style="background: #fff5f5; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #e74c3c;">
+                <p><strong>This is GOOD NEWS!</strong> You can only fix what you can detect. Awareness is half the solution.</p>
+                
+                <ol style="line-height: 2;">
+                    <li><strong>Go to Error Trilogy section</strong></li>
+                    <li><strong>Name the error</strong> clearly</li>
+                    <li><strong>Detection:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>How do you know it's happening? (feel/see/hear)</li>
+                            <li>When does it happen?</li>
+                            <li>Where in the body?</li>
+                        </ul>
+                    </li>
+                    <li><strong>Rejection:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>Why must it go?</li>
+                            <li>How urgent? (1-10)</li>
+                            <li>Your zero tolerance statement</li>
+                        </ul>
+                    </li>
+                    <li><strong>Correction:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>What drill creates the opposite feeling?</li>
+                            <li>What's the correct feeling?</li>
+                            <li>Your message</li>
+                            <li>Daily rep target (suggest 64)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Save it</strong></li>
+                    <li><strong>Make this your primary focus</strong> for upcoming practice</li>
+                </ol>
+            </div>
+
+            <h3>📊 Tracking Progress</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                <ul style="line-height: 2;">
+                    <li><strong>Check Progress & Stats regularly</strong> to see your streak and total sessions</li>
+                    <li><strong>Log "Felt Like Doing Nothing" moments</strong> - These are huge wins!</li>
+                    <li><strong>Watch your practice streak</strong> - Consistency builds habits</li>
+                    <li><strong>Review recent sessions</strong> to spot patterns</li>
+                </ul>
+            </div>
+
+            <h3>💾 Don't Forget to Backup!</h3>
+            <div class="alert warning">
+                <strong>⚠️ Important:</strong> Your data is stored in your browser. Go to Export/Import section monthly and download a backup file. If you clear browser data or switch devices, you'll lose everything unless you have a backup!
+            </div>
+
+            <h3>🚀 Quick Start Checklist</h3>
+            <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 15px 0; border: 2px solid #27ae60;">
+                <h4 style="margin-top: 0;">First Time Using This Tracker?</h4>
+                <ol style="line-height: 2;">
+                    <li>✅ Read this How To Use section completely</li>
+                    <li>✅ Go to Error Trilogy and log your current main error</li>
+                    <li>✅ Set up Quick Tally with today's drill and message</li>
+                    <li>✅ Do a practice session and log it in Daily Practice</li>
+                    <li>✅ Set a phone reminder for every 15 minutes (for 168 process)</li>
+                    <li>✅ Export a backup (just in case!)</li>
+                    <li>✅ Read the Quick Reference section for the core concepts</li>
+                </ol>
+            </div>
+
+            <div style="background: #3498db; color: white; padding: 25px; border-radius: 10px; margin: 30px 0; text-align: center;">
+                <h3 style="margin: 0 0 15px 0; color: white;">🎺 Remember: You're Changing Your Brain</h3>
+                <p style="font-size: 1.1em; line-height: 1.8; margin: 0;">
+                    This isn't just practice tracking - it's <strong>neuroplasticity in action</strong>.<br>
+                    Every rep with clear intention builds new pathways.<br>
+                    Every message tells your subconscious what you want.<br>
+                    Every error detected is a step toward "I Know".<br>
+                    <br>
+                    <strong>Be patient. Be consistent. Trust the process.</strong>
+                </p>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="showSection('daily')" style="font-size: 1.1em; padding: 15px 30px;">
+                    Let's Start → Daily Practice
+                </button>
+            </div>
+        </div>
+
+        <!-- DAILY PRACTICE SECTION -->
+        <div id="daily" class="section active">
+            <h2>Daily Practice Log</h2>
+            
+            <div class="form-group">
+                <label for="practice-date">Date:</label>
+                <input type="date" id="practice-date">
+            </div>
+
+            <h3>Morning Check-In</h3>
+
+            <!-- HELP: Morning Check-In -->
+            <div class="help-toggle" onclick="toggleHelp('help-morning')">
+                <h4><span class="arrow">▶</span> 📖 How to do Morning Check-In</h4>
+            </div>
+            <div id="help-morning" class="help-content">
+                <p><strong>Purpose:</strong> Set your intention for the day. Pick ONE focus - don't try to fix everything at once.</p>
+                <ol>
+                    <li><strong>Choose your primary focus</strong> - What's the main error you're working on?</li>
+                    <li><strong>Write one clear sentence</strong> - "Today I'm eliminating [specific error]"</li>
+                </ol>
+                <div class="help-tip">
+                    <strong>Remember:</strong> You can't work on 4 things at once. Pick the most urgent error from your Error Trilogy. Once it's "locked in," move to the next one.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Today's Primary Focus:</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="focus-throat" value="throat">
+                    <label for="focus-throat">Throat grab at turnaround</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="focus-meerkat" value="meerkat">
+                    <label for="focus-meerkat">Meerkat/elevation</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="focus-passive" value="passive">
+                    <label for="focus-passive">Passive release</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="focus-arms" value="arms">
+                    <label for="focus-arms">Arm independence</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="focus-other" value="other">
+                    <label for="focus-other">Other</label>
+                    <input type="text" id="focus-other-text" placeholder="Specify..." style="width: 200px; margin-left: 10px;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="daily-intention">One Sentence Intention:</label>
+                <input type="text" id="daily-intention" placeholder="Today I'm working on...">
+            </div>
+
+            <h3>Left-Brain Block #1 (15 min) - Eyes Closed Work</h3>
+
+            <!-- HELP: Left-Brain Block -->
+            <div class="help-toggle" onclick="toggleHelp('help-leftbrain')">
+                <h4><span class="arrow">▶</span> 📖 How to do Left-Brain Practice</h4>
+            </div>
+            <div id="help-leftbrain" class="help-content">
+                <p><strong>Purpose:</strong> Systematic error correction through feeling-based drills. This is where you CHANGE YOUR BRAIN.</p>
+                
+                <p><strong>The 6-Step Process:</strong></p>
+                <ol>
+                    <li><strong>What am I working on?</strong> - State your ONE focus clearly</li>
+                    <li><strong>Step 1 - Intention:</strong> What do you want to achieve?
+                        <ul><li>Example: "I want throat to stay open through the turnaround"</li></ul>
+                    </li>
+                    <li><strong>Step 2 - Call Out the Error:</strong> What's the possible error?
+                        <ul><li>Example: "Throat/back of tongue locks at top of breath"</li></ul>
+                    </li>
+                    <li><strong>Step 3 - The Drill:</strong> What creates the opposite feeling?
+                        <ul><li>Example: "Finger between teeth - breathe to top - turnaround - throat STAYS open - passive drop"</li></ul>
+                    </li>
+                    <li><strong>Step 4 - Messaging:</strong> Create your mantra
+                        <ul><li>Example: "Next time I reach the top of breath, I will keep throat open like the drill"</li></ul>
+                    </li>
+                    <li><strong>Step 5 - Execute:</strong> DO THE DRILL
+                        <ul>
+                            <li><strong>EYES CLOSED</strong> for most reps</li>
+                            <li>Spotlight on the target area (throat, belly, etc.)</li>
+                            <li>After each rep: "Did I get what I want?"</li>
+                            <li>YES → Repeat (green loop) - build the mile-and-mile</li>
+                            <li>NO → Back to Step 1 (diagnostic) - why did it fail?</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div class="help-tip">
+                    <strong>Critical:</strong> This is NOT random practice. Each rep has CLEAR INTENTION. You're showing your brain: "This is the feeling I want." The brain learns from repetition + clear messaging.
+                </div>
+
+                <p><strong>How to track:</strong></p>
+                <ul>
+                    <li><strong>Reps:</strong> How many times did you do the drill?</li>
+                    <li><strong>Success Ratio:</strong> How many were correct? (e.g., 7/10 means 7 good, 3 had the error)</li>
+                    <li><strong>Notes:</strong> Any observations, breakthroughs, or patterns</li>
+                </ul>
+
+                <div class="help-tip">
+                    <strong>When to stop:</strong> When you get 8-10 correct reps in a row, you've built enough for today. Don't drill to exhaustion - your brain consolidates this overnight.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="lb1-working-on">What am I working on:</label>
+                <input type="text" id="lb1-working-on" placeholder="e.g., Eliminating throat grab at turnaround">
+            </div>
+
+            <div class="form-group">
+                <label for="lb1-intention">Step 1 - Intention of Success:</label>
+                <textarea id="lb1-intention" placeholder="What do I want to achieve?"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="lb1-error">Step 2 - Call Out the Error:</label>
+                <textarea id="lb1-error" placeholder="What's the possible error?"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="lb1-drill">Step 3 - The Drill:</label>
+                <textarea id="lb1-drill" placeholder="What's the opposing feeling drill?"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="lb1-message">Step 4 - Messaging:</label>
+                <input type="text" id="lb1-message" placeholder="Next time I _____, I will feel _____">
+            </div>
+
+            <div class="form-group">
+                <label for="lb1-reps">Reps Completed:</label>
+                <input type="number" id="lb1-reps" min="0" value="0">
+            </div>
+
+            <div class="form-group">
+                <label for="lb1-success">Success Ratio (e.g., 7/10):</label>
+                <input type="text" id="lb1-success" placeholder="7/10">
+            </div>
+
+            <div class="form-group">
+                <label for="lb1-notes">Notes:</label>
+                <textarea id="lb1-notes" placeholder="Any observations..."></textarea>
+            </div>
+
+            <h3>Right-Brain Block #1 (15 min) - Just Play</h3>
+
+            <!-- HELP: Right-Brain Block -->
+            <div class="help-toggle" onclick="toggleHelp('help-rightbrain')">
+                <h4><span class="arrow">▶</span> 📖 How to do Right-Brain Practice</h4>
+            </div>
+            <div id="help-rightbrain" class="help-content">
+                <p><strong>Purpose:</strong> This is your REALITY CHECK. Does the left-brain work transfer to actual playing?</p>
+                
+                <p><strong>What to do:</strong></p>
+                <ol>
+                    <li><strong>Put the process aside</strong> - No thinking about technique</li>
+                    <li><strong>Play music</strong> - Scales, tunes, exercises, whatever you want</li>
+                    <li><strong>OBSERVE ONLY</strong> - This is key!
+                        <ul>
+                            <li>Did the error from left-brain appear?</li>
+                            <li>When did it happen?</li>
+                            <li>What triggered it?</li>
+                        </ul>
+                    </li>
+                    <li><strong>Don't fix during this block</strong> - Just notice and log it</li>
+                    <li><strong>Note what felt good</strong> - These are wins!</li>
+                </ol>
+
+                <div class="help-tip">
+                    <strong>The Formula 1 Principle:</strong> The racing driver doesn't fix the car halfway through the race. He sends a message back to the mechanics: "When I get back, fix this." You're the driver now. Notice the issues, log them, and fix them in the next left-brain block.
+                </div>
+
+                <p><strong>What the results mean:</strong></p>
+                <ul>
+                    <li><strong>Error still happening often:</strong> Good! You're aware of it. Need more left-brain drilling.</li>
+                    <li><strong>Error happening less:</strong> Great! The drill is working. Keep going.</li>
+                    <li><strong>Error almost gone:</strong> Excellent! You're approaching "I Know" territory.</li>
+                    <li><strong>Felt effortless:</strong> LOG THIS! Go to Progress & Stats → Effortless Moments</li>
+                </ul>
+
+                <div class="help-tip">
+                    <strong>Remember:</strong> Right-brain practice is NOT wasted time. It's essential assessment. Without this, you don't know if your left-brain work is effective.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="rb1-played">What I Played:</label>
+                <input type="text" id="rb1-played" placeholder="Scales, tunes, exercises...">
+            </div>
+
+            <div class="form-group">
+                <label for="rb1-errors">Errors I Noticed (observe only):</label>
+                <textarea id="rb1-errors" placeholder="Don't fix, just notice..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="rb1-good">What Felt Good:</label>
+                <textarea id="rb1-good" placeholder="Moments of ease..."></textarea>
+            </div>
+
+            <h3>End of Day Review</h3>
+
+            <!-- HELP: End of Day -->
+            <div class="help-toggle" onclick="toggleHelp('help-endofday')">
+                <h4><span class="arrow">▶</span> 📖 How to do End of Day Review</h4>
+            </div>
+            <div id="help-endofday" class="help-content">
+                <p><strong>Purpose:</strong> Consolidate today's learning and prime your brain for overnight processing.</p>
+                
+                <p><strong>The process:</strong></p>
+                <ol>
+                    <li><strong>Main error today:</strong> What error appeared most often?</li>
+                    <li><strong>How it FELT:</strong> Be specific - "Tight in throat" not just "bad"
+                        <ul><li>The brain learns from feelings, not descriptions</li></ul>
+                    </li>
+                    <li><strong>The opposing drill:</strong> What drill creates the opposite feeling?</li>
+                    <li><strong>The correct feeling:</strong> What do you want instead?</li>
+                    <li><strong>Tomorrow's message:</strong> What will you tell your brain tomorrow?
+                        <ul><li>Example: "When I reach top of breath, throat stays open"</li></ul>
+                    </li>
+                </ol>
+
+                <div class="help-tip">
+                    <strong>Before bed tonight:</strong> Mentally review the correct feeling one more time. Your brain builds new neural pathways during sleep. Give it the right blueprint to work with!
+                </div>
+
+                <p><strong>Why this matters:</strong></p>
+                <ul>
+                    <li>You're feeding your subconscious the learning points</li>
+                    <li>Brain consolidates during sleep (the mile-and-mile coating)</li>
+                    <li>Tomorrow morning you'll wake up with slightly different wiring</li>
+                    <li>This is THE SCIENCE of neuroplasticity in action</li>
+                </ul>
+            </div>
+
+            <div class="form-group">
+                <label for="eod-error">Error I experienced today:</label>
+                <textarea id="eod-error"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="eod-feeling">How it felt (be specific):</label>
+                <textarea id="eod-feeling"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="eod-drill">The opposing drill that fixes it:</label>
+                <textarea id="eod-drill"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="eod-correct">The correct feeling:</label>
+                <textarea id="eod-correct"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="eod-tomorrow">Tomorrow's message to my brain:</label>
+                <input type="text" id="eod-tomorrow" placeholder="When I _____, I will _____">
+            </div>
+
+            <button onclick="saveDailySession()">💾 Save This Session</button>
+            <button class="secondary" onclick="clearDailyForm()">Clear Form for New Session</button>
+
+            <div id="save-alert" style="display: none;" class="alert">Session saved! You can log another session today if you practice again.</div>
+
+            <h3>Today's Sessions</h3>
+            <div id="todays-sessions" class="session-list"></div>
+
+            <h3>Recent Sessions (Last 10)</h3>
+            <div id="recent-sessions" class="session-list"></div>
+        </div>
+
+        <!-- WEEKLY REVIEW SECTION -->
+        <div id="weekly" class="section">
+            <h2>Weekly Review</h2>
+            
+            <div class="form-group">
+                <label for="week-of">Week of:</label>
+                <input type="date" id="week-of">
+            </div>
+
+            <div class="form-group">
+                <label for="week-main-issue">Main Issue This Week:</label>
+                <input type="text" id="week-main-issue" placeholder="e.g., Throat grab at turnaround">
+            </div>
+
+            <h3>Daily Tracking</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Intention Clear?</th>
+                        <th>Error Identified?</th>
+                        <th>Drill Done?</th>
+                        <th>Success Rate</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="weekly-table">
+                    <tr data-day="Monday">
+                        <td>Monday</td>
+                        <td><input type="checkbox" class="week-check" data-day="mon" data-field="intention"></td>
+                        <td><input type="checkbox" class="week-check" data-day="mon" data-field="error"></td>
+                        <td><input type="checkbox" class="week-check" data-day="mon" data-field="drill"></td>
+                        <td><input type="text" class="week-success" data-day="mon" placeholder="7/10" style="width: 60px;"></td>
+                        <td><input type="text" class="week-notes" data-day="mon" placeholder="Notes..."></td>
+                    </tr>
+                    <tr data-day="Tuesday">
+                        <td>Tuesday</td>
+                        <td><input type="checkbox" class="week-check" data-day="tue" data-field="intention"></td>
+                        <td><input type="checkbox" class="week-check" data-day="tue" data-field="error"></td>
+                        <td><input type="checkbox" class="week-check" data-day="tue" data-field="drill"></td>
+                        <td><input type="text" class="week-success" data-day="tue" placeholder="7/10" style="width: 60px;"></td>
+                        <td><input type="text" class="week-notes" data-day="tue" placeholder="Notes..."></td>
+                    </tr>
+                    <tr data-day="Wednesday">
+                        <td>Wednesday</td>
+                        <td><input type="checkbox" class="week-check" data-day="wed" data-field="intention"></td>
+                        <td><input type="checkbox" class="week-check" data-day="wed" data-field="error"></td>
+                        <td><input type="checkbox" class="week-check" data-day="wed" data-field="drill"></td>
+                        <td><input type="text" class="week-success" data-day="wed" placeholder="7/10" style="width: 60px;"></td>
+                        <td><input type="text" class="week-notes" data-day="wed" placeholder="Notes..."></td>
+                    </tr>
+                    <tr data-day="Thursday">
+                        <td>Thursday</td>
+                        <td><input type="checkbox" class="week-check" data-day="thu" data-field="intention"></td>
+                        <td><input type="checkbox" class="week-check" data-day="thu" data-field="error"></td>
+                        <td><input type="checkbox" class="week-check" data-day="thu" data-field="drill"></td>
+                        <td><input type="text" class="week-success" data-day="thu" placeholder="7/10" style="width: 60px;"></td>
+                        <td><input type="text" class="week-notes" data-day="thu" placeholder="Notes..."></td>
+                    </tr>
+                    <tr data-day="Friday">
+                        <td>Friday</td>
+                        <td><input type="checkbox" class="week-check" data-day="fri" data-field="intention"></td>
+                        <td><input type="checkbox" class="week-check" data-day="fri" data-field="error"></td>
+                        <td><input type="checkbox" class="week-check" data-day="fri" data-field="drill"></td>
+                        <td><input type="text" class="week-success" data-day="fri" placeholder="7/10" style="width: 60px;"></td>
+                        <td><input type="text" class="week-notes" data-day="fri" placeholder="Notes..."></td>
+                    </tr>
+                    <tr data-day="Saturday">
+                        <td>Saturday</td>
+                        <td><input type="checkbox" class="week-check" data-day="sat" data-field="intention"></td>
+                        <td><input type="checkbox" class="week-check" data-day="sat" data-field="error"></td>
+                        <td><input type="checkbox" class="week-check" data-day="sat" data-field="drill"></td>
+                        <td><input type="text" class="week-success" data-day="sat" placeholder="7/10" style="width: 60px;"></td>
+                        <td><input type="text" class="week-notes" data-day="sat" placeholder="Notes..."></td>
+                    </tr>
+                    <tr data-day="Sunday">
+                        <td>Sunday</td>
+                        <td><input type="checkbox" class="week-check" data-day="sun" data-field="intention"></td>
+                        <td><input type="checkbox" class="week-check" data-day="sun" data-field="error"></td>
+                        <td><input type="checkbox" class="week-check" data-day="sun" data-field="drill"></td>
+                        <td><input type="text" class="week-success" data-day="sun" placeholder="7/10" style="width: 60px;"></td>
+                        <td><input type="text" class="week-notes" data-day="sun" placeholder="Notes..."></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="form-group">
+                <label>Progress This Week:</label>
+                <div class="checkbox-group">
+                    <input type="radio" name="week-progress" id="prog-worse" value="worse">
+                    <label for="prog-worse">Error getting worse (noticing it more - GOOD!)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="radio" name="week-progress" id="prog-same" value="same">
+                    <label for="prog-same">Error same (keep drilling)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="radio" name="week-progress" id="prog-improving" value="improving">
+                    <label for="prog-improving">Error improving (drill is working)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="radio" name="week-progress" id="prog-almost" value="almost">
+                    <label for="prog-almost">Error almost gone (approaching "I know" token)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="radio" name="week-progress" id="prog-eliminated" value="eliminated">
+                    <label for="prog-eliminated">Error eliminated (locked in! Move to next issue)</label>
+                </div>
+            </div>
+
+            <h3>The "I Know" Sliders</h3>
+            <div id="sliders-container"></div>
+
+            <div class="form-group">
+                <label for="week-reflections">Week Reflections:</label>
+                <textarea id="week-reflections" placeholder="What I learned, what worked, what didn't..."></textarea>
+            </div>
+
+            <button onclick="saveWeeklyReview()">💾 Save Weekly Review</button>
+            <button class="secondary" onclick="clearWeeklyForm()">Clear Form</button>
+
+            <h3>Past Weekly Reviews</h3>
+            <div id="past-weeks" class="session-list"></div>
+        </div>
+
+        <!-- ERROR TRILOGY SECTION -->
+        <div id="errors" class="section">
+            <h2>Error Trilogy</h2>
+            <p style="margin-bottom: 20px; color: #7f8c8d;">Use this template for ANY error you discover</p>
+
+            <h3>Error Detection</h3>
+            <div class="form-group">
+                <label for="error-name">The error is:</label>
+                <input type="text" id="error-name" placeholder="e.g., Throat grab at turnaround">
+            </div>
+
+            <div class="form-group">
+                <label>How I detect it:</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="detect-feel" value="feel">
+                    <label for="detect-feel">I can feel it</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="detect-see" value="see">
+                    <label for="detect-see">I can see it (mirror/video)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="detect-hear" value="hear">
+                    <label for="detect-hear">I can hear it (in sound)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="detect-told" value="told">
+                    <label for="detect-told">Someone pointed it out</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="error-when">When does it happen:</label>
+                <textarea id="error-when" placeholder="During specific exercises, at certain times..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="error-where">Where in the body:</label>
+                <textarea id="error-where" placeholder="Throat, chest, abdomen..."></textarea>
+            </div>
+
+            <h3>Error Rejection</h3>
+            <div class="form-group">
+                <label for="error-why">This error must go because:</label>
+                <textarea id="error-why" placeholder="Why is this important to fix..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="error-urgency">My level of urgency (1-10):</label>
+                <input type="range" id="error-urgency" min="1" max="10" value="5" 
+                       oninput="document.getElementById('urgency-value').textContent = this.value">
+                <span id="urgency-value">5</span>
+            </div>
+
+            <div class="form-group">
+                <label for="error-statement">Zero tolerance statement:</label>
+                <input type="text" id="error-statement" placeholder="I refuse to _____ anymore because _____">
+            </div>
+
+            <h3>Error Correction</h3>
+            <div class="form-group">
+                <label for="error-drill">The opposing drill:</label>
+                <textarea id="error-drill" placeholder="What drill creates the opposite feeling..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="error-correct-feel">The correct feeling:</label>
+                <textarea id="error-correct-feel" placeholder="What should it feel like..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="error-message">The message:</label>
+                <input type="text" id="error-message" placeholder="When I _____, I will feel _____">
+            </div>
+
+            <div class="form-group">
+                <label for="error-reps">Daily rep target:</label>
+                <input type="number" id="error-reps" min="1" value="64">
+            </div>
+
+            <button onclick="saveErrorTrilogy()">💾 Save Error Trilogy</button>
+            <button class="secondary" onclick="clearErrorForm()">Clear Form</button>
+
+            <h3>Your Error Log</h3>
+            <div id="error-log"></div>
+        </div>
+
+        <!-- PROGRESS & STATS SECTION -->
+        <div id="progress" class="section">
+            <h2>Progress & Statistics</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Sessions</div>
+                    <div class="stat-number" id="stat-sessions">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Current Streak</div>
+                    <div class="stat-number" id="stat-streak">0</div>
+                    <div class="stat-label">days</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Practice Time</div>
+                    <div class="stat-number" id="stat-time">0</div>
+                    <div class="stat-label">minutes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Errors Tracked</div>
+                    <div class="stat-number" id="stat-errors">0</div>
+                </div>
+            </div>
+
+            <h3>Practice Frequency (Last 30 Days)</h3>
+            <div id="practice-calendar"></div>
+
+            <h3>Error Progress Over Time</h3>
+            <div id="error-progress-chart"></div>
+
+            <h3>"Felt Like Doing Nothing" Moments</h3>
+            <div class="form-group">
+                <label for="effortless-date">Date:</label>
+                <input type="date" id="effortless-date">
+            </div>
+            <div class="form-group">
+                <label for="effortless-activity">What I was doing:</label>
+                <input type="text" id="effortless-activity" placeholder="Playing low C, scales, etc.">
+            </div>
+            <button onclick="saveEffortlessMoment()">✨ Save Effortless Moment</button>
+
+            <div id="effortless-log"></div>
+        </div>
+
+        <!-- QUICK REFERENCE SECTION -->
+        <div id="reference" class="section">
+            <h2>Quick Reference Cards</h2>
+
+            <div class="quick-ref-cards">
+                <div class="ref-card">
+                    <h4>The Learning Loop</h4>
+                    <pre>1. INTENTION → What am I working on?
+2. ERROR → What could go wrong?
+3. DRILL → Opposing feeling
+4. MESSAGE → "Next time, do THIS"
+5. EXECUTE → No RAM, just do it
+6. LOOP → Good? Repeat. Bad? Back to #1</pre>
+                </div>
+
+                <div class="ref-card">
+                    <h4>Every Action Needs a Message</h4>
+                    <pre>Breathing? → "This is what playing feels like"
+Drilling? → "This is what I want"
+Error? → "Not doing that anymore"
+Success? → "That's it! Again!"</pre>
+                </div>
+
+                <div class="ref-card">
+                    <h4>Zero Tolerance List</h4>
+                    <pre>✗ Throat grab
+✗ Meerkat/elevation
+✗ Active pushing
+✗ Arm recruitment
+✗ "Close enough"</pre>
+                </div>
+
+                <div class="ref-card">
+                    <h4>The Feeling Triangle</h4>
+                    <pre>      VISUALIZATION
+       (What I want)
+            /\
+           /  \
+          /    \
+         /      \
+        /        \
+  FEELING ---- MESSAGE
+(Eyes closed)  (To brain)</pre>
+                </div>
+
+                <div class="ref-card">
+                    <h4>The 168 Process</h4>
+                    <pre>16 hours awake × 4 reps/hour = 64 daily reps
+
+Every 15 minutes:
+• Quick drill (10 seconds)
+• Feel the correct sensation
+• Message: "Playing feels like THIS"
+• Continue with day
+
+Brain builds new pathways overnight</pre>
+                </div>
+
+                <div class="ref-card">
+                    <h4>Error Detection Signs</h4>
+                    <pre>• Throat grab/lock
+• Meerkat (elevation)
+• Synchronized reduction
+• Active pushing
+• Jaw activation
+• Arm recruitment
+• Chest coning
+• Any involuntary tension</pre>
+                </div>
+            </div>
+
+            <h3>Common Errors & Fixes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Error</th>
+                        <th>How to Detect</th>
+                        <th>Opposing Drill</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Throat grab at turnaround</td>
+                        <td>Feel lock at top of breath</td>
+                        <td>Finger drill - stay open through turnaround</td>
+                        <td>"Turnaround ≠ grab"</td>
+                    </tr>
+                    <tr>
+                        <td>Meerkat (elevation)</td>
+                        <td>Watch yourself - body lifts</td>
+                        <td>Breath with spotlight on spine/shoulders</td>
+                        <td>"Only ribs move"</td>
+                    </tr>
+                    <tr>
+                        <td>Active release</td>
+                        <td>Air feels pushed</td>
+                        <td>Balloon deflation - zero effort</td>
+                        <td>"Don't help it, don't hold it"</td>
+                    </tr>
+                    <tr>
+                        <td>Elbow recruitment</td>
+                        <td>Chest/shoulders tense when arms lift</td>
+                        <td>Elbows only - everything else dead weight</td>
+                        <td>"Arms are separate"</td>
+                    </tr>
+                    <tr>
+                        <td>Player mode activation</td>
+                        <td>Everything tenses when horn comes up</td>
+                        <td>Perfect drill → add horn → check feeling</td>
+                        <td>"Horn doesn't change feeling"</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- EXPORT/IMPORT SECTION -->
+        <div id="export" class="section">
+            <h2>Export & Import Data</h2>
+
+            <div class="export-section">
+                <h3>Backup Your Data</h3>
+                <p>Download all your practice data as a JSON file. Save this file regularly as a backup.</p>
+                <button onclick="exportData()">📥 Download Backup</button>
+            </div>
+
+            <div class="export-section">
+                <h3>Restore From Backup</h3>
+                <p>Upload a previously saved JSON file to restore your data.</p>
+                <input type="file" id="import-file" accept=".json">
+                <button onclick="importData()">📤 Upload Backup</button>
+            </div>
+
+            <div class="export-section">
+                <h3>⚠️ Reset All Data</h3>
+                <p class="alert warning">Warning: This will permanently delete all your practice data. Make sure you've downloaded a backup first!</p>
+                <button class="danger" onclick="resetAllData()">🗑️ Reset Everything</button>
+            </div>
+
+            <div class="export-section">
+                <h3>Print Current View</h3>
+                <p>Print the currently visible section for offline reference.</p>
+                <button onclick="window.print()">🖨️ Print</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize app
+        let appData = {
+            dailySessions: [],
+            weeklyReviews: [],
+            errorTrilogies: [],
+            effortlessMoments: [],
+            sliders: {
+                throat: 0,
+                meerkat: 0,
+                passive: 0,
+                arms: 0
+            },
+            quickTally: {
+                date: new Date().toISOString().split('T')[0],
+                count: 0,
+                marks: [],
+                drill: '',
+                message: ''
+            }
+        };
+
+        // Load data from localStorage
+        function loadData() {
+            const stored = localStorage.getItem('trumpetPracticeData');
+            if (stored) {
+                appData = JSON.parse(stored);
+                
+                // Reset tally if it's a new day
+                const today = new Date().toISOString().split('T')[0];
+                if (appData.quickTally.date !== today) {
+                    appData.quickTally = {
+                        date: today,
+                        count: 0,
+                        marks: [],
+                        drill: appData.quickTally.drill || '',
+                        message: appData.quickTally.message || ''
+                    };
+                    saveData();
+                }
+                
+                updateStats();
+                displayRecentSessions();
+                displayTodaysSessions();
+                displayPastWeeks();
+                displayErrorLog();
+                displayEffortlessLog();
+                initializeSliders();
+                updateQuickTally();
+                
+                // Restore quick tally settings
+                document.getElementById('quick-drill-select').value = appData.quickTally.drill || '';
+                document.getElementById('quick-message').value = appData.quickTally.message || '';
+                if (appData.quickTally.drill === 'custom') {
+                    document.getElementById('quick-drill-custom').style.display = 'block';
+                }
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('trumpetPracticeData', JSON.stringify(appData));
+        }
+
+        // Show/hide sections
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+
+            if (sectionId === 'progress') {
+                updateStats();
+            }
+        }
+
+        // Quick Tally functions (at top of page)
+        function initQuickTally() {
+            const tallyContainer = document.getElementById('quick-tally');
+            tallyContainer.innerHTML = '';
+            for (let i = 0; i < 64; i++) {
+                const mark = document.createElement('div');
+                mark.className = 'tally-mark';
+                mark.dataset.index = i;
+                if (appData.quickTally.marks.includes(i)) {
+                    mark.classList.add('active');
+                }
+                mark.onclick = () => toggleQuickTally(mark, i);
+                tallyContainer.appendChild(mark);
+            }
+            updateQuickTallyCount();
+        }
+
+        function toggleQuickTally(mark, index) {
+            mark.classList.toggle('active');
+            
+            if (mark.classList.contains('active')) {
+                if (!appData.quickTally.marks.includes(index)) {
+                    appData.quickTally.marks.push(index);
+                }
+            } else {
+                appData.quickTally.marks = appData.quickTally.marks.filter(i => i !== index);
+            }
+            
+            appData.quickTally.count = appData.quickTally.marks.length;
+            updateQuickTallyCount();
+            saveData();
+        }
+
+        function updateQuickTallyCount() {
+            const count = appData.quickTally.marks.length;
+            document.getElementById('quick-tally-count').textContent = count;
+            const percentage = Math.round((count / 64) * 100);
+            const progressBar = document.getElementById('quick-progress');
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+        }
+
+        function resetQuickTally() {
+            if (!confirm('Reset today\'s tally counter?')) return;
+            
+            appData.quickTally.marks = [];
+            appData.quickTally.count = 0;
+            document.querySelectorAll('#quick-tally .tally-mark').forEach(m => m.classList.remove('active'));
+            updateQuickTallyCount();
+            saveData();
+        }
+
+        function saveQuickDrill() {
+            const select = document.getElementById('quick-drill-select');
+            appData.quickTally.drill = select.value;
+            
+            const customInput = document.getElementById('quick-drill-custom');
+            if (select.value === 'custom') {
+                customInput.style.display = 'block';
+            } else {
+                customInput.style.display = 'none';
+            }
+            
+            saveData();
+        }
+
+        function saveQuickMessage() {
+            appData.quickTally.message = document.getElementById('quick-message').value;
+            saveData();
+        }
+
+        function updateQuickTally() {
+            initQuickTally();
+            document.getElementById('quick-drill-select').value = appData.quickTally.drill || '';
+            document.getElementById('quick-message').value = appData.quickTally.message || '';
+        }
+
+        // Save daily session
+        function saveDailySession() {
+            const session = {
+                date: document.getElementById('practice-date').value || new Date().toISOString().split('T')[0],
+                sessionTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+                focus: Array.from(document.querySelectorAll('input[id^="focus-"]:checked')).map(cb => cb.value),
+                focusOther: document.getElementById('focus-other-text').value,
+                intention: document.getElementById('daily-intention').value,
+                leftBrain1: {
+                    workingOn: document.getElementById('lb1-working-on').value,
+                    intention: document.getElementById('lb1-intention').value,
+                    error: document.getElementById('lb1-error').value,
+                    drill: document.getElementById('lb1-drill').value,
+                    message: document.getElementById('lb1-message').value,
+                    reps: document.getElementById('lb1-reps').value,
+                    success: document.getElementById('lb1-success').value,
+                    notes: document.getElementById('lb1-notes').value
+                },
+                rightBrain1: {
+                    played: document.getElementById('rb1-played').value,
+                    errors: document.getElementById('rb1-errors').value,
+                    good: document.getElementById('rb1-good').value
+                },
+                endOfDay: {
+                    error: document.getElementById('eod-error').value,
+                    feeling: document.getElementById('eod-feeling').value,
+                    drill: document.getElementById('eod-drill').value,
+                    correct: document.getElementById('eod-correct').value,
+                    tomorrow: document.getElementById('eod-tomorrow').value
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            appData.dailySessions.push(session);
+            saveData();
+            
+            // Show success message
+            const alert = document.getElementById('save-alert');
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 3000);
+
+            displayRecentSessions();
+            displayTodaysSessions();
+            updateStats();
+        }
+
+        // Display today's sessions
+        function displayTodaysSessions() {
+            const container = document.getElementById('todays-sessions');
+            const today = document.getElementById('practice-date').value || new Date().toISOString().split('T')[0];
+            const todaysSessions = appData.dailySessions.filter(s => s.date === today);
+            
+            if (todaysSessions.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d;">No sessions logged today yet.</p>';
+                return;
+            }
+
+            container.innerHTML = todaysSessions.map((session, index) => `
+                <div class="session-card" style="border-left-color: #27ae60;">
+                    <h4>Session ${index + 1} - ${session.sessionTime || 'Time not recorded'}</h4>
+                    <p><strong>Focus:</strong> ${session.intention || 'Not specified'}</p>
+                    <p><strong>Working On:</strong> ${session.leftBrain1.workingOn || 'N/A'}</p>
+                    <p><strong>Success Rate:</strong> ${session.leftBrain1.success || 'N/A'}</p>
+                    ${session.rightBrain1.good ? `<p><strong>What Felt Good:</strong> ${session.rightBrain1.good}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Display recent sessions
+        function displayRecentSessions() {
+            const container = document.getElementById('recent-sessions');
+            const recent = appData.dailySessions.slice(-10).reverse();
+            
+            if (recent.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d;">No sessions yet. Start logging your practice!</p>';
+                return;
+            }
+
+            container.innerHTML = recent.map(session => `
+                <div class="session-card">
+                    <h4>${new Date(session.date).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} - ${session.sessionTime || ''}</h4>
+                    <p><strong>Focus:</strong> ${session.intention || 'Not specified'}</p>
+                    <p><strong>Working On:</strong> ${session.leftBrain1.workingOn || 'N/A'}</p>
+                    <p><strong>Success Rate:</strong> ${session.leftBrain1.success || 'N/A'}</p>
+                    ${session.endOfDay.error ? `<p><strong>Key Error:</strong> ${session.endOfDay.error}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Clear daily form
+        function clearDailyForm() {
+            document.querySelectorAll('#daily input[type="text"], #daily input[type="number"], #daily textarea').forEach(el => el.value = '');
+            document.querySelectorAll('#daily input[type="checkbox"]').forEach(el => el.checked = false);
+            document.querySelectorAll('#daily select').forEach(el => el.selectedIndex = 0);
+            
+            // Set date to today
+            document.getElementById('practice-date').value = new Date().toISOString().split('T')[0];
+        }
+
+        // Save weekly review
+        function saveWeeklyReview() {
+            const weekData = {
+                weekOf: document.getElementById('week-of').value,
+                mainIssue: document.getElementById('week-main-issue').value,
+                dailyTracking: {},
+                progress: document.querySelector('input[name="week-progress"]:checked')?.value,
+                sliders: { ...appData.sliders },
+                reflections: document.getElementById('week-reflections').value,
+                timestamp: new Date().toISOString()
+            };
+
+            // Collect daily tracking data
+            ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(day => {
+                weekData.dailyTracking[day] = {
+                    intention: document.querySelector(`.week-check[data-day="${day}"][data-field="intention"]`).checked,
+                    error: document.querySelector(`.week-check[data-day="${day}"][data-field="error"]`).checked,
+                    drill: document.querySelector(`.week-check[data-day="${day}"][data-field="drill"]`).checked,
+                    success: document.querySelector(`.week-success[data-day="${day}"]`).value,
+                    notes: document.querySelector(`.week-notes[data-day="${day}"]`).value
+                };
+            });
+
+            appData.weeklyReviews.push(weekData);
+            saveData();
+            
+            alert('Weekly review saved!');
+            displayPastWeeks();
+        }
+
+        // Display past weeks
+        function displayPastWeeks() {
+            const container = document.getElementById('past-weeks');
+            const recent = appData.weeklyReviews.slice(-5).reverse();
+            
+            if (recent.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d;">No weekly reviews yet.</p>';
+                return;
+            }
+
+            container.innerHTML = recent.map(week => `
+                <div class="session-card">
+                    <h4>Week of ${new Date(week.weekOf).toLocaleDateString('en-GB')}</h4>
+                    <p><strong>Main Issue:</strong> ${week.mainIssue}</p>
+                    <p><strong>Progress:</strong> ${week.progress || 'Not specified'}</p>
+                    ${week.reflections ? `<p><strong>Reflections:</strong> ${week.reflections}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Clear weekly form
+        function clearWeeklyForm() {
+            if (!confirm('Clear the weekly review form?')) return;
+            
+            document.getElementById('week-of').value = '';
+            document.getElementById('week-main-issue').value = '';
+            document.getElementById('week-reflections').value = '';
+            
+            document.querySelectorAll('.week-check').forEach(el => el.checked = false);
+            document.querySelectorAll('.week-success, .week-notes').forEach(el => el.value = '');
+            document.querySelectorAll('input[name="week-progress"]').forEach(el => el.checked = false);
+        }
+
+        // Initialize sliders
+        function initializeSliders() {
+            const container = document.getElementById('sliders-container');
+            const issues = [
+                { key: 'throat', label: 'Throat grab at turnaround' },
+                { key: 'meerkat', label: 'Meerkat/elevation' },
+                { key: 'passive', label: 'Passive release' },
+                { key: 'arms', label: 'Arm independence' }
+            ];
+
+            container.innerHTML = issues.map(issue => `
+                <div class="slider-container">
+                    <label>${issue.label}</label>
+                    <div class="slider">
+                        <div class="slider-marker" id="slider-${issue.key}" 
+                             style="left: ${appData.sliders[issue.key]}%"
+                             draggable="true"
+                             ondragstart="dragStart(event, '${issue.key}')"
+                             ondrag="drag(event, '${issue.key}')"
+                             ondragend="dragEnd(event, '${issue.key}')"></div>
+                    </div>
+                    <div class="slider-labels">
+                        <span>Unaware</span>
+                        <span>I Know (locked)</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Slider drag functions
+        function dragStart(e, key) {
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function drag(e, key) {
+            if (e.clientX === 0) return; // Ignore invalid positions
+            
+            const slider = e.target.parentElement;
+            const rect = slider.getBoundingClientRect();
+            let percentage = ((e.clientX - rect.left) / rect.width) * 100;
+            percentage = Math.max(0, Math.min(100, percentage));
+            
+            e.target.style.left = percentage + '%';
+        }
+
+        function dragEnd(e, key) {
+            const slider = e.target.parentElement;
+            const rect = slider.getBoundingClientRect();
+            let percentage = ((e.clientX - rect.left) / rect.width) * 100;
+            percentage = Math.max(0, Math.min(100, percentage));
+            
+            appData.sliders[key] = Math.round(percentage);
+            e.target.style.left = percentage + '%';
+            saveData();
+        }
+
+        // Save error trilogy
+        function saveErrorTrilogy() {
+            const error = {
+                name: document.getElementById('error-name').value,
+                detection: {
+                    feel: document.getElementById('detect-feel').checked,
+                    see: document.getElementById('detect-see').checked,
+                    hear: document.getElementById('detect-hear').checked,
+                    told: document.getElementById('detect-told').checked,
+                    when: document.getElementById('error-when').value,
+                    where: document.getElementById('error-where').value
+                },
+                rejection: {
+                    why: document.getElementById('error-why').value,
+                    urgency: document.getElementById('error-urgency').value,
+                    statement: document.getElementById('error-statement').value
+                },
+                correction: {
+                    drill: document.getElementById('error-drill').value,
+                    correctFeeling: document.getElementById('error-correct-feel').value,
+                    message: document.getElementById('error-message').value,
+                    dailyReps: document.getElementById('error-reps').value
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            appData.errorTrilogies.push(error);
+            saveData();
+            
+            alert('Error trilogy saved!');
+            displayErrorLog();
+            updateStats();
+        }
+
+        // Display error log
+        function displayErrorLog() {
+            const container = document.getElementById('error-log');
+            
+            if (appData.errorTrilogies.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d;">No errors logged yet.</p>';
+                return;
+            }
+
+            container.innerHTML = appData.errorTrilogies.slice().reverse().map((error, index) => `
+                <div class="error-log">
+                    <h4>${error.name}</h4>
+                    <p><strong>Urgency:</strong> ${error.rejection.urgency}/10</p>
+                    <p><strong>Zero Tolerance:</strong> ${error.rejection.statement}</p>
+                    <p><strong>Opposing Drill:</strong> ${error.correction.drill}</p>
+                    <p><strong>Message:</strong> ${error.correction.message}</p>
+                    <p><strong>Daily Target:</strong> ${error.correction.dailyReps} reps</p>
+                    <p style="font-size: 0.85em; color: #7f8c8d;">Logged: ${new Date(error.timestamp).toLocaleDateString()}</p>
+                </div>
+            `).join('');
+        }
+
+        // Clear error form
+        function clearErrorForm() {
+            if (!confirm('Clear the error trilogy form?')) return;
+            
+            document.querySelectorAll('#errors input[type="text"], #errors textarea').forEach(el => el.value = '');
+            document.querySelectorAll('#errors input[type="checkbox"]').forEach(el => el.checked = false);
+            document.getElementById('error-urgency').value = 5;
+            document.getElementById('urgency-value').textContent = 5;
+            document.getElementById('error-reps').value = 64;
+        }
+
+        // Save effortless moment
+        function saveEffortlessMoment() {
+            const moment = {
+                date: document.getElementById('effortless-date').value,
+                activity: document.getElementById('effortless-activity').value,
+                timestamp: new Date().toISOString()
+            };
+
+            if (!moment.date || !moment.activity) {
+                alert('Please fill in both date and activity');
+                return;
+            }
+
+            appData.effortlessMoments.push(moment);
+            saveData();
+            
+            document.getElementById('effortless-date').value = '';
+            document.getElementById('effortless-activity').value = '';
+            
+            alert('✨ Effortless moment saved!');
+            displayEffortlessLog();
+        }
+
+        // Display effortless log
+        function displayEffortlessLog() {
+            const container = document.getElementById('effortless-log');
+            
+            if (appData.effortlessMoments.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d; margin-top: 20px;">No effortless moments logged yet. These are worth celebrating!</p>';
+                return;
+            }
+
+            container.innerHTML = '<h4 style="margin-top: 20px;">Your Effortless Moments:</h4>' + 
+                appData.effortlessMoments.slice().reverse().map(moment => `
+                    <div class="session-card" style="border-left-color: #27ae60;">
+                        <p><strong>Date:</strong> ${new Date(moment.date).toLocaleDateString('en-GB')}</p>
+                        <p><strong>Activity:</strong> ${moment.activity}</p>
+                    </div>
+                `).join('');
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('stat-sessions').textContent = appData.dailySessions.length;
+            document.getElementById('stat-errors').textContent = appData.errorTrilogies.length;
+            
+            // Calculate streak
+            let streak = 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Get unique practice dates
+            const uniqueDates = [...new Set(appData.dailySessions.map(s => s.date))]
+                .map(d => new Date(d))
+                .sort((a, b) => b - a);
+            
+            for (let i = 0; i < uniqueDates.length; i++) {
+                const sessionDate = new Date(uniqueDates[i]);
+                sessionDate.setHours(0, 0, 0, 0);
+                const daysDiff = Math.floor((today - sessionDate) / (1000 * 60 * 60 * 24));
+                
+                if (daysDiff === i) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            
+            document.getElementById('stat-streak').textContent = streak;
+            
+            // Estimate total practice time (assuming 30-45 min per session)
+            const estimatedMinutes = appData.dailySessions.length * 35;
+            document.getElementById('stat-time').textContent = estimatedMinutes;
+        }
+
+        // Export data
+        function exportData() {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `trumpet-practice-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Import data
+        function importData() {
+            const file = document.getElementById('import-file').files[0];
+            if (!file) {
+                alert('Please select a file first');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (confirm('This will replace all current data. Continue?')) {
+                        appData = imported;
+                        saveData();
+                        location.reload();
+                    }
+                } catch (err) {
+                    alert('Error reading file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Reset all data
+        function resetAllData() {
+            const confirmation = prompt('Type "DELETE ALL" to confirm reset:');
+            if (confirmation === 'DELETE ALL') {
+                localStorage.removeItem('trumpetPracticeData');
+                location.reload();
+            } else {
+                alert('Reset cancelled');
+            }
+        }
+
+        // Initialize app on load
+        window.onload = () => {
+            loadData();
+            initQuickTally();
+            initializeSliders();
+            
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('practice-date').value = today;
+            document.getElementById('effortless-date').value = today;
+        };
+
+        // Toggle help sections
+        function toggleHelp(helpId) {
+            const helpContent = document.getElementById(helpId);
+            const toggle = event.currentTarget;
+            
+            helpContent.classList.toggle('active');
+            toggle.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
