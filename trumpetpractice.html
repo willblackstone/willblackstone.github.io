@@ -482,6 +482,7 @@
             <button onclick="showSection('daily')">Daily Practice</button>
             <button onclick="showSection('weekly')">Weekly Review</button>
             <button onclick="showSection('errors')">Error Trilogy</button>
+            <button onclick="showSection('lessons')">🎓 Lessons Log</button>
             <button onclick="showSection('progress')">Progress & Stats</button>
             <button onclick="showSection('reference')">Quick Reference</button>
             <button onclick="showSection('export')">Export/Import</button>
@@ -1122,6 +1123,146 @@
             <div id="past-weeks" class="session-list"></div>
         </div>
 
+        <!-- LESSONS LOG SECTION -->
+        <div id="lessons" class="section">
+            <h2>🎓 Lessons Log</h2>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">Keep track of lessons with your teacher and extract the key learning points</p>
+
+            <div class="help-toggle" onclick="toggleHelp('help-lessons')">
+                <h4><span class="arrow">▶</span> 📖 How to Use Lessons Log</h4>
+            </div>
+            <div id="help-lessons" class="help-content">
+                <p><strong>Purpose:</strong> Distill each lesson into actionable steps and key discoveries.</p>
+                
+                <p><strong>After each lesson:</strong></p>
+                <ol>
+                    <li><strong>Fill this out within 24 hours</strong> while it's fresh</li>
+                    <li><strong>Watch the lesson video</strong> (if you have one) and take notes</li>
+                    <li><strong>Extract the essential points</strong> - not everything, just what matters</li>
+                    <li><strong>Identify your homework</strong> - what to work on next</li>
+                    <li><strong>Add to Error Trilogy</strong> - any new errors discovered</li>
+                </ol>
+
+                <div class="help-tip">
+                    <strong>The goal:</strong> Compress a 60-minute lesson into 5 minutes of reading that tells you exactly what to do.
+                </div>
+            </div>
+
+            <h3>Add New Lesson</h3>
+
+            <div class="form-group">
+                <label for="lesson-date">Lesson Date:</label>
+                <input type="date" id="lesson-date">
+            </div>
+
+            <div class="form-group">
+                <label for="lesson-teacher">Teacher:</label>
+                <input type="text" id="lesson-teacher" placeholder="Teacher's name">
+            </div>
+
+            <div class="form-group">
+                <label for="lesson-number">Lesson # (optional):</label>
+                <input type="number" id="lesson-number" min="1" placeholder="e.g., 3">
+            </div>
+
+            <h4 style="color: #e67e22; margin-top: 25px;">📌 Key Discoveries</h4>
+            <p style="color: #7f8c8d; margin-bottom: 10px;">What were the main issues identified in this lesson?</p>
+
+            <div class="form-group">
+                <label for="lesson-discoveries">Main Issues/Errors Found:</label>
+                <textarea id="lesson-discoveries" placeholder="e.g., 
+• Throat grab at turnaround
+• Meerkat/elevation when breathing
+• Arm recruitment causing chest tension
+..."></textarea>
+            </div>
+
+            <h4 style="color: #e67e22; margin-top: 25px;">🔧 Specific Process/Drills</h4>
+            <p style="color: #7f8c8d; margin-bottom: 10px;">What is your EXACT process to fix these issues?</p>
+
+            <div class="form-group">
+                <label for="lesson-process">Step-by-Step Process:</label>
+                <textarea id="lesson-process" placeholder="For each main issue, what's the drill?
+
+Example:
+ISSUE: Throat grab at turnaround
+DRILL: 
+1. Finger between teeth
+2. Breathe in - feel expansion
+3. At top - don't grab, stay open
+4. Passive drop/reduction
+5. Message: 'This is what playing feels like'
+..."></textarea>
+            </div>
+
+            <h4 style="color: #e67e22; margin-top: 25px;">💡 Key Insights/Breakthroughs</h4>
+            <p style="color: #7f8c8d; margin-bottom: 10px;">What clicked? What made sense?</p>
+
+            <div class="form-group">
+                <label for="lesson-insights">Aha Moments:</label>
+                <textarea id="lesson-insights" placeholder="e.g.,
+• The 'turnaround' concept - breath changes direction at top, like rollercoaster
+• Meerkat - I'm lifting my whole torso, not just ribs
+• Arms recruiting chest - need to move elbows independently
+• The 168 process - 64 reps throughout day builds pathways overnight
+..."></textarea>
+            </div>
+
+            <h4 style="color: #e67e22; margin-top: 25px;">📋 Your Homework</h4>
+            <p style="color: #7f8c8d; margin-bottom: 10px;">What specific things should you work on before next lesson?</p>
+
+            <div class="form-group">
+                <label for="lesson-homework">Action Items:</label>
+                <textarea id="lesson-homework" placeholder="e.g.,
+1. Master the turnaround drill - 100% consistent no-grab
+2. Video yourself - watch for meerkat
+3. 80% eyes-closed practice this week
+4. Set phone reminder for 168 process (every 15 min)
+5. Add 'throat grab' to Error Trilogy
+..."></textarea>
+            </div>
+
+            <h4 style="color: #e67e22; margin-top: 25px;">⚠️ What NOT to Do</h4>
+            <p style="color: #7f8c8d; margin-bottom: 10px;">Common mistakes or things to avoid</p>
+
+            <div class="form-group">
+                <label for="lesson-avoid">Avoid These:</label>
+                <textarea id="lesson-avoid" placeholder="e.g.,
+❌ Don't try to recreate feeling without the process
+❌ Don't accept 'close enough' on throat engagement
+❌ Don't practice without clear intention
+❌ Don't skip eyes-closed work
+..."></textarea>
+            </div>
+
+            <h4 style="color: #e67e22; margin-top: 25px;">🎯 Primary Focus for Next Week</h4>
+            
+            <div class="form-group">
+                <label for="lesson-focus">One Main Thing to Work On:</label>
+                <input type="text" id="lesson-focus" placeholder="e.g., Eliminate throat grab at turnaround">
+            </div>
+
+            <h4 style="color: #e67e22; margin-top: 25px;">📝 Additional Notes</h4>
+
+            <div class="form-group">
+                <label for="lesson-notes">General Notes/Observations:</label>
+                <textarea id="lesson-notes" placeholder="Any other important points, questions to ask next time, etc."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="lesson-video">Video Link (optional):</label>
+                <input type="text" id="lesson-video" placeholder="e.g., YouTube unlisted link, Dropbox link, etc.">
+            </div>
+
+            <button onclick="saveLesson()">💾 Save Lesson</button>
+            <button class="secondary" onclick="clearLessonForm()">Clear Form</button>
+
+            <div id="lesson-save-alert" style="display: none;" class="alert">Lesson saved!</div>
+
+            <h3 style="margin-top: 40px;">Past Lessons</h3>
+            <div id="lessons-list"></div>
+        </div>
+
         <!-- ERROR TRILOGY SECTION -->
         <div id="errors" class="section">
             <h2>Error Trilogy</h2>
@@ -1408,6 +1549,7 @@ Brain builds new pathways overnight</pre>
             weeklyReviews: [],
             errorTrilogies: [],
             effortlessMoments: [],
+            lessons: [],
             sliders: {
                 throat: 0,
                 meerkat: 0,
@@ -1448,6 +1590,7 @@ Brain builds new pathways overnight</pre>
                 displayPastWeeks();
                 displayErrorLog();
                 displayEffortlessLog();
+                displayLessons();
                 initializeSliders();
                 updateQuickTally();
                 
@@ -1972,7 +2115,177 @@ Brain builds new pathways overnight</pre>
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('practice-date').value = today;
             document.getElementById('effortless-date').value = today;
+            document.getElementById('lesson-date').value = today;
         };
+
+        // Toggle help sections
+        function toggleHelp(helpId) {
+            const helpContent = document.getElementById(helpId);
+            const toggle = event.currentTarget;
+            
+            helpContent.classList.toggle('active');
+            toggle.classList.toggle('active');
+        }
+
+        // Save lesson
+        function saveLesson() {
+            const lesson = {
+                date: document.getElementById('lesson-date').value,
+                teacher: document.getElementById('lesson-teacher').value,
+                lessonNumber: document.getElementById('lesson-number').value,
+                discoveries: document.getElementById('lesson-discoveries').value,
+                process: document.getElementById('lesson-process').value,
+                insights: document.getElementById('lesson-insights').value,
+                homework: document.getElementById('lesson-homework').value,
+                avoid: document.getElementById('lesson-avoid').value,
+                focus: document.getElementById('lesson-focus').value,
+                notes: document.getElementById('lesson-notes').value,
+                videoLink: document.getElementById('lesson-video').value,
+                timestamp: new Date().toISOString()
+            };
+
+            if (!lesson.date) {
+                alert('Please enter a lesson date');
+                return;
+            }
+
+            appData.lessons.push(lesson);
+            saveData();
+            
+            const alert = document.getElementById('lesson-save-alert');
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 3000);
+            
+            displayLessons();
+            clearLessonForm();
+        }
+
+        // Display lessons
+        function displayLessons() {
+            const container = document.getElementById('lessons-list');
+            
+            if (appData.lessons.length === 0) {
+                container.innerHTML = '<p style="color: #7f8c8d;">No lessons logged yet. Add your first lesson above!</p>';
+                return;
+            }
+
+            const lessons = appData.lessons.slice().reverse();
+            
+            container.innerHTML = lessons.map((lesson, index) => `
+                <div class="session-card" style="border-left-color: #9b59b6;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h4>
+                                ${lesson.lessonNumber ? `Lesson #${lesson.lessonNumber} - ` : ''}
+                                ${new Date(lesson.date).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </h4>
+                            ${lesson.teacher ? `<p style="color: #7f8c8d; font-size: 0.9em;">Teacher: ${lesson.teacher}</p>` : ''}
+                        </div>
+                        <button class="danger" onclick="deleteLesson(${appData.lessons.length - 1 - index})" style="padding: 5px 10px; font-size: 0.85em;">Delete</button>
+                    </div>
+                    
+                    ${lesson.focus ? `
+                        <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 3px solid #f39c12;">
+                            <strong>🎯 Primary Focus:</strong> ${lesson.focus}
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-top: 15px;">
+                        <button class="secondary" onclick="toggleLessonDetails(${appData.lessons.length - 1 - index})" style="font-size: 0.9em;">
+                            📖 View Full Details
+                        </button>
+                        ${lesson.videoLink ? `
+                            <a href="${lesson.videoLink}" target="_blank" style="margin-left: 10px;">
+                                <button class="secondary" style="font-size: 0.9em;">🎥 Watch Video</button>
+                            </a>
+                        ` : ''}
+                    </div>
+                    
+                    <div id="lesson-details-${appData.lessons.length - 1 - index}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                        
+                        ${lesson.discoveries ? `
+                            <div style="margin-bottom: 15px;">
+                                <h5 style="color: #e67e22; margin-bottom: 5px;">📌 Key Discoveries</h5>
+                                <p style="white-space: pre-wrap;">${lesson.discoveries}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${lesson.process ? `
+                            <div style="margin-bottom: 15px;">
+                                <h5 style="color: #e67e22; margin-bottom: 5px;">🔧 Specific Process</h5>
+                                <p style="white-space: pre-wrap; background: #f8f9fa; padding: 10px; border-radius: 5px;">${lesson.process}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${lesson.insights ? `
+                            <div style="margin-bottom: 15px;">
+                                <h5 style="color: #e67e22; margin-bottom: 5px;">💡 Key Insights</h5>
+                                <p style="white-space: pre-wrap;">${lesson.insights}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${lesson.homework ? `
+                            <div style="margin-bottom: 15px;">
+                                <h5 style="color: #e67e22; margin-bottom: 5px;">📋 Homework</h5>
+                                <p style="white-space: pre-wrap; background: #d4edda; padding: 10px; border-radius: 5px;">${lesson.homework}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${lesson.avoid ? `
+                            <div style="margin-bottom: 15px;">
+                                <h5 style="color: #e67e22; margin-bottom: 5px;">⚠️ What NOT to Do</h5>
+                                <p style="white-space: pre-wrap; background: #fff5f5; padding: 10px; border-radius: 5px;">${lesson.avoid}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${lesson.notes ? `
+                            <div style="margin-bottom: 15px;">
+                                <h5 style="color: #e67e22; margin-bottom: 5px;">📝 Additional Notes</h5>
+                                <p style="white-space: pre-wrap; color: #555;">${lesson.notes}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle lesson details
+        function toggleLessonDetails(index) {
+            const details = document.getElementById(`lesson-details-${index}`);
+            const button = event.target;
+            
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                button.textContent = '📖 Hide Details';
+            } else {
+                details.style.display = 'none';
+                button.textContent = '📖 View Full Details';
+            }
+        }
+
+        // Delete lesson
+        function deleteLesson(index) {
+            if (!confirm('Delete this lesson? This cannot be undone.')) return;
+            
+            appData.lessons.splice(index, 1);
+            saveData();
+            displayLessons();
+        }
+
+        // Clear lesson form
+        function clearLessonForm() {
+            document.getElementById('lesson-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('lesson-teacher').value = '';
+            document.getElementById('lesson-number').value = '';
+            document.getElementById('lesson-discoveries').value = '';
+            document.getElementById('lesson-process').value = '';
+            document.getElementById('lesson-insights').value = '';
+            document.getElementById('lesson-homework').value = '';
+            document.getElementById('lesson-avoid').value = '';
+            document.getElementById('lesson-focus').value = '';
+            document.getElementById('lesson-notes').value = '';
+            document.getElementById('lesson-video').value = '';
+        }
 
         // Toggle help sections
         function toggleHelp(helpId) {
