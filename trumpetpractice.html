@@ -2520,6 +2520,11 @@ This is the foundation of EVERYTHING we're working on.`,
             // Load GitHub settings
             loadGitHubSettings();
             
+            // Auto-pull from GitHub (smart - checks for conflicts first)
+            setTimeout(() => {
+                autoSyncOnLoad();
+            }, 1000); // Wait 1 second for page to fully load
+            
             console.log('Initialization complete');
         };
 
@@ -2918,6 +2923,91 @@ This is the foundation of EVERYTHING we're working on.`,
                 setTimeout(() => {
                     statusDiv.style.display = 'none';
                 }, 5000);
+            }
+        }
+
+        // Smart auto-pull on page load
+        async function autoSyncOnLoad() {
+            const { token, gistId } = getGitHubSettings();
+            
+            // Only auto-pull if we have credentials
+            if (!token || !gistId) {
+                console.log('No GitHub credentials - skipping auto-pull');
+                return;
+            }
+            
+            // Check if there's an unsaved draft
+            const draft = localStorage.getItem('dailyPracticeDraft');
+            if (draft) {
+                const draftData = JSON.parse(draft);
+                // If draft is recent (less than 1 hour old), don't auto-pull
+                const draftAge = Date.now() - new Date(draftData.lastSaved).getTime();
+                if (draftAge < 3600000) { // 1 hour in milliseconds
+                    console.log('Recent draft detected - skipping auto-pull to preserve your work');
+                    addToSyncLog('⚠️ Auto-pull skipped (unsaved draft detected)');
+                    return;
+                }
+            }
+            
+            // Check if local data was modified recently (last 5 minutes)
+            const lastLocalSave = localStorage.getItem('trumpetPracticeData');
+            if (lastLocalSave) {
+                const localData = JSON.parse(lastLocalSave);
+                // Check if any session/lesson/error has a recent timestamp
+                const hasRecentChanges = [
+                    ...(localData.dailySessions || []),
+                    ...(localData.lessons || []),
+                    ...(localData.errorTrilogies || [])
+                ].some(item => {
+                    if (!item.timestamp) return false;
+                    const age = Date.now() - new Date(item.timestamp).getTime();
+                    return age < 300000; // 5 minutes
+                });
+                
+                if (hasRecentChanges) {
+                    console.log('Recent local changes detected - skipping auto-pull');
+                    addToSyncLog('⚠️ Auto-pull skipped (recent local changes)');
+                    return;
+                }
+            }
+            
+            // Safe to auto-pull
+            addToSyncLog('🔄 Auto-pulling latest data from GitHub...');
+            
+            try {
+                const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const gist = await response.json();
+                    const fileContent = gist.files['trumpet-practice-data.json'].content;
+                    const remoteData = JSON.parse(fileContent);
+                    
+                    // Silently merge - use remote data
+                    appData = remoteData;
+                    localStorage.setItem('trumpetPracticeData', JSON.stringify(appData));
+                    
+                    addToSyncLog('✅ Auto-pull successful');
+                    
+                    // Refresh displays
+                    if (typeof displayRecentSessions === 'function') displayRecentSessions();
+                    if (typeof displayTodaysSessions === 'function') displayTodaysSessions();
+                    if (typeof displayLessons === 'function') displayLessons();
+                    if (typeof updateStats === 'function') updateStats();
+                    if (typeof initQuickTally === 'function') initQuickTally();
+                    
+                    console.log('Auto-pull completed successfully');
+                } else {
+                    console.log('Auto-pull failed:', response.status);
+                    addToSyncLog(`⚠️ Auto-pull failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.log('Auto-pull error:', error.message);
+                addToSyncLog(`⚠️ Auto-pull error: ${error.message}`);
             }
         }
 
