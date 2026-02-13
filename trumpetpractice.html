@@ -1537,8 +1537,12 @@ Brain builds new pathways overnight</pre>
             </div>
 
             <div class="form-group">
-                <label for="gist-id">Gist ID (leave empty for first-time setup):</label>
-                <input type="text" id="gist-id" placeholder="Will be auto-filled after first sync" style="font-family: monospace;" readonly>
+                <label for="gist-id">Gist ID (copy this to use on other devices):</label>
+                <input type="text" id="gist-id" placeholder="Will be auto-filled after first sync OR paste from other device" style="font-family: monospace;">
+                <p style="font-size: 0.9em; color: #7f8c8d; margin-top: 5px;">
+                    <strong>First device:</strong> Leave empty - will auto-fill after first sync<br>
+                    <strong>Other devices:</strong> Paste the Gist ID from your first device here before clicking "Pull Latest"
+                </p>
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -1558,6 +1562,16 @@ Brain builds new pathways overnight</pre>
                     <li><strong>View Gist:</strong> Visit <a href="https://gist.github.com" target="_blank">gist.github.com</a> to see your data</li>
                 </ul>
                 
+                <h4>🔧 Already Created Multiple Gists? Here's How to Fix:</h4>
+                <ol style="line-height: 1.8;">
+                    <li>Go to <a href="https://gist.github.com" target="_blank">gist.github.com</a></li>
+                    <li>Find the Gist with the most complete data (probably from iPad)</li>
+                    <li>Click on it and copy the ID from the URL (e.g., <code>abc123def456</code>)</li>
+                    <li>On your other device (Mac), paste that ID in the "Gist ID" field above</li>
+                    <li>Click "Pull Latest from GitHub"</li>
+                    <li>Delete the duplicate Gist from gist.github.com (optional cleanup)</li>
+                </ol>
+                
                 <h4>🔐 Security</h4>
                 <ul style="line-height: 1.8;">
                     <li>Token is stored in your browser's localStorage only</li>
@@ -1571,7 +1585,7 @@ Brain builds new pathways overnight</pre>
                     <li>Open this app on new device</li>
                     <li>Go to Settings</li>
                     <li>Paste the same token</li>
-                    <li>Paste the Gist ID (from here or from gist.github.com)</li>
+                    <li><strong>Paste the Gist ID</strong> (from your first device or from gist.github.com)</li>
                     <li>Click "Pull Latest from GitHub"</li>
                     <li>Done! All your data appears</li>
                 </ol>
