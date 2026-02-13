@@ -2719,11 +2719,18 @@ This is the foundation of EVERYTHING we're working on.`,
         }
 
         async function testConnection() {
-            const { token } = getGitHubSettings();
+            // Get value from form field first, fallback to localStorage
+            const tokenField = document.getElementById('github-token').value.trim();
+            const token = tokenField || localStorage.getItem('github_token');
             
             if (!token) {
                 alert('Please enter your GitHub token first');
                 return;
+            }
+            
+            // Save to localStorage
+            if (tokenField) {
+                localStorage.setItem('github_token', tokenField);
             }
 
             addToSyncLog('Testing connection...');
@@ -2818,12 +2825,20 @@ This is the foundation of EVERYTHING we're working on.`,
         }
 
         async function syncFromGist() {
-            const { token, gistId } = getGitHubSettings();
+            // Get values from form fields first, fallback to localStorage
+            const tokenField = document.getElementById('github-token').value.trim();
+            const gistIdField = document.getElementById('gist-id').value.trim();
+            
+            const token = tokenField || localStorage.getItem('github_token');
+            const gistId = gistIdField || localStorage.getItem('gist_id');
             
             if (!token || !gistId) {
                 alert('Please enter both GitHub token and Gist ID');
                 return;
             }
+            
+            // Save to localStorage for future use
+            saveGitHubSettings(token, gistId);
 
             addToSyncLog('Pulling from GitHub...');
             
