@@ -485,6 +485,7 @@
             <button onclick="showSection('lessons')">🎓 Lessons Log</button>
             <button onclick="showSection('progress')">Progress & Stats</button>
             <button onclick="showSection('reference')">Quick Reference</button>
+            <button onclick="showSection('settings')">⚙️ Settings</button>
             <button onclick="showSection('export')">Export/Import</button>
         </div>
 
@@ -594,16 +595,16 @@
                 </p>
             </div>
 
-            <h3>🌙 End of Day (5 minutes)</h3>
+            <h3>🌙 End of Session (5 minutes)</h3>
             <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #34495e;">
                 <ol style="line-height: 2;">
-                    <li><strong>Scroll to "End of Day Review"</strong> in Daily Practice</li>
+                    <li><strong>Scroll to "End of Session Review"</strong> in Daily Practice</li>
                     <li><strong>Describe the main error</strong> you experienced</li>
                     <li><strong>How it FELT</strong> (be specific - this is crucial)</li>
                     <li><strong>The drill that fixes it</strong></li>
                     <li><strong>The correct feeling</strong> (what you want instead)</li>
-                    <li><strong>Tomorrow's message</strong> to your brain</li>
-                    <li><strong>Click "Save Daily Session"</strong></li>
+                    <li><strong>Next session's message</strong> to your brain</li>
+                    <li><strong>Click "Save This Session"</strong></li>
                 </ol>
 
                 <p style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px;">
@@ -729,7 +730,11 @@
             
             <div class="form-group">
                 <label for="practice-date">Date:</label>
-                <input type="date" id="practice-date">
+                <input type="date" id="practice-date" onchange="autoSaveDraft()">
+            </div>
+
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f39c12;">
+                <p style="margin: 0;"><strong>💾 Auto-Save Active:</strong> Your work is automatically saved as you type. Safe to switch apps!</p>
             </div>
 
             <h3>Morning Check-In</h3>
@@ -752,31 +757,31 @@
             <div class="form-group">
                 <label>Today's Primary Focus:</label>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="focus-throat" value="throat">
+                    <input type="checkbox" id="focus-throat" value="throat" onchange="autoSaveDraft()">
                     <label for="focus-throat">Throat grab at turnaround</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="focus-meerkat" value="meerkat">
+                    <input type="checkbox" id="focus-meerkat" value="meerkat" onchange="autoSaveDraft()">
                     <label for="focus-meerkat">Meerkat/elevation</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="focus-passive" value="passive">
+                    <input type="checkbox" id="focus-passive" value="passive" onchange="autoSaveDraft()">
                     <label for="focus-passive">Passive release</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="focus-arms" value="arms">
+                    <input type="checkbox" id="focus-arms" value="arms" onchange="autoSaveDraft()">
                     <label for="focus-arms">Arm independence</label>
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="focus-other" value="other">
+                    <input type="checkbox" id="focus-other" value="other" onchange="autoSaveDraft()">
                     <label for="focus-other">Other</label>
-                    <input type="text" id="focus-other-text" placeholder="Specify..." style="width: 200px; margin-left: 10px;">
+                    <input type="text" id="focus-other-text" placeholder="Specify..." style="width: 200px; margin-left: 10px;" oninput="autoSaveDraft()">
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="daily-intention">One Sentence Intention:</label>
-                <input type="text" id="daily-intention" placeholder="Today I'm working on...">
+                <input type="text" id="daily-intention" placeholder="Today I'm working on..." oninput="autoSaveDraft()">
             </div>
 
             <h3>Left-Brain Block #1 (15 min) - Eyes Closed Work</h3>
@@ -832,42 +837,42 @@
 
             <div class="form-group">
                 <label for="lb1-working-on">What am I working on:</label>
-                <input type="text" id="lb1-working-on" placeholder="e.g., Eliminating throat grab at turnaround">
+                <input type="text" id="lb1-working-on" placeholder="e.g., Eliminating throat grab at turnaround" oninput="autoSaveDraft()">
             </div>
 
             <div class="form-group">
                 <label for="lb1-intention">Step 1 - Intention of Success:</label>
-                <textarea id="lb1-intention" placeholder="What do I want to achieve?"></textarea>
+                <textarea id="lb1-intention" placeholder="What do I want to achieve?" oninput="autoSaveDraft()"></textarea>
             </div>
 
             <div class="form-group">
                 <label for="lb1-error">Step 2 - Call Out the Error:</label>
-                <textarea id="lb1-error" placeholder="What's the possible error?"></textarea>
+                <textarea id="lb1-error" placeholder="What's the possible error?" oninput="autoSaveDraft()"></textarea>
             </div>
 
             <div class="form-group">
                 <label for="lb1-drill">Step 3 - The Drill:</label>
-                <textarea id="lb1-drill" placeholder="What's the opposing feeling drill?"></textarea>
+                <textarea id="lb1-drill" placeholder="What's the opposing feeling drill?" oninput="autoSaveDraft()"></textarea>
             </div>
 
             <div class="form-group">
                 <label for="lb1-message">Step 4 - Messaging:</label>
-                <input type="text" id="lb1-message" placeholder="Next time I _____, I will feel _____">
+                <input type="text" id="lb1-message" placeholder="Next time I _____, I will feel _____" oninput="autoSaveDraft()">
             </div>
 
             <div class="form-group">
                 <label for="lb1-reps">Reps Completed:</label>
-                <input type="number" id="lb1-reps" min="0" value="0">
+                <input type="number" id="lb1-reps" min="0" value="0" oninput="autoSaveDraft()">
             </div>
 
             <div class="form-group">
                 <label for="lb1-success">Success Ratio (e.g., 7/10):</label>
-                <input type="text" id="lb1-success" placeholder="7/10">
+                <input type="text" id="lb1-success" placeholder="7/10" oninput="autoSaveDraft()">
             </div>
 
             <div class="form-group">
                 <label for="lb1-notes">Notes:</label>
-                <textarea id="lb1-notes" placeholder="Any observations..."></textarea>
+                <textarea id="lb1-notes" placeholder="Any observations..." oninput="autoSaveDraft()"></textarea>
             </div>
 
             <h3>Right-Brain Block #1 (15 min) - Just Play</h3>
@@ -913,27 +918,27 @@
 
             <div class="form-group">
                 <label for="rb1-played">What I Played:</label>
-                <input type="text" id="rb1-played" placeholder="Scales, tunes, exercises...">
+                <input type="text" id="rb1-played" placeholder="Scales, tunes, exercises..." oninput="autoSaveDraft()">
             </div>
 
             <div class="form-group">
                 <label for="rb1-errors">Errors I Noticed (observe only):</label>
-                <textarea id="rb1-errors" placeholder="Don't fix, just notice..."></textarea>
+                <textarea id="rb1-errors" placeholder="Don't fix, just notice..." oninput="autoSaveDraft()"></textarea>
             </div>
 
             <div class="form-group">
                 <label for="rb1-good">What Felt Good:</label>
-                <textarea id="rb1-good" placeholder="Moments of ease..."></textarea>
+                <textarea id="rb1-good" placeholder="Moments of ease..." oninput="autoSaveDraft()"></textarea>
             </div>
 
-            <h3>End of Day Review</h3>
+            <h3>End of Session Review</h3>
 
-            <!-- HELP: End of Day -->
-            <div class="help-toggle" onclick="toggleHelp('help-endofday')">
-                <h4><span class="arrow">▶</span> 📖 How to do End of Day Review</h4>
+            <!-- HELP: End of Session -->
+            <div class="help-toggle" onclick="toggleHelp('help-endofsession')">
+                <h4><span class="arrow">▶</span> 📖 How to do End of Session Review</h4>
             </div>
-            <div id="help-endofday" class="help-content">
-                <p><strong>Purpose:</strong> Consolidate today's learning and prime your brain for overnight processing.</p>
+            <div id="help-endofsession" class="help-content">
+                <p><strong>Purpose:</strong> Consolidate this session's learning and prime your brain for processing.</p>
                 
                 <p><strong>The process:</strong></p>
                 <ol>
@@ -943,7 +948,7 @@
                     </li>
                     <li><strong>The opposing drill:</strong> What drill creates the opposite feeling?</li>
                     <li><strong>The correct feeling:</strong> What do you want instead?</li>
-                    <li><strong>Tomorrow's message:</strong> What will you tell your brain tomorrow?
+                    <li><strong>Tomorrow's message:</strong> What will you tell your brain next session?
                         <ul><li>Example: "When I reach top of breath, throat stays open"</li></ul>
                     </li>
                 </ol>
@@ -962,28 +967,28 @@
             </div>
 
             <div class="form-group">
-                <label for="eod-error">Error I experienced today:</label>
-                <textarea id="eod-error"></textarea>
+                <label for="eod-error">Error I experienced this session:</label>
+                <textarea id="eod-error" oninput="autoSaveDraft()"></textarea>
             </div>
 
             <div class="form-group">
                 <label for="eod-feeling">How it felt (be specific):</label>
-                <textarea id="eod-feeling"></textarea>
+                <textarea id="eod-feeling" oninput="autoSaveDraft()"></textarea>
             </div>
 
             <div class="form-group">
                 <label for="eod-drill">The opposing drill that fixes it:</label>
-                <textarea id="eod-drill"></textarea>
+                <textarea id="eod-drill" oninput="autoSaveDraft()"></textarea>
             </div>
 
             <div class="form-group">
                 <label for="eod-correct">The correct feeling:</label>
-                <textarea id="eod-correct"></textarea>
+                <textarea id="eod-correct" oninput="autoSaveDraft()"></textarea>
             </div>
 
             <div class="form-group">
-                <label for="eod-tomorrow">Tomorrow's message to my brain:</label>
-                <input type="text" id="eod-tomorrow" placeholder="When I _____, I will _____">
+                <label for="eod-tomorrow">Next session's message to my brain:</label>
+                <input type="text" id="eod-tomorrow" placeholder="When I _____, I will _____" oninput="autoSaveDraft()">
             </div>
 
             <button onclick="saveDailySession()">💾 Save This Session</button>
@@ -1511,6 +1516,73 @@ Brain builds new pathways overnight</pre>
             </table>
         </div>
 
+        <!-- SETTINGS SECTION -->
+        <div id="settings" class="section">
+            <h2>⚙️ Settings</h2>
+            
+            <h3>GitHub Gist Sync</h3>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">Sync your data across all devices using GitHub Gist. Your data is stored in your private GitHub Gist and syncs automatically.</p>
+            
+            <div id="sync-status" class="alert" style="display: none;">
+                <strong id="sync-status-text"></strong>
+            </div>
+
+            <div class="form-group">
+                <label for="github-token">GitHub Personal Access Token:</label>
+                <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="font-family: monospace;">
+                <p style="font-size: 0.9em; color: #7f8c8d; margin-top: 5px;">
+                    Create one at: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>
+                    Only needs <strong>gist</strong> permission. Token is stored locally only.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label for="gist-id">Gist ID (leave empty for first-time setup):</label>
+                <input type="text" id="gist-id" placeholder="Will be auto-filled after first sync" style="font-family: monospace;" readonly>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="saveSettingsAndSync()">💾 Save Settings & Sync Now</button>
+                <button class="secondary" onclick="syncFromGist()">⬇️ Pull Latest from GitHub</button>
+                <button class="secondary" onclick="syncToGist()">⬆️ Push to GitHub</button>
+                <button class="secondary" onclick="testConnection()">🔌 Test Connection</button>
+            </div>
+
+            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db;">
+                <h4 style="margin-top: 0;">ℹ️ How Sync Works</h4>
+                <ul style="line-height: 1.8;">
+                    <li><strong>Auto-sync:</strong> Every time you save anything, it syncs to GitHub automatically</li>
+                    <li><strong>Cross-device:</strong> Use the same token on all devices to keep data in sync</li>
+                    <li><strong>Private:</strong> Your Gist is private by default - only you can see it</li>
+                    <li><strong>Backup:</strong> Your data is safely stored on GitHub's servers</li>
+                    <li><strong>View Gist:</strong> Visit <a href="https://gist.github.com" target="_blank">gist.github.com</a> to see your data</li>
+                </ul>
+                
+                <h4>🔐 Security</h4>
+                <ul style="line-height: 1.8;">
+                    <li>Token is stored in your browser's localStorage only</li>
+                    <li>Never sent anywhere except GitHub API</li>
+                    <li>Revoke token anytime at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></li>
+                    <li>Still export manual backups monthly as insurance</li>
+                </ul>
+
+                <h4>📱 Setup on New Device</h4>
+                <ol style="line-height: 1.8;">
+                    <li>Open this app on new device</li>
+                    <li>Go to Settings</li>
+                    <li>Paste the same token</li>
+                    <li>Paste the Gist ID (from here or from gist.github.com)</li>
+                    <li>Click "Pull Latest from GitHub"</li>
+                    <li>Done! All your data appears</li>
+                </ol>
+            </div>
+
+            <h3 style="margin-top: 40px;">Sync Log</h3>
+            <div id="sync-log" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 0.85em; max-height: 200px; overflow-y: auto;">
+                No sync activity yet
+            </div>
+        </div>
+
         <!-- EXPORT/IMPORT SECTION -->
         <div id="export" class="section">
             <h2>Export & Import Data</h2>
@@ -1764,8 +1836,17 @@ This is the foundation of EVERYTHING we're working on.`,
         }
 
         // Save data to localStorage
+        // Save data to localStorage
         function saveData() {
             localStorage.setItem('trumpetPracticeData', JSON.stringify(appData));
+            
+            // Auto-sync to GitHub if configured
+            const { token, gistId } = getGitHubSettings();
+            if (token && gistId) {
+                syncToGist().catch(err => {
+                    console.error('Auto-sync failed:', err);
+                });
+            }
         }
 
         // Show/hide sections
@@ -1782,6 +1863,8 @@ This is the foundation of EVERYTHING we're working on.`,
         }
 
         // Quick Tally functions (at top of page)
+        let tallyDebounceTimer;
+        
         function initQuickTally() {
             console.log('initQuickTally called');
             const tallyContainer = document.getElementById('quick-tally');
@@ -1827,7 +1910,18 @@ This is the foundation of EVERYTHING we're working on.`,
             
             appData.quickTally.count = appData.quickTally.marks.length;
             updateQuickTallyCount();
-            saveData();
+            
+            // Save to localStorage immediately
+            localStorage.setItem('trumpetPracticeData', JSON.stringify(appData));
+            
+            // Debounce GitHub sync - wait 3 seconds after last click
+            clearTimeout(tallyDebounceTimer);
+            tallyDebounceTimer = setTimeout(() => {
+                const { token, gistId } = getGitHubSettings();
+                if (token && gistId) {
+                    syncToGist().catch(err => console.error('Tally sync failed:', err));
+                }
+            }, 3000);
         }
 
         function updateQuickTallyCount() {
@@ -1869,18 +1963,113 @@ This is the foundation of EVERYTHING we're working on.`,
                 customInput.style.display = 'none';
             }
             
-            saveData();
+            saveData(); // Sync to GitHub
         }
 
         function saveQuickMessage() {
             appData.quickTally.message = document.getElementById('quick-message').value;
-            saveData();
+            saveData(); // Sync to GitHub
         }
 
         function updateQuickTally() {
             initQuickTally();
             document.getElementById('quick-drill-select').value = appData.quickTally.drill || '';
             document.getElementById('quick-message').value = appData.quickTally.message || '';
+        }
+
+        // Auto-save draft as user types
+        let autoSaveTimeout;
+        function autoSaveDraft() {
+            // Debounce - wait 1 second after user stops typing
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                const draft = {
+                    date: document.getElementById('practice-date').value || new Date().toISOString().split('T')[0],
+                    focus: Array.from(document.querySelectorAll('input[id^="focus-"]:checked')).map(cb => cb.value),
+                    focusOther: document.getElementById('focus-other-text').value,
+                    intention: document.getElementById('daily-intention').value,
+                    leftBrain1: {
+                        workingOn: document.getElementById('lb1-working-on').value,
+                        intention: document.getElementById('lb1-intention').value,
+                        error: document.getElementById('lb1-error').value,
+                        drill: document.getElementById('lb1-drill').value,
+                        message: document.getElementById('lb1-message').value,
+                        reps: document.getElementById('lb1-reps').value,
+                        success: document.getElementById('lb1-success').value,
+                        notes: document.getElementById('lb1-notes').value
+                    },
+                    rightBrain1: {
+                        played: document.getElementById('rb1-played').value,
+                        errors: document.getElementById('rb1-errors').value,
+                        good: document.getElementById('rb1-good').value
+                    },
+                    endOfDay: {
+                        error: document.getElementById('eod-error').value,
+                        feeling: document.getElementById('eod-feeling').value,
+                        drill: document.getElementById('eod-drill').value,
+                        correct: document.getElementById('eod-correct').value,
+                        tomorrow: document.getElementById('eod-tomorrow').value
+                    },
+                    lastSaved: new Date().toISOString()
+                };
+                
+                localStorage.setItem('dailyPracticeDraft', JSON.stringify(draft));
+                console.log('Draft auto-saved at', new Date().toLocaleTimeString());
+            }, 1000);
+        }
+
+        // Load draft on page load
+        function loadDraft() {
+            const draft = localStorage.getItem('dailyPracticeDraft');
+            if (!draft) return;
+            
+            try {
+                const data = JSON.parse(draft);
+                
+                // Restore all form values
+                document.getElementById('practice-date').value = data.date || '';
+                document.getElementById('daily-intention').value = data.intention || '';
+                document.getElementById('focus-other-text').value = data.focusOther || '';
+                
+                // Restore checkboxes
+                if (data.focus) {
+                    data.focus.forEach(val => {
+                        const checkbox = document.querySelector(`input[value="${val}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+                
+                // Left brain
+                document.getElementById('lb1-working-on').value = data.leftBrain1?.workingOn || '';
+                document.getElementById('lb1-intention').value = data.leftBrain1?.intention || '';
+                document.getElementById('lb1-error').value = data.leftBrain1?.error || '';
+                document.getElementById('lb1-drill').value = data.leftBrain1?.drill || '';
+                document.getElementById('lb1-message').value = data.leftBrain1?.message || '';
+                document.getElementById('lb1-reps').value = data.leftBrain1?.reps || '0';
+                document.getElementById('lb1-success').value = data.leftBrain1?.success || '';
+                document.getElementById('lb1-notes').value = data.leftBrain1?.notes || '';
+                
+                // Right brain
+                document.getElementById('rb1-played').value = data.rightBrain1?.played || '';
+                document.getElementById('rb1-errors').value = data.rightBrain1?.errors || '';
+                document.getElementById('rb1-good').value = data.rightBrain1?.good || '';
+                
+                // End of day
+                document.getElementById('eod-error').value = data.endOfDay?.error || '';
+                document.getElementById('eod-feeling').value = data.endOfDay?.feeling || '';
+                document.getElementById('eod-drill').value = data.endOfDay?.drill || '';
+                document.getElementById('eod-correct').value = data.endOfDay?.correct || '';
+                document.getElementById('eod-tomorrow').value = data.endOfDay?.tomorrow || '';
+                
+                console.log('Draft restored from', new Date(data.lastSaved).toLocaleString());
+            } catch (e) {
+                console.error('Error loading draft:', e);
+            }
+        }
+
+        // Clear draft after successful save
+        function clearDraft() {
+            localStorage.removeItem('dailyPracticeDraft');
         }
 
         // Save daily session
@@ -1918,6 +2107,9 @@ This is the foundation of EVERYTHING we're working on.`,
 
             appData.dailySessions.push(session);
             saveData();
+            
+            // Clear the draft since we saved successfully
+            clearDraft();
             
             // Show success message
             const alert = document.getElementById('save-alert');
@@ -1980,6 +2172,9 @@ This is the foundation of EVERYTHING we're working on.`,
             
             // Set date to today
             document.getElementById('practice-date').value = new Date().toISOString().split('T')[0];
+            
+            // Clear the auto-saved draft
+            clearDraft();
         }
 
         // Save weekly review
@@ -2304,6 +2499,13 @@ This is the foundation of EVERYTHING we're working on.`,
             document.getElementById('practice-date').value = today;
             document.getElementById('effortless-date').value = today;
             document.getElementById('lesson-date').value = today;
+            
+            // Load any saved draft
+            loadDraft();
+            
+            // Load GitHub settings
+            loadGitHubSettings();
+            
             console.log('Initialization complete');
         };
 
@@ -2474,6 +2676,242 @@ This is the foundation of EVERYTHING we're working on.`,
             document.getElementById('lesson-focus').value = '';
             document.getElementById('lesson-notes').value = '';
             document.getElementById('lesson-video').value = '';
+        }
+
+        // GitHub Gist Sync Functions
+        let syncLog = [];
+        
+        function addToSyncLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            syncLog.unshift(`[${timestamp}] ${message}`);
+            if (syncLog.length > 20) syncLog.pop();
+            
+            const logDiv = document.getElementById('sync-log');
+            if (logDiv) {
+                logDiv.innerHTML = syncLog.join('\n') || 'No sync activity yet';
+            }
+            console.log(`[SYNC] ${message}`);
+        }
+
+        function getGitHubSettings() {
+            const token = localStorage.getItem('github_token');
+            const gistId = localStorage.getItem('gist_id');
+            return { token, gistId };
+        }
+
+        function saveGitHubSettings(token, gistId) {
+            if (token) localStorage.setItem('github_token', token);
+            if (gistId) localStorage.setItem('gist_id', gistId);
+        }
+
+        async function testConnection() {
+            const { token } = getGitHubSettings();
+            
+            if (!token) {
+                alert('Please enter your GitHub token first');
+                return;
+            }
+
+            addToSyncLog('Testing connection...');
+            
+            try {
+                const response = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    addToSyncLog(`✅ Connected as ${user.login}`);
+                    showSyncStatus(`✅ Connected to GitHub as ${user.login}`, 'success');
+                } else {
+                    addToSyncLog('❌ Connection failed - check token');
+                    showSyncStatus('❌ Connection failed - check your token', 'error');
+                }
+            } catch (error) {
+                addToSyncLog(`❌ Error: ${error.message}`);
+                showSyncStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function syncToGist() {
+            const { token, gistId } = getGitHubSettings();
+            
+            if (!token) {
+                return false; // Silent fail for auto-sync
+            }
+
+            addToSyncLog('Syncing to GitHub...');
+            
+            try {
+                const gistData = {
+                    description: 'Trumpet Practice Tracker Data',
+                    public: false,
+                    files: {
+                        'trumpet-practice-data.json': {
+                            content: JSON.stringify(appData, null, 2)
+                        }
+                    }
+                };
+
+                let response;
+                if (gistId) {
+                    // Update existing gist
+                    response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(gistData)
+                    });
+                } else {
+                    // Create new gist
+                    response = await fetch('https://api.github.com/gists', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(gistData)
+                    });
+                }
+
+                if (response.ok) {
+                    const gist = await response.json();
+                    saveGitHubSettings(token, gist.id);
+                    const gistIdField = document.getElementById('gist-id');
+                    if (gistIdField) gistIdField.value = gist.id;
+                    
+                    const now = new Date().toLocaleString();
+                    localStorage.setItem('last_sync', now);
+                    
+                    addToSyncLog(`✅ Synced (ID: ${gist.id.substring(0, 8)}...)`);
+                    return true;
+                } else {
+                    const error = await response.json();
+                    addToSyncLog(`❌ Sync failed: ${error.message}`);
+                    return false;
+                }
+            } catch (error) {
+                addToSyncLog(`❌ Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function syncFromGist() {
+            const { token, gistId } = getGitHubSettings();
+            
+            if (!token || !gistId) {
+                alert('Please enter both GitHub token and Gist ID');
+                return;
+            }
+
+            addToSyncLog('Pulling from GitHub...');
+            
+            try {
+                const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const gist = await response.json();
+                    const fileContent = gist.files['trumpet-practice-data.json'].content;
+                    const data = JSON.parse(fileContent);
+                    
+                    if (confirm('Replace local data with data from GitHub?\n\nClick OK to replace, Cancel to keep local data.')) {
+                        appData = data;
+                        localStorage.setItem('trumpetPracticeData', JSON.stringify(appData));
+                        location.reload();
+                    }
+                    
+                    addToSyncLog('✅ Pulled from GitHub');
+                    showSyncStatus('✅ Data loaded from GitHub', 'success');
+                } else {
+                    const error = await response.json();
+                    addToSyncLog(`❌ Pull failed: ${error.message}`);
+                    showSyncStatus(`❌ Pull failed: ${error.message}`, 'error');
+                }
+            } catch (error) {
+                addToSyncLog(`❌ Error: ${error.message}`);
+                showSyncStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function saveSettingsAndSync() {
+            const token = document.getElementById('github-token').value.trim();
+            
+            if (!token) {
+                alert('Please enter your GitHub token');
+                return;
+            }
+
+            if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+                alert('Token should start with "ghp_" or "github_pat_". Please check your token.');
+                return;
+            }
+
+            saveGitHubSettings(token, null);
+            addToSyncLog('Settings saved');
+            showSyncStatus('⏳ Syncing to GitHub...', 'info');
+            
+            // Do initial sync
+            syncToGist().then(success => {
+                if (success) {
+                    showSyncStatus('✅ Settings saved and synced to GitHub!', 'success');
+                }
+            });
+        }
+
+        function showSyncStatus(message, type) {
+            const statusDiv = document.getElementById('sync-status');
+            const statusText = document.getElementById('sync-status-text');
+            
+            if (statusDiv && statusText) {
+                statusText.textContent = message;
+                statusDiv.className = 'alert';
+                if (type === 'error') {
+                    statusDiv.style.background = '#fff5f5';
+                    statusDiv.style.borderColor = '#e74c3c';
+                } else {
+                    statusDiv.style.background = '#d4edda';
+                    statusDiv.style.borderColor = '#27ae60';
+                }
+                statusDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Load GitHub settings on page load
+        function loadGitHubSettings() {
+            const { token, gistId } = getGitHubSettings();
+            const lastSync = localStorage.getItem('last_sync');
+            
+            const tokenField = document.getElementById('github-token');
+            const gistIdField = document.getElementById('gist-id');
+            
+            if (tokenField && token) {
+                tokenField.value = token;
+            }
+            
+            if (gistIdField && gistId) {
+                gistIdField.value = gistId;
+                addToSyncLog(`Gist ID: ${gistId.substring(0, 8)}...`);
+            }
+            
+            if (lastSync) {
+                addToSyncLog(`Last sync: ${lastSync}`);
+            }
         }
 
         // Toggle help sections
