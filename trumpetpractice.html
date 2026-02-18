@@ -479,6 +479,7 @@
 
         <div class="nav">
             <button onclick="showSection('howto')" class="active">📖 How to Use</button>
+            <button onclick="showSection('mission')">✨ Mission Statement</button>
             <button onclick="showSection('daily')">Daily Practice</button>
             <button onclick="showSection('weekly')">Weekly Review</button>
             <button onclick="showSection('errors')">Error Trilogy</button>
@@ -721,6 +722,55 @@
                 <button onclick="showSection('daily')" style="font-size: 1.1em; padding: 15px 30px;">
                     Let's Start → Daily Practice
                 </button>
+            </div>
+        </div>
+
+        <!-- MISSION STATEMENT SECTION -->
+        <div id="mission" class="section">
+            <h2>✨ My Mission Statement</h2>
+            
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; margin-bottom: 30px; text-align: center;">
+                <p style="font-size: 1.2em; margin: 0; line-height: 1.8;">
+                    <strong>This is YOUR space.</strong><br>
+                    Your vision. Your inspiration. Your deepest musical desires.<br>
+                    Write from the heart. Return here when you need to remember why.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <textarea id="mission-statement" 
+                          oninput="saveMissionStatement()" 
+                          placeholder="Write your mission statement here...
+
+What does music mean to you?
+What do you want to achieve as a musician?
+How do you want to feel when you play?
+What impact do you want to have?
+What inspires you?
+What are your deepest musical desires?
+
+This is a living document - update it as you grow..."
+                          style="min-height: 500px; font-size: 1.1em; line-height: 1.8; padding: 20px;"></textarea>
+            </div>
+
+            <p style="color: #7f8c8d; font-style: italic; margin-top: 10px;">
+                💾 Auto-saves as you type • Last saved: <span id="mission-last-saved">Never</span>
+            </p>
+
+            <div class="help-toggle" onclick="toggleHelp('help-mission-prompts')" style="margin-top: 30px;">
+                <h4><span class="arrow">▶</span> 💡 Need inspiration? Click for writing prompts</h4>
+            </div>
+            <div id="help-mission-prompts" class="help-content">
+                <h4 style="margin-top: 0; color: #e67e22;">Questions to Get You Started:</h4>
+                <ul style="line-height: 1.8;">
+                    <li>What made you fall in love with music?</li>
+                    <li>When you play perfectly, how does it feel?</li>
+                    <li>What do you want audiences to experience when they hear you?</li>
+                    <li>What would you tell your future self 10 years from now?</li>
+                    <li>What legacy do you want to leave as a musician?</li>
+                    <li>In moments of frustration, what do you need to remember?</li>
+                    <li>What does "success" mean to you as a musician?</li>
+                </ul>
             </div>
         </div>
 
@@ -1616,6 +1666,7 @@ Brain builds new pathways overnight</pre>
             weeklyReviews: [],
             errorTrilogies: [],
             effortlessMoments: [],
+            missionStatement: '',
             lessons: [
                 {
                     date: "2025-01-15",
@@ -1775,6 +1826,7 @@ This is the foundation of EVERYTHING we're working on.`,
                 if (!appData.errorTrilogies) appData.errorTrilogies = [];
                 if (!appData.effortlessMoments) appData.effortlessMoments = [];
                 if (!appData.lessons) appData.lessons = [];
+                if (!appData.missionStatement) appData.missionStatement = '';
                 if (!appData.sliders) appData.sliders = { throat: 0, meerkat: 0, passive: 0, arms: 0 };
                 
                 // Ensure quickTally exists and has marks array
@@ -1970,6 +2022,39 @@ This is the foundation of EVERYTHING we're working on.`,
             initQuickTally();
             document.getElementById('quick-drill-select').value = appData.quickTally.drill || '';
             document.getElementById('quick-message').value = appData.quickTally.message || '';
+        }
+
+        // Mission Statement functions
+        let missionSaveTimeout;
+        
+        function saveMissionStatement() {
+            // Debounce - wait 2 seconds after user stops typing
+            clearTimeout(missionSaveTimeout);
+            missionSaveTimeout = setTimeout(() => {
+                appData.missionStatement = document.getElementById('mission-statement').value;
+                saveData();
+                
+                // Update last saved timestamp
+                const now = new Date().toLocaleString('en-GB', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    day: 'numeric',
+                    month: 'short'
+                });
+                const lastSavedEl = document.getElementById('mission-last-saved');
+                if (lastSavedEl) {
+                    lastSavedEl.textContent = now;
+                }
+                
+                console.log('Mission statement saved');
+            }, 2000);
+        }
+        
+        function loadMissionStatement() {
+            const missionEl = document.getElementById('mission-statement');
+            if (missionEl && appData.missionStatement) {
+                missionEl.value = appData.missionStatement;
+            }
         }
 
         // Show/hide practice forms based on type selection
@@ -2526,6 +2611,9 @@ This is the foundation of EVERYTHING we're working on.`,
             
             // Load any saved draft
             loadDraft();
+            
+            // Load mission statement
+            loadMissionStatement();
             
             // Load GitHub settings
             loadGitHubSettings();
