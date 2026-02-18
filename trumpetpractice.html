@@ -897,9 +897,20 @@
                     <label for="rb1-good">What Felt Good:</label>
                     <textarea id="rb1-good" placeholder="Moments of ease..." oninput="autoSaveDraft()"></textarea>
                 </div>
+
+                <h3>Session Notes</h3>
+                <div class="form-group">
+                    <label for="rb1-notes">Overall thoughts/observations:</label>
+                    <textarea id="rb1-notes" placeholder="Any final thoughts about this session..." oninput="autoSaveDraft()" style="min-height: 100px;"></textarea>
+                </div>
+
+                <button onclick="saveDailySession()">💾 Save This Session</button>
+                <button class="secondary" onclick="clearDailyForm()">Clear Form for New Session</button>
+
+                <div id="save-alert-rb" style="display: none;" class="alert">Session saved! You can log another session today if you practice again.</div>
             </div>
 
-            <!-- End of Session Review (always shown after selecting type) -->
+            <!-- End of Session Review (only for left-brain) -->
             <div id="end-of-session-form" style="display: none;">
                 <h3>End of Session Review</h3>
 
@@ -2007,7 +2018,8 @@ This is the foundation of EVERYTHING we're working on.`,
                     rightBrain1: {
                         played: document.getElementById('rb1-played').value,
                         errors: document.getElementById('rb1-errors').value,
-                        good: document.getElementById('rb1-good').value
+                        good: document.getElementById('rb1-good').value,
+                        notes: document.getElementById('rb1-notes').value
                     },
                     endOfDay: {
                         error: document.getElementById('eod-error').value,
@@ -2055,6 +2067,7 @@ This is the foundation of EVERYTHING we're working on.`,
                 document.getElementById('rb1-played').value = data.rightBrain1?.played || '';
                 document.getElementById('rb1-errors').value = data.rightBrain1?.errors || '';
                 document.getElementById('rb1-good').value = data.rightBrain1?.good || '';
+                document.getElementById('rb1-notes').value = data.rightBrain1?.notes || '';
                 
                 // End of day
                 document.getElementById('eod-error').value = data.endOfDay?.error || '';
@@ -2093,7 +2106,8 @@ This is the foundation of EVERYTHING we're working on.`,
                 rightBrain1: {
                     played: document.getElementById('rb1-played').value,
                     errors: document.getElementById('rb1-errors').value,
-                    good: document.getElementById('rb1-good').value
+                    good: document.getElementById('rb1-good').value,
+                    notes: document.getElementById('rb1-notes').value
                 },
                 endOfDay: {
                     error: document.getElementById('eod-error').value,
@@ -2112,9 +2126,13 @@ This is the foundation of EVERYTHING we're working on.`,
             clearDraft();
             
             // Show success message
-            const alert = document.getElementById('save-alert');
-            alert.style.display = 'block';
-            setTimeout(() => alert.style.display = 'none', 3000);
+            const practiceType = document.getElementById('practice-type').value;
+            const alertId = practiceType === 'right-brain' ? 'save-alert-rb' : 'save-alert';
+            const alert = document.getElementById(alertId);
+            if (alert) {
+                alert.style.display = 'block';
+                setTimeout(() => alert.style.display = 'none', 3000);
+            }
 
             displayRecentSessions();
             displayTodaysSessions();
