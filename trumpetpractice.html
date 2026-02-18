@@ -737,201 +737,171 @@
                 <p style="margin: 0;"><strong>💾 Auto-Save Active:</strong> Your work is automatically saved as you type. Safe to switch apps!</p>
             </div>
 
-            <h3>Morning Check-In</h3>
-
-            <!-- HELP: Morning Check-In -->
-            <div class="help-toggle" onclick="toggleHelp('help-morning')">
-                <h4><span class="arrow">▶</span> 📖 How to do Morning Check-In</h4>
+            <div class="form-group">
+                <label for="practice-type">What type of practice is this?</label>
+                <select id="practice-type" onchange="showPracticeForm()" style="font-size: 1.1em; padding: 10px;">
+                    <option value="">-- Select Practice Type --</option>
+                    <option value="left-brain">🧠 Left-Brain Block (Systematic drilling)</option>
+                    <option value="right-brain">🎵 Right-Brain Block (Just play & observe)</option>
+                </select>
             </div>
-            <div id="help-morning" class="help-content">
-                <p><strong>Purpose:</strong> Set your intention for the day. Pick ONE focus - don't try to fix everything at once.</p>
-                <ol>
-                    <li><strong>Choose your primary focus</strong> - What's the main error you're working on?</li>
-                    <li><strong>Write one clear sentence</strong> - "Today I'm eliminating [specific error]"</li>
-                </ol>
-                <div class="help-tip">
-                    <strong>Remember:</strong> You can't work on 4 things at once. Pick the most urgent error from your Error Trilogy. Once it's "locked in," move to the next one.
+
+            <!-- Left-Brain Form (hidden by default) -->
+            <div id="left-brain-form" style="display: none;">
+                <h3>🧠 Left-Brain Block - Eyes Closed Work</h3>
+
+                <!-- HELP: Left-Brain Block -->
+                <div class="help-toggle" onclick="toggleHelp('help-leftbrain')">
+                    <h4><span class="arrow">▶</span> 📖 How to do Left-Brain Practice</h4>
+                </div>
+                <div id="help-leftbrain" class="help-content">
+                    <p><strong>Purpose:</strong> Systematic error correction through feeling-based drills. This is where you CHANGE YOUR BRAIN.</p>
+                    
+                    <p><strong>The 6-Step Process:</strong></p>
+                    <ol>
+                        <li><strong>What am I working on?</strong> - State your ONE focus clearly</li>
+                        <li><strong>Step 1 - Intention:</strong> What do you want to achieve?
+                            <ul><li>Example: "I want throat to stay open through the turnaround"</li></ul>
+                        </li>
+                        <li><strong>Step 2 - Call Out the Error:</strong> What's the possible error?
+                            <ul><li>Example: "Throat/back of tongue locks at top of breath"</li></ul>
+                        </li>
+                        <li><strong>Step 3 - The Drill:</strong> What creates the opposite feeling?
+                            <ul><li>Example: "Finger between teeth - breathe to top - turnaround - throat STAYS open - passive drop"</li></ul>
+                        </li>
+                        <li><strong>Step 4 - Messaging:</strong> Create your mantra
+                            <ul><li>Example: "Next time I reach the top of breath, I will keep throat open like the drill"</li></ul>
+                        </li>
+                        <li><strong>Step 5 - Execute:</strong> DO THE DRILL
+                            <ul>
+                                <li><strong>EYES CLOSED</strong> for most reps</li>
+                                <li>Spotlight on the target area (throat, belly, etc.)</li>
+                                <li>After each rep: "Did I get what I want?"</li>
+                                <li>YES → Repeat (green loop) - build the mile-and-mile</li>
+                                <li>NO → Back to Step 1 (diagnostic) - why did it fail?</li>
+                            </ul>
+                        </li>
+                    </ol>
+
+                    <div class="help-tip">
+                        <strong>Critical:</strong> This is NOT random practice. Each rep has CLEAR INTENTION. You're showing your brain: "This is the feeling I want." The brain learns from repetition + clear messaging.
+                    </div>
+
+                    <p><strong>How to track:</strong></p>
+                    <ul>
+                        <li><strong>Reps:</strong> How many times did you do the drill?</li>
+                        <li><strong>Success Ratio:</strong> How many were correct? (e.g., 7/10 means 7 good, 3 had the error)</li>
+                        <li><strong>Notes:</strong> Any observations, breakthroughs, or patterns</li>
+                    </ul>
+
+                    <div class="help-tip">
+                        <strong>When to stop:</strong> When you get 8-10 correct reps in a row, you've built enough for today. Don't drill to exhaustion - your brain consolidates this overnight.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="lb1-working-on">What am I working on:</label>
+                    <input type="text" id="lb1-working-on" placeholder="e.g., Eliminating throat grab at turnaround" oninput="autoSaveDraft()">
+                </div>
+
+                <div class="form-group">
+                    <label for="lb1-intention">Step 1 - Intention of Success:</label>
+                    <textarea id="lb1-intention" placeholder="What do I want to achieve?" oninput="autoSaveDraft()"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="lb1-error">Step 2 - Call Out the Error:</label>
+                    <textarea id="lb1-error" placeholder="What's the possible error?" oninput="autoSaveDraft()"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="lb1-drill">Step 3 - The Drill:</label>
+                    <textarea id="lb1-drill" placeholder="What's the opposing feeling drill?" oninput="autoSaveDraft()"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="lb1-message">Step 4 - Messaging:</label>
+                    <input type="text" id="lb1-message" placeholder="Next time I _____, I will feel _____" oninput="autoSaveDraft()">
+                </div>
+
+                <div class="form-group">
+                    <label for="lb1-reps">Reps Completed:</label>
+                    <input type="number" id="lb1-reps" min="0" value="0" oninput="autoSaveDraft()">
+                </div>
+
+                <div class="form-group">
+                    <label for="lb1-success">Success Ratio (e.g., 7/10):</label>
+                    <input type="text" id="lb1-success" placeholder="7/10" oninput="autoSaveDraft()">
+                </div>
+
+                <div class="form-group">
+                    <label for="lb1-notes">Notes:</label>
+                    <textarea id="lb1-notes" placeholder="Any observations..." oninput="autoSaveDraft()"></textarea>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>Today's Primary Focus:</label>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="focus-throat" value="throat" onchange="autoSaveDraft()">
-                    <label for="focus-throat">Throat grab at turnaround</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="focus-meerkat" value="meerkat" onchange="autoSaveDraft()">
-                    <label for="focus-meerkat">Meerkat/elevation</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="focus-passive" value="passive" onchange="autoSaveDraft()">
-                    <label for="focus-passive">Passive release</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="focus-arms" value="arms" onchange="autoSaveDraft()">
-                    <label for="focus-arms">Arm independence</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="focus-other" value="other" onchange="autoSaveDraft()">
-                    <label for="focus-other">Other</label>
-                    <input type="text" id="focus-other-text" placeholder="Specify..." style="width: 200px; margin-left: 10px;" oninput="autoSaveDraft()">
-                </div>
-            </div>
+            <!-- Right-Brain Form (hidden by default) -->
+            <div id="right-brain-form" style="display: none;">
+                <h3>🎵 Right-Brain Block - Just Play</h3>
 
-            <div class="form-group">
-                <label for="daily-intention">One Sentence Intention:</label>
-                <input type="text" id="daily-intention" placeholder="Today I'm working on..." oninput="autoSaveDraft()">
-            </div>
+                <!-- HELP: Right-Brain Block -->
+                <div class="help-toggle" onclick="toggleHelp('help-rightbrain')">
+                    <h4><span class="arrow">▶</span> 📖 How to do Right-Brain Practice</h4>
+                </div>
+                <div id="help-rightbrain" class="help-content">
+                    <p><strong>Purpose:</strong> This is your REALITY CHECK. Does the left-brain work transfer to actual playing?</p>
+                    
+                    <p><strong>What to do:</strong></p>
+                    <ol>
+                        <li><strong>Put the process aside</strong> - No thinking about technique</li>
+                        <li><strong>Play music</strong> - Scales, tunes, exercises, whatever you want</li>
+                        <li><strong>OBSERVE ONLY</strong> - This is key!
+                            <ul>
+                                <li>Did the error from left-brain appear?</li>
+                                <li>When did it happen?</li>
+                                <li>What triggered it?</li>
+                            </ul>
+                        </li>
+                        <li><strong>Don't fix during this block</strong> - Just notice and log it</li>
+                        <li><strong>Note what felt good</strong> - These are wins!</li>
+                    </ol>
 
-            <h3>Left-Brain Block #1 (15 min) - Eyes Closed Work</h3>
+                    <div class="help-tip">
+                        <strong>The Formula 1 Principle:</strong> The racing driver doesn't fix the car halfway through the race. He sends a message back to the mechanics: "When I get back, fix this." You're the driver now. Notice the issues, log them, and fix them in the next left-brain block.
+                    </div>
 
-            <!-- HELP: Left-Brain Block -->
-            <div class="help-toggle" onclick="toggleHelp('help-leftbrain')">
-                <h4><span class="arrow">▶</span> 📖 How to do Left-Brain Practice</h4>
-            </div>
-            <div id="help-leftbrain" class="help-content">
-                <p><strong>Purpose:</strong> Systematic error correction through feeling-based drills. This is where you CHANGE YOUR BRAIN.</p>
-                
-                <p><strong>The 6-Step Process:</strong></p>
-                <ol>
-                    <li><strong>What am I working on?</strong> - State your ONE focus clearly</li>
-                    <li><strong>Step 1 - Intention:</strong> What do you want to achieve?
-                        <ul><li>Example: "I want throat to stay open through the turnaround"</li></ul>
-                    </li>
-                    <li><strong>Step 2 - Call Out the Error:</strong> What's the possible error?
-                        <ul><li>Example: "Throat/back of tongue locks at top of breath"</li></ul>
-                    </li>
-                    <li><strong>Step 3 - The Drill:</strong> What creates the opposite feeling?
-                        <ul><li>Example: "Finger between teeth - breathe to top - turnaround - throat STAYS open - passive drop"</li></ul>
-                    </li>
-                    <li><strong>Step 4 - Messaging:</strong> Create your mantra
-                        <ul><li>Example: "Next time I reach the top of breath, I will keep throat open like the drill"</li></ul>
-                    </li>
-                    <li><strong>Step 5 - Execute:</strong> DO THE DRILL
-                        <ul>
-                            <li><strong>EYES CLOSED</strong> for most reps</li>
-                            <li>Spotlight on the target area (throat, belly, etc.)</li>
-                            <li>After each rep: "Did I get what I want?"</li>
-                            <li>YES → Repeat (green loop) - build the mile-and-mile</li>
-                            <li>NO → Back to Step 1 (diagnostic) - why did it fail?</li>
-                        </ul>
-                    </li>
-                </ol>
+                    <p><strong>What the results mean:</strong></p>
+                    <ul>
+                        <li><strong>Error still happening often:</strong> Good! You're aware of it. Need more left-brain drilling.</li>
+                        <li><strong>Error happening less:</strong> Great! The drill is working. Keep going.</li>
+                        <li><strong>Error almost gone:</strong> Excellent! You're approaching "I Know" territory.</li>
+                        <li><strong>Felt effortless:</strong> LOG THIS! Go to Progress & Stats → Effortless Moments</li>
+                    </ul>
 
-                <div class="help-tip">
-                    <strong>Critical:</strong> This is NOT random practice. Each rep has CLEAR INTENTION. You're showing your brain: "This is the feeling I want." The brain learns from repetition + clear messaging.
+                    <div class="help-tip">
+                        <strong>Remember:</strong> Right-brain practice is NOT wasted time. It's essential assessment. Without this, you don't know if your left-brain work is effective.
+                    </div>
                 </div>
 
-                <p><strong>How to track:</strong></p>
-                <ul>
-                    <li><strong>Reps:</strong> How many times did you do the drill?</li>
-                    <li><strong>Success Ratio:</strong> How many were correct? (e.g., 7/10 means 7 good, 3 had the error)</li>
-                    <li><strong>Notes:</strong> Any observations, breakthroughs, or patterns</li>
-                </ul>
+                <div class="form-group">
+                    <label for="rb1-played">What I Played:</label>
+                    <input type="text" id="rb1-played" placeholder="Scales, tunes, exercises..." oninput="autoSaveDraft()">
+                </div>
 
-                <div class="help-tip">
-                    <strong>When to stop:</strong> When you get 8-10 correct reps in a row, you've built enough for today. Don't drill to exhaustion - your brain consolidates this overnight.
+                <div class="form-group">
+                    <label for="rb1-errors">Errors I Noticed (observe only):</label>
+                    <textarea id="rb1-errors" placeholder="Don't fix, just notice..." oninput="autoSaveDraft()"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="rb1-good">What Felt Good:</label>
+                    <textarea id="rb1-good" placeholder="Moments of ease..." oninput="autoSaveDraft()"></textarea>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="lb1-working-on">What am I working on:</label>
-                <input type="text" id="lb1-working-on" placeholder="e.g., Eliminating throat grab at turnaround" oninput="autoSaveDraft()">
-            </div>
-
-            <div class="form-group">
-                <label for="lb1-intention">Step 1 - Intention of Success:</label>
-                <textarea id="lb1-intention" placeholder="What do I want to achieve?" oninput="autoSaveDraft()"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="lb1-error">Step 2 - Call Out the Error:</label>
-                <textarea id="lb1-error" placeholder="What's the possible error?" oninput="autoSaveDraft()"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="lb1-drill">Step 3 - The Drill:</label>
-                <textarea id="lb1-drill" placeholder="What's the opposing feeling drill?" oninput="autoSaveDraft()"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="lb1-message">Step 4 - Messaging:</label>
-                <input type="text" id="lb1-message" placeholder="Next time I _____, I will feel _____" oninput="autoSaveDraft()">
-            </div>
-
-            <div class="form-group">
-                <label for="lb1-reps">Reps Completed:</label>
-                <input type="number" id="lb1-reps" min="0" value="0" oninput="autoSaveDraft()">
-            </div>
-
-            <div class="form-group">
-                <label for="lb1-success">Success Ratio (e.g., 7/10):</label>
-                <input type="text" id="lb1-success" placeholder="7/10" oninput="autoSaveDraft()">
-            </div>
-
-            <div class="form-group">
-                <label for="lb1-notes">Notes:</label>
-                <textarea id="lb1-notes" placeholder="Any observations..." oninput="autoSaveDraft()"></textarea>
-            </div>
-
-            <h3>Right-Brain Block #1 (15 min) - Just Play</h3>
-
-            <!-- HELP: Right-Brain Block -->
-            <div class="help-toggle" onclick="toggleHelp('help-rightbrain')">
-                <h4><span class="arrow">▶</span> 📖 How to do Right-Brain Practice</h4>
-            </div>
-            <div id="help-rightbrain" class="help-content">
-                <p><strong>Purpose:</strong> This is your REALITY CHECK. Does the left-brain work transfer to actual playing?</p>
-                
-                <p><strong>What to do:</strong></p>
-                <ol>
-                    <li><strong>Put the process aside</strong> - No thinking about technique</li>
-                    <li><strong>Play music</strong> - Scales, tunes, exercises, whatever you want</li>
-                    <li><strong>OBSERVE ONLY</strong> - This is key!
-                        <ul>
-                            <li>Did the error from left-brain appear?</li>
-                            <li>When did it happen?</li>
-                            <li>What triggered it?</li>
-                        </ul>
-                    </li>
-                    <li><strong>Don't fix during this block</strong> - Just notice and log it</li>
-                    <li><strong>Note what felt good</strong> - These are wins!</li>
-                </ol>
-
-                <div class="help-tip">
-                    <strong>The Formula 1 Principle:</strong> The racing driver doesn't fix the car halfway through the race. He sends a message back to the mechanics: "When I get back, fix this." You're the driver now. Notice the issues, log them, and fix them in the next left-brain block.
-                </div>
-
-                <p><strong>What the results mean:</strong></p>
-                <ul>
-                    <li><strong>Error still happening often:</strong> Good! You're aware of it. Need more left-brain drilling.</li>
-                    <li><strong>Error happening less:</strong> Great! The drill is working. Keep going.</li>
-                    <li><strong>Error almost gone:</strong> Excellent! You're approaching "I Know" territory.</li>
-                    <li><strong>Felt effortless:</strong> LOG THIS! Go to Progress & Stats → Effortless Moments</li>
-                </ul>
-
-                <div class="help-tip">
-                    <strong>Remember:</strong> Right-brain practice is NOT wasted time. It's essential assessment. Without this, you don't know if your left-brain work is effective.
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="rb1-played">What I Played:</label>
-                <input type="text" id="rb1-played" placeholder="Scales, tunes, exercises..." oninput="autoSaveDraft()">
-            </div>
-
-            <div class="form-group">
-                <label for="rb1-errors">Errors I Noticed (observe only):</label>
-                <textarea id="rb1-errors" placeholder="Don't fix, just notice..." oninput="autoSaveDraft()"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="rb1-good">What Felt Good:</label>
-                <textarea id="rb1-good" placeholder="Moments of ease..." oninput="autoSaveDraft()"></textarea>
-            </div>
-
-            <h3>End of Session Review</h3>
+            <!-- End of Session Review (always shown after selecting type) -->
+            <div id="end-of-session-form" style="display: none;">
+                <h3>End of Session Review</h3>
 
             <!-- HELP: End of Session -->
             <div class="help-toggle" onclick="toggleHelp('help-endofsession')">
@@ -1991,6 +1961,30 @@ This is the foundation of EVERYTHING we're working on.`,
             document.getElementById('quick-message').value = appData.quickTally.message || '';
         }
 
+        // Show/hide practice forms based on type selection
+        function showPracticeForm() {
+            const practiceType = document.getElementById('practice-type').value;
+            const leftBrainForm = document.getElementById('left-brain-form');
+            const rightBrainForm = document.getElementById('right-brain-form');
+            const endOfSessionForm = document.getElementById('end-of-session-form');
+            
+            // Hide all forms first
+            leftBrainForm.style.display = 'none';
+            rightBrainForm.style.display = 'none';
+            endOfSessionForm.style.display = 'none';
+            
+            // Show relevant forms
+            if (practiceType === 'left-brain') {
+                leftBrainForm.style.display = 'block';
+                endOfSessionForm.style.display = 'block';
+            } else if (practiceType === 'right-brain') {
+                rightBrainForm.style.display = 'block';
+                // NO end-of-session review for right-brain
+            }
+            
+            autoSaveDraft();
+        }
+
         // Auto-save draft as user types
         let autoSaveTimeout;
         function autoSaveDraft() {
@@ -1999,9 +1993,7 @@ This is the foundation of EVERYTHING we're working on.`,
             autoSaveTimeout = setTimeout(() => {
                 const draft = {
                     date: document.getElementById('practice-date').value || new Date().toISOString().split('T')[0],
-                    focus: Array.from(document.querySelectorAll('input[id^="focus-"]:checked')).map(cb => cb.value),
-                    focusOther: document.getElementById('focus-other-text').value,
-                    intention: document.getElementById('daily-intention').value,
+                    practiceType: document.getElementById('practice-type').value,
                     leftBrain1: {
                         workingOn: document.getElementById('lb1-working-on').value,
                         intention: document.getElementById('lb1-intention').value,
@@ -2042,15 +2034,11 @@ This is the foundation of EVERYTHING we're working on.`,
                 
                 // Restore all form values
                 document.getElementById('practice-date').value = data.date || '';
-                document.getElementById('daily-intention').value = data.intention || '';
-                document.getElementById('focus-other-text').value = data.focusOther || '';
                 
-                // Restore checkboxes
-                if (data.focus) {
-                    data.focus.forEach(val => {
-                        const checkbox = document.querySelector(`input[value="${val}"]`);
-                        if (checkbox) checkbox.checked = true;
-                    });
+                // Restore practice type
+                if (data.practiceType) {
+                    document.getElementById('practice-type').value = data.practiceType;
+                    showPracticeForm(); // Show the appropriate forms
                 }
                 
                 // Left brain
@@ -2091,9 +2079,7 @@ This is the foundation of EVERYTHING we're working on.`,
             const session = {
                 date: document.getElementById('practice-date').value || new Date().toISOString().split('T')[0],
                 sessionTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-                focus: Array.from(document.querySelectorAll('input[id^="focus-"]:checked')).map(cb => cb.value),
-                focusOther: document.getElementById('focus-other-text').value,
-                intention: document.getElementById('daily-intention').value,
+                practiceType: document.getElementById('practice-type').value,
                 leftBrain1: {
                     workingOn: document.getElementById('lb1-working-on').value,
                     intention: document.getElementById('lb1-intention').value,
@@ -2146,15 +2132,18 @@ This is the foundation of EVERYTHING we're working on.`,
                 return;
             }
 
-            container.innerHTML = todaysSessions.map((session, index) => `
+            container.innerHTML = todaysSessions.map((session, index) => {
+                const typeIcon = session.practiceType === 'left-brain' ? '🧠' : '🎵';
+                const typeName = session.practiceType === 'left-brain' ? 'Left-Brain' : 'Right-Brain';
+                
+                return `
                 <div class="session-card" style="border-left-color: #27ae60;">
-                    <h4>Session ${index + 1} - ${session.sessionTime || 'Time not recorded'}</h4>
-                    <p><strong>Focus:</strong> ${session.intention || 'Not specified'}</p>
-                    <p><strong>Working On:</strong> ${session.leftBrain1.workingOn || 'N/A'}</p>
-                    <p><strong>Success Rate:</strong> ${session.leftBrain1.success || 'N/A'}</p>
-                    ${session.rightBrain1.good ? `<p><strong>What Felt Good:</strong> ${session.rightBrain1.good}</p>` : ''}
+                    <h4>${typeIcon} ${typeName} ${index + 1} - ${session.sessionTime || 'Time not recorded'}</h4>
+                    ${session.leftBrain1?.workingOn ? `<p><strong>Working On:</strong> ${session.leftBrain1.workingOn}</p>` : ''}
+                    ${session.leftBrain1?.success ? `<p><strong>Success Rate:</strong> ${session.leftBrain1.success}</p>` : ''}
+                    ${session.rightBrain1?.good ? `<p><strong>What Felt Good:</strong> ${session.rightBrain1.good}</p>` : ''}
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // Display recent sessions
@@ -2167,15 +2156,18 @@ This is the foundation of EVERYTHING we're working on.`,
                 return;
             }
 
-            container.innerHTML = recent.map(session => `
+            container.innerHTML = recent.map(session => {
+                const typeIcon = session.practiceType === 'left-brain' ? '🧠' : '🎵';
+                const typeName = session.practiceType === 'left-brain' ? 'Left-Brain' : 'Right-Brain';
+                
+                return `
                 <div class="session-card">
-                    <h4>${new Date(session.date).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} - ${session.sessionTime || ''}</h4>
-                    <p><strong>Focus:</strong> ${session.intention || 'Not specified'}</p>
-                    <p><strong>Working On:</strong> ${session.leftBrain1.workingOn || 'N/A'}</p>
-                    <p><strong>Success Rate:</strong> ${session.leftBrain1.success || 'N/A'}</p>
-                    ${session.endOfDay.error ? `<p><strong>Key Error:</strong> ${session.endOfDay.error}</p>` : ''}
+                    <h4>${typeIcon} ${typeName} - ${new Date(session.date).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} - ${session.sessionTime || ''}</h4>
+                    ${session.leftBrain1?.workingOn ? `<p><strong>Working On:</strong> ${session.leftBrain1.workingOn}</p>` : ''}
+                    ${session.leftBrain1?.success ? `<p><strong>Success Rate:</strong> ${session.leftBrain1.success}</p>` : ''}
+                    ${session.endOfDay?.error ? `<p><strong>Key Error:</strong> ${session.endOfDay.error}</p>` : ''}
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // Clear daily form
