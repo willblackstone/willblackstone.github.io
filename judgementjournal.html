@@ -617,6 +617,7 @@ function logEntry() {
   saveState();
   document.getElementById('judgement-text').value = '';
   renderEntries();
+  autoSyncPush();
 }
 
 function deleteEntry(id) {
@@ -774,9 +775,52 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── Auto Sync ─────────────────────────────────────────────────────────────────
+async function autoSyncPull() {
+  const { token, gistId } = getGhCreds();
+  if (!token || !gistId) return;
+  showStatus('sync-status', 'Syncing…', 'info');
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: 'token ' + token }
+    });
+    if (!res.ok) throw new Error(`GitHub responded: ${res.status}`);
+    const data = await res.json();
+    const file = data.files['judgement-tracker.json'];
+    if (!file) throw new Error('No judgement-tracker.json found in this Gist.');
+    const parsed = JSON.parse(file.content);
+    state.entries = parsed.entries || [];
+    state.categories = parsed.categories || [...BUILTIN];
+    BUILTIN.forEach(b => { if (!state.categories.includes(b)) state.categories.unshift(b); });
+    saveState();
+    populateCatSelect();
+    renderFilterBar();
+    renderEntries();
+    showStatus('sync-status', `Synced — ${state.entries.length} entries.`, 'ok');
+  } catch(e) {
+    showStatus('sync-status', 'Pull failed: ' + e.message, 'err');
+  }
+}
+
+async function autoSyncPush() {
+  const { token, gistId } = getGhCreds();
+  if (!token || !gistId) return;
+  const content = JSON.stringify({ entries: state.entries, categories: state.categories }, null, 2);
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'Judgement Tracker Data', public: false, files: { 'judgement-tracker.json': { content } } })
+    });
+    if (!res.ok) throw new Error(`GitHub responded: ${res.status}`);
+    showStatus('sync-status', 'Saved to Gist.', 'ok');
+  } catch(e) {
+    showStatus('sync-status', 'Push failed: ' + e.message, 'err');
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadState();
-// load saved gh creds into fields
 const savedToken = localStorage.getItem('gh-token');
 const savedGist = localStorage.getItem('gh-gist-id');
 if (savedToken) document.getElementById('gh-token').value = savedToken;
@@ -785,6 +829,7 @@ if (savedGist) document.getElementById('gh-gist-id').value = savedGist;
 populateCatSelect();
 renderFilterBar();
 renderEntries();
+autoSyncPull();
 </script>
 </body>
 </html>
