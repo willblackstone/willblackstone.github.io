@@ -1,0 +1,316 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  #app { padding: 1.5rem 1rem; max-width: 420px; margin: 0 auto; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; text-align: center; }
+  .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; letter-spacing: 0.04em; }
+  .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .metric-value.muted { color: var(--color-text-tertiary); }
+  #tap-zone { width: 100%; aspect-ratio: 1; border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: background 0.15s; background: var(--color-background-secondary); -webkit-tap-highlight-color: transparent; }
+  #tap-zone:active { background: var(--color-background-tertiary); }
+  #tap-zone.listening { border-color: transparent; background: #E1F5EE; }
+  @media (prefers-color-scheme: dark) { #tap-zone.listening { background: #04342C; } }
+  #tap-zone.tone-active { background: #E6F1FB; border-color: transparent; }
+  @media (prefers-color-scheme: dark) { #tap-zone.tone-active { background: #042C53; } }
+  #tap-zone.missed { background: #FCEBEB; border-color: transparent; }
+  @media (prefers-color-scheme: dark) { #tap-zone.missed { background: #501313; } }
+  #status-icon { font-size: 40px; margin-bottom: 8px; line-height: 1; }
+  #status-text { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  #status-sub { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; }
+  .btn { border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); border-radius: var(--border-radius-md); padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: var(--font-sans); }
+  .btn:hover { background: var(--color-background-secondary); }
+  .btn.primary { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+  .btn.primary:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  select, input[type=range] { font-family: var(--font-sans); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .history-item { font-size: 13px; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; justify-content: space-between; color: var(--color-text-secondary); }
+  .history-item span { color: var(--color-text-primary); font-weight: 500; }
+  #result-pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .result-fast { background: #E1F5EE; color: #0F6E56; }
+  .result-ok { background: #FAEEDA; color: #854F0B; }
+  .result-slow { background: #FCEBEB; color: #A32D2D; }
+  @media (prefers-color-scheme: dark) {
+    .result-fast { background: #04342C; color: #5DCAA5; }
+    .result-ok { background: #412402; color: #EF9F27; }
+    .result-slow { background: #501313; color: #F09595; }
+  }
+</style>
+
+<div id="app">
+  <h2 class="sr-only">Attention trainer: tap when the tone stops</h2>
+
+  <div style="margin-bottom: 1.25rem;">
+    <div class="row" style="margin-bottom: 10px;">
+      <div style="flex:1;">
+        <div class="metric-label" style="margin-bottom:6px;">Session duration</div>
+        <select id="dur-select" style="width:100%; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px;">
+          <option value="5">5 min</option>
+          <option value="10" selected>10 min</option>
+          <option value="15">15 min</option>
+          <option value="20">20 min</option>
+          <option value="30">30 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <div class="metric-label" style="margin-bottom:6px;">Tone range (sec)</div>
+        <div class="row">
+          <input type="number" id="tone-min" min="2" max="30" value="5" style="width:52px; padding:8px; border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); background:var(--color-background-primary); color:var(--color-text-primary); font-size:14px; text-align:center;">
+          <span style="color:var(--color-text-secondary); font-size:13px;">–</span>
+          <input type="number" id="tone-max" min="5" max="120" value="60" style="width:52px; padding:8px; border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); background:var(--color-background-primary); color:var(--color-text-primary); font-size:14px; text-align:center;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tap-zone" onclick="handleTap()">
+    <div id="status-icon">◉</div>
+    <div id="status-text">Tap to start</div>
+    <div id="status-sub">Ready when you are</div>
+  </div>
+
+  <div class="grid3" style="margin: 1rem 0;">
+    <div class="metric">
+      <div class="metric-label">Session</div>
+      <div class="metric-value muted" id="timer-display">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Last RT</div>
+      <div class="metric-value muted" id="last-rt">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Avg RT</div>
+      <div class="metric-value muted" id="avg-rt">—</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom: 1rem;">
+    <div class="metric">
+      <div class="metric-label">Rounds</div>
+      <div class="metric-value muted" id="round-count">0</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Best RT</div>
+      <div class="metric-value muted" id="best-rt">—</div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:8px; margin-bottom:1.25rem;">
+    <button class="btn" id="stop-btn" onclick="endSession()" disabled>End session</button>
+    <button class="btn" id="reset-btn" onclick="resetAll()" style="margin-left:auto;">Reset</button>
+  </div>
+
+  <div id="history-section" style="display:none;">
+    <div class="metric-label" style="margin-bottom:8px;">Recent rounds</div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<script>
+let audioCtx = null;
+let oscillator = null;
+let gainNode = null;
+
+let state = 'idle';
+let sessionActive = false;
+let sessionDuration = 0;
+let sessionStart = 0;
+let sessionTimer = null;
+let roundTimer = null;
+let toneStart = 0;
+let toneStop = 0;
+let listenStart = 0;
+let listenTimeout = null;
+let rounds = [];
+let currentRound = 0;
+let missedWindow = 2500;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function startTone() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  gainNode = ctx.createGain();
+  gainNode.gain.setValueAtTime(0, ctx.currentTime);
+  gainNode.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.05);
+  gainNode.connect(ctx.destination);
+  oscillator = ctx.createOscillator();
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+  oscillator.connect(gainNode);
+  oscillator.start();
+  toneStart = performance.now();
+}
+
+function stopTone() {
+  if (!gainNode || !oscillator) return;
+  const ctx = getAudioCtx();
+  gainNode.gain.setValueAtTime(gainNode.gain.value, ctx.currentTime);
+  gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.04);
+  setTimeout(() => { try { oscillator.stop(); oscillator.disconnect(); gainNode.disconnect(); } catch(e){} }, 60);
+  oscillator = null; gainNode = null;
+  toneStop = performance.now();
+}
+
+function randBetween(a, b) { return a + Math.random() * (b - a); }
+
+function startRound() {
+  if (!sessionActive) return;
+  state = 'waiting';
+  setZone('tone-active', '◎', 'Listening…', 'Tone is playing');
+  currentRound++;
+  startTone();
+  const minS = parseInt(document.getElementById('tone-min').value) || 5;
+  const maxS = parseInt(document.getElementById('tone-max').value) || 60;
+  const duration = randBetween(minS * 1000, maxS * 1000);
+  roundTimer = setTimeout(() => {
+    stopTone();
+    state = 'listening';
+    listenStart = performance.now();
+    setZone('listening', '◉', 'Tap now!', 'The tone has stopped');
+    listenTimeout = setTimeout(() => {
+      if (state === 'listening') {
+        state = 'missed';
+        setZone('missed', '✕', 'Too slow', 'Tap within 2.5s of the tone stopping');
+        rounds.push({ round: currentRound, rt: null, missed: true });
+        updateStats();
+        addHistory(currentRound, null, true);
+        setTimeout(startRound, 1500);
+      }
+    }, missedWindow);
+  }, duration);
+}
+
+function handleTap() {
+  if (!sessionActive && state === 'idle') {
+    beginSession();
+    return;
+  }
+  if (state === 'waiting') {
+    // tapped during tone — ignore, just visual feedback
+    return;
+  }
+  if (state === 'listening') {
+    clearTimeout(listenTimeout);
+    const rt = performance.now() - listenStart;
+    state = 'recorded';
+    rounds.push({ round: currentRound, rt, missed: false });
+    updateStats();
+    addHistory(currentRound, rt, false);
+    const label = rt < 350 ? 'Fast!' : rt < 700 ? 'Good' : 'Slow';
+    setZone('', '◎', Math.round(rt) + ' ms', label);
+    setTimeout(startRound, 1200);
+    return;
+  }
+  if (state === 'idle' || state === 'done') {
+    beginSession();
+  }
+}
+
+function beginSession() {
+  sessionDuration = parseInt(document.getElementById('dur-select').value) * 60 * 1000;
+  sessionStart = performance.now();
+  sessionActive = true;
+  currentRound = 0;
+  document.getElementById('stop-btn').disabled = false;
+  document.getElementById('dur-select').disabled = true;
+  sessionTimer = setInterval(updateTimer, 500);
+  startRound();
+}
+
+function updateTimer() {
+  if (!sessionActive) return;
+  const elapsed = performance.now() - sessionStart;
+  const remaining = Math.max(0, sessionDuration - elapsed);
+  if (remaining <= 0) { endSession(); return; }
+  const m = Math.floor(remaining / 60000);
+  const s = Math.floor((remaining % 60000) / 1000);
+  document.getElementById('timer-display').textContent = m + ':' + String(s).padStart(2,'0');
+  document.getElementById('timer-display').classList.remove('muted');
+}
+
+function endSession() {
+  sessionActive = false;
+  state = 'done';
+  clearInterval(sessionTimer);
+  clearTimeout(roundTimer);
+  clearTimeout(listenTimeout);
+  stopTone();
+  document.getElementById('stop-btn').disabled = true;
+  document.getElementById('dur-select').disabled = false;
+  const valid = rounds.filter(r => !r.missed);
+  if (valid.length > 0) {
+    const avg = valid.reduce((a,r)=>a+r.rt,0)/valid.length;
+    setZone('', '◎', 'Session done', rounds.length + ' rounds · avg ' + Math.round(avg) + ' ms');
+  } else {
+    setZone('', '◉', 'Session done', 'No rounds completed');
+  }
+  document.getElementById('timer-display').textContent = '—';
+  document.getElementById('timer-display').classList.add('muted');
+}
+
+function resetAll() {
+  endSession();
+  rounds = [];
+  currentRound = 0;
+  state = 'idle';
+  setZone('', '◉', 'Tap to start', 'Ready when you are');
+  document.getElementById('last-rt').textContent = '—';
+  document.getElementById('last-rt').classList.add('muted');
+  document.getElementById('avg-rt').textContent = '—';
+  document.getElementById('avg-rt').classList.add('muted');
+  document.getElementById('best-rt').textContent = '—';
+  document.getElementById('best-rt').classList.add('muted');
+  document.getElementById('round-count').textContent = '0';
+  document.getElementById('round-count').classList.add('muted');
+  document.getElementById('history-list').innerHTML = '';
+  document.getElementById('history-section').style.display = 'none';
+}
+
+function updateStats() {
+  const valid = rounds.filter(r => !r.missed);
+  document.getElementById('round-count').textContent = rounds.length;
+  document.getElementById('round-count').classList.remove('muted');
+  if (valid.length === 0) return;
+  const last = valid[valid.length-1].rt;
+  const avg = valid.reduce((a,r)=>a+r.rt,0)/valid.length;
+  const best = Math.min(...valid.map(r=>r.rt));
+  document.getElementById('last-rt').textContent = Math.round(last) + 'ms';
+  document.getElementById('last-rt').classList.remove('muted');
+  document.getElementById('avg-rt').textContent = Math.round(avg) + 'ms';
+  document.getElementById('avg-rt').classList.remove('muted');
+  document.getElementById('best-rt').textContent = Math.round(best) + 'ms';
+  document.getElementById('best-rt').classList.remove('muted');
+}
+
+function addHistory(round, rt, missed) {
+  document.getElementById('history-section').style.display = 'block';
+  const list = document.getElementById('history-list');
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  if (missed) {
+    item.innerHTML = `<span style="color:var(--color-text-secondary)">Round ${round}</span><span style="color:#A32D2D">missed</span>`;
+  } else {
+    const cls = rt < 350 ? 'result-fast' : rt < 700 ? 'result-ok' : 'result-slow';
+    const label = rt < 350 ? 'fast' : rt < 700 ? 'ok' : 'slow';
+    item.innerHTML = `<span style="color:var(--color-text-secondary)">Round ${round}</span><span>${Math.round(rt)} ms <span class="result-pill ${cls}">${label}</span></span>`;
+  }
+  list.insertBefore(item, list.firstChild);
+  if (list.children.length > 10) list.removeChild(list.lastChild);
+}
+
+function setZone(cls, icon, text, sub) {
+  const z = document.getElementById('tap-zone');
+  z.className = cls ? `${cls}` : '';
+  document.getElementById('status-icon').textContent = icon;
+  document.getElementById('status-text').textContent = text;
+  document.getElementById('status-sub').textContent = sub;
+}
+</script>
