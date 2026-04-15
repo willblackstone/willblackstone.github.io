@@ -103,6 +103,30 @@
         </div>
       </div>
     </div>
+    <div class="row" style="margin-bottom: 10px;">
+      <div style="flex:1;">
+        <div class="metric-label" style="margin-bottom:6px;">Tone</div>
+        <select id="tone-select" style="width:100%; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px;">
+          <option value="pure" selected>Pure (A4)</option>
+          <option value="warm">Warm (E4 triangle)</option>
+          <option value="soft">Soft (G4)</option>
+          <option value="bell">Bell (C5)</option>
+          <option value="low">Low (D4)</option>
+          <option value="flute">Flute (D5)</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <div class="metric-label" style="margin-bottom:6px;">Mode</div>
+        <div class="row" style="gap:10px;">
+          <label style="font-size:13px; color:var(--color-text-primary); display:flex; align-items:center; gap:4px; cursor:pointer;">
+            <input type="checkbox" id="wiggly-toggle"> Wiggly
+          </label>
+          <label style="font-size:13px; color:var(--color-text-primary); display:flex; align-items:center; gap:4px; cursor:pointer;">
+            <input type="checkbox" id="cue-toggle"> Cue
+          </label>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="tap-zone" onclick="handleTap()">
@@ -170,6 +194,16 @@ document.addEventListener('visibilitychange', async () => {
 let audioCtx = null;
 let oscillator = null;
 let gainNode = null;
+let wiggleInterval = null;
+
+const TONE_PRESETS = {
+  pure:  { freq: 440, type: 'sine' },
+  warm:  { freq: 330, type: 'triangle' },
+  soft:  { freq: 392, type: 'sine' },
+  bell:  { freq: 523.25, type: 'sine' },
+  low:   { freq: 293.66, type: 'sine' },
+  flute: { freq: 587.33, type: 'sine' },
+};
 
 let state = 'idle';
 let sessionActive = false;
@@ -193,19 +227,42 @@ function getAudioCtx() {
 function startTone() {
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
+  const presetKey = document.getElementById('tone-select').value || 'pure';
+  const preset = TONE_PRESETS[presetKey] || TONE_PRESETS.pure;
   gainNode = ctx.createGain();
   gainNode.gain.setValueAtTime(0, ctx.currentTime);
   gainNode.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.05);
   gainNode.connect(ctx.destination);
   oscillator = ctx.createOscillator();
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+  oscillator.type = preset.type;
+  oscillator.frequency.setValueAtTime(preset.freq, ctx.currentTime);
   oscillator.connect(gainNode);
   oscillator.start();
   toneStart = performance.now();
+  if (document.getElementById('wiggly-toggle').checked) {
+    startWiggle();
+  }
+}
+
+function startWiggle() {
+  clearInterval(wiggleInterval);
+  const step = () => {
+    if (!oscillator) return;
+    const ctx = getAudioCtx();
+    const target = 260 + Math.random() * 540; // 260–800 Hz
+    const dur = 0.12 + Math.random() * 0.25;
+    try {
+      oscillator.frequency.cancelScheduledValues(ctx.currentTime);
+      oscillator.frequency.setValueAtTime(oscillator.frequency.value, ctx.currentTime);
+      oscillator.frequency.linearRampToValueAtTime(target, ctx.currentTime + dur);
+    } catch(e) {}
+  };
+  step();
+  wiggleInterval = setInterval(step, 220);
 }
 
 function stopTone() {
+  clearInterval(wiggleInterval); wiggleInterval = null;
   if (!gainNode || !oscillator) return;
   const ctx = getAudioCtx();
   gainNode.gain.setValueAtTime(gainNode.gain.value, ctx.currentTime);
@@ -215,10 +272,66 @@ function stopTone() {
   toneStop = performance.now();
 }
 
+function playCue(done) {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const t0 = ctx.currentTime;
+  // three short bips
+  const bipFreq = 880;
+  const bipLen = 0.08;
+  const bipGap = 0.09;
+  for (let i = 0; i < 3; i++) {
+    const start = t0 + i * (bipLen + bipGap);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(0.18, start + 0.01);
+    g.gain.linearRampToValueAtTime(0, start + bipLen);
+    g.connect(ctx.destination);
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(bipFreq, start);
+    o.connect(g);
+    o.start(start);
+    o.stop(start + bipLen + 0.02);
+  }
+  // long "boooo"
+  const booStart = t0 + 3 * (bipLen + bipGap) + 0.06;
+  const booLen = 0.45;
+  const bg = ctx.createGain();
+  bg.gain.setValueAtTime(0, booStart);
+  bg.gain.linearRampToValueAtTime(0.2, booStart + 0.03);
+  bg.gain.linearRampToValueAtTime(0.18, booStart + booLen - 0.08);
+  bg.gain.linearRampToValueAtTime(0, booStart + booLen);
+  bg.connect(ctx.destination);
+  const bo = ctx.createOscillator();
+  bo.type = 'triangle';
+  bo.frequency.setValueAtTime(220, booStart);
+  bo.frequency.linearRampToValueAtTime(165, booStart + booLen);
+  bo.connect(bg);
+  bo.start(booStart);
+  bo.stop(booStart + booLen + 0.05);
+  const totalMs = (booStart + booLen + 0.12 - t0) * 1000;
+  setTimeout(done, totalMs);
+}
+
 function randBetween(a, b) { return a + Math.random() * (b - a); }
 
 function startRound() {
   if (!sessionActive) return;
+  const useCue = document.getElementById('cue-toggle').checked;
+  if (useCue) {
+    state = 'cue';
+    setZone('', '◌', 'Get ready…', 'Attention reset');
+    playCue(() => {
+      if (!sessionActive) return;
+      beginRoundTone();
+    });
+    return;
+  }
+  beginRoundTone();
+}
+
+function beginRoundTone() {
   state = 'waiting';
   setZone('tone-active', '◎', 'Listening…', 'Tone is playing');
   currentRound++;
