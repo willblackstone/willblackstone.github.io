@@ -1,13 +1,14 @@
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font-sans); }
-  #app { padding: 1.5rem 1rem; max-width: 420px; margin: 0 auto; }
+  body { font-family: var(--font-sans); -webkit-text-size-adjust: 100%; }
+  #app { padding: 1rem; max-width: 420px; margin: 0 auto; }
+  @media (max-width: 390px) { #app { padding: 0.75rem; } }
   .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; text-align: center; }
   .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; letter-spacing: 0.04em; }
   .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
   .metric-value.muted { color: var(--color-text-tertiary); }
-  #tap-zone { width: 100%; aspect-ratio: 1; border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: background 0.15s; background: var(--color-background-secondary); -webkit-tap-highlight-color: transparent; }
+  #tap-zone { width: 100%; aspect-ratio: 1; max-height: min(55vw, 260px); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: background 0.15s; background: var(--color-background-secondary); -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   #tap-zone:active { background: var(--color-background-tertiary); }
   #tap-zone.listening { border-color: transparent; background: #E1F5EE; }
   @media (prefers-color-scheme: dark) { #tap-zone.listening { background: #04342C; } }
@@ -24,9 +25,10 @@
   .btn.primary:hover { opacity: 0.85; }
   .btn:disabled { opacity: 0.35; cursor: default; }
   select, input[type=range] { font-family: var(--font-sans); }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .tone-input { width: 48px; min-width: 0; padding: 8px 4px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px; text-align: center; font-family: var(--font-sans); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
   .history-item { font-size: 13px; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; justify-content: space-between; color: var(--color-text-secondary); }
   .history-item span { color: var(--color-text-primary); font-weight: 500; }
   #result-pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
@@ -48,20 +50,33 @@
       <div style="flex:1;">
         <div class="metric-label" style="margin-bottom:6px;">Session duration</div>
         <select id="dur-select" style="width:100%; padding: 8px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px;">
+          <option value="2">2 min</option>
+          <option value="3">3 min</option>
+          <option value="4">4 min</option>
           <option value="5">5 min</option>
+          <option value="6">6 min</option>
+          <option value="7">7 min</option>
+          <option value="8">8 min</option>
+          <option value="9">9 min</option>
           <option value="10" selected>10 min</option>
+          <option value="11">11 min</option>
+          <option value="12">12 min</option>
+          <option value="13">13 min</option>
+          <option value="14">14 min</option>
           <option value="15">15 min</option>
           <option value="20">20 min</option>
+          <option value="25">25 min</option>
           <option value="30">30 min</option>
+          <option value="45">45 min</option>
           <option value="60">60 min</option>
         </select>
       </div>
       <div style="flex:1;">
         <div class="metric-label" style="margin-bottom:6px;">Tone range (sec)</div>
         <div class="row">
-          <input type="number" id="tone-min" min="2" max="30" value="5" style="width:52px; padding:8px; border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); background:var(--color-background-primary); color:var(--color-text-primary); font-size:14px; text-align:center;">
+          <input type="number" id="tone-min" min="2" max="30" value="5" class="tone-input">
           <span style="color:var(--color-text-secondary); font-size:13px;">–</span>
-          <input type="number" id="tone-max" min="5" max="120" value="60" style="width:52px; padding:8px; border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); background:var(--color-background-primary); color:var(--color-text-primary); font-size:14px; text-align:center;">
+          <input type="number" id="tone-max" min="5" max="120" value="60" class="tone-input">
         </div>
       </div>
     </div>
@@ -222,8 +237,7 @@ function handleTap() {
     rounds.push({ round: currentRound, rt, missed: false });
     updateStats();
     addHistory(currentRound, rt, false);
-    const label = rt < 350 ? 'Fast!' : rt < 700 ? 'Good' : 'Slow';
-    setZone('', '◎', Math.round(rt) + ' ms', label);
+    setZone('', '◎', Math.round(rt) + ' ms', '');
     setTimeout(startRound, 1200);
     return;
   }
@@ -318,9 +332,7 @@ function addHistory(round, rt, missed) {
   if (missed) {
     item.innerHTML = `<span style="color:var(--color-text-secondary)">Round ${round}</span><span style="color:#A32D2D">missed</span>`;
   } else {
-    const cls = rt < 350 ? 'result-fast' : rt < 700 ? 'result-ok' : 'result-slow';
-    const label = rt < 350 ? 'fast' : rt < 700 ? 'ok' : 'slow';
-    item.innerHTML = `<span style="color:var(--color-text-secondary)">Round ${round}</span><span>${Math.round(rt)} ms <span class="result-pill ${cls}">${label}</span></span>`;
+    item.innerHTML = `<span style="color:var(--color-text-secondary)">Round ${round}</span><span>${Math.round(rt)} ms</span>`;
   }
   list.insertBefore(item, list.firstChild);
   if (list.children.length > 10) list.removeChild(list.lastChild);
