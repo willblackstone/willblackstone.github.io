@@ -97,9 +97,9 @@
       <div style="flex:1;">
         <div class="metric-label" style="margin-bottom:6px;">Tone range (sec)</div>
         <div class="row">
-          <input type="number" id="tone-min" min="2" max="30" value="5" class="tone-input">
+          <input type="number" id="tone-min" min="2" max="30" value="3" class="tone-input">
           <span style="color:var(--color-text-secondary); font-size:13px;">–</span>
-          <input type="number" id="tone-max" min="5" max="120" value="60" class="tone-input">
+          <input type="number" id="tone-max" min="5" max="120" value="10" class="tone-input">
         </div>
       </div>
     </div>
@@ -122,7 +122,7 @@
             <input type="checkbox" id="wiggly-toggle"> Wiggly
           </label>
           <label style="font-size:13px; color:var(--color-text-primary); display:flex; align-items:center; gap:4px; cursor:pointer;">
-            <input type="checkbox" id="cue-toggle"> Cue
+            <input type="checkbox" id="cue-toggle" checked> Cue
           </label>
         </div>
       </div>
@@ -240,7 +240,7 @@ function startTone() {
   oscillator.start();
   toneStart = performance.now();
   if (document.getElementById('wiggly-toggle').checked) {
-    startWiggle();
+    setTimeout(() => { if (oscillator) startWiggle(); }, 1000);
   }
 }
 
