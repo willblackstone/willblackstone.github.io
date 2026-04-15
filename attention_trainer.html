@@ -111,6 +111,24 @@
 </div>
 
 <script>
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch (err) {}
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock && document.visibilityState === 'visible') {
+    await requestWakeLock();
+  }
+});
+
 let audioCtx = null;
 let oscillator = null;
 let gainNode = null;
@@ -222,6 +240,7 @@ function beginSession() {
   document.getElementById('stop-btn').disabled = false;
   document.getElementById('dur-select').disabled = true;
   sessionTimer = setInterval(updateTimer, 500);
+  requestWakeLock();
   startRound();
 }
 
@@ -243,6 +262,7 @@ function endSession() {
   clearTimeout(roundTimer);
   clearTimeout(listenTimeout);
   stopTone();
+  releaseWakeLock();
   document.getElementById('stop-btn').disabled = true;
   document.getElementById('dur-select').disabled = false;
   const valid = rounds.filter(r => !r.missed);
