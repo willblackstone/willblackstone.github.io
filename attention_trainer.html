@@ -311,28 +311,34 @@ function startTone() {
   oscMix1.connect(filterNode);
   oscMix2.connect(filterNode);
 
-  // Per-round detune spread: 1–8 cents total.
-  const cents = randBetween(1, 8);
+  // Detune is the primary rhythm source: two oscillators at fixed offset
+  // produce a constant beat frequency. Give each osc its own random-walk
+  // detune so the beat rate itself wanders unpredictably.
+  const d1Init = randBetween(-6, 0);
+  const d2Init = randBetween(0, 6);
   oscillator = ctx.createOscillator();
   oscillator.setPeriodicWave(wave);
   oscillator.frequency.setValueAtTime(preset.freq, now);
-  oscillator.detune.setValueAtTime(-cents / 2, now);
+  oscillator.detune.setValueAtTime(d1Init, now);
   oscillator.connect(oscMix1);
   oscillator.start();
 
   osc2 = ctx.createOscillator();
   osc2.setPeriodicWave(wave);
   osc2.frequency.setValueAtTime(preset.freq, now);
-  osc2.detune.setValueAtTime(cents / 2, now);
+  osc2.detune.setValueAtTime(d2Init, now);
   osc2.connect(oscMix2);
   osc2.start();
 
-  // Dedicated 2nd-harmonic oscillator whose gain is LFO-modulated for shimmer.
+  // Shimmer osc: not locked to exact 2× (that beats rigidly against the
+  // 2nd harmonic of the chorus oscillators). Drift its detune too.
+  const shDetInit = randBetween(-20, 20);
   shimmerOsc = ctx.createOscillator();
   shimmerOsc.type = 'sine';
   shimmerOsc.frequency.setValueAtTime(preset.freq * 2, now);
+  shimmerOsc.detune.setValueAtTime(shDetInit, now);
   shimmerGain = ctx.createGain();
-  shimmerGain.gain.setValueAtTime(0.1, now);
+  shimmerGain.gain.setValueAtTime(0.08, now);
   shimmerOsc.connect(shimmerGain);
   shimmerGain.connect(filterNode);
   shimmerOsc.start();
@@ -342,15 +348,12 @@ function startTone() {
   modulationParams = {
     baseGain,
     lastTickPerf: performance.now(),
-    tremoloValue: baseGain,
-    shimmerValue: 0.1,
-    breatheValue: 3750,
-    tremoloTarget: baseGain,
-    shimmerTarget: 0.1,
-    breatheTarget: 3750,
-    tremoloNextAt: 0,
-    shimmerNextAt: 0,
-    breatheNextAt: 0,
+    tremoloValue: baseGain, shimmerValue: 0.08, breatheValue: 3750,
+    tremoloTarget: baseGain, shimmerTarget: 0.08, breatheTarget: 3750,
+    tremoloNextAt: 0, shimmerNextAt: 0, breatheNextAt: 0,
+    d1Value: d1Init, d2Value: d2Init, shDetValue: shDetInit,
+    d1Target: d1Init, d2Target: d2Init, shDetTarget: shDetInit,
+    d1NextAt: 0, d2NextAt: 0, shDetNextAt: 0,
   };
 
   toneStart = performance.now();
@@ -370,16 +373,29 @@ function startModulation() {
 // Each parameter retargets on its own irregular schedule. No shared phase,
 // no sine — motion is a smoothed random walk so nothing lands on a rhythm.
 function retargetTremolo(p) {
-  p.tremoloTarget = p.baseGain * randBetween(0.93, 1.07);
-  p.tremoloNextAt = performance.now() + randBetween(250, 2000);
+  // Gentle amplitude drift only — the main "movement" is now in detune.
+  p.tremoloTarget = p.baseGain * randBetween(0.96, 1.04);
+  p.tremoloNextAt = performance.now() + randBetween(600, 3500);
 }
 function retargetShimmer(p) {
-  p.shimmerTarget = randBetween(0.015, 0.18);
-  p.shimmerNextAt = performance.now() + randBetween(400, 3500);
+  p.shimmerTarget = randBetween(0.03, 0.14);
+  p.shimmerNextAt = performance.now() + randBetween(600, 3500);
 }
 function retargetBreathe(p) {
   p.breatheTarget = randBetween(1500, 6000);
   p.breatheNextAt = performance.now() + randBetween(1500, 7000);
+}
+function retargetD1(p) {
+  p.d1Target = randBetween(-7, 7);
+  p.d1NextAt = performance.now() + randBetween(700, 3000);
+}
+function retargetD2(p) {
+  p.d2Target = randBetween(-7, 7);
+  p.d2NextAt = performance.now() + randBetween(700, 3000);
+}
+function retargetShDet(p) {
+  p.shDetTarget = randBetween(-30, 30);
+  p.shDetNextAt = performance.now() + randBetween(500, 2500);
 }
 
 function stepModulation() {
@@ -395,11 +411,17 @@ function stepModulation() {
   if (nowMs >= p.tremoloNextAt) retargetTremolo(p);
   if (nowMs >= p.shimmerNextAt) retargetShimmer(p);
   if (nowMs >= p.breatheNextAt) retargetBreathe(p);
+  if (nowMs >= p.d1NextAt) retargetD1(p);
+  if (nowMs >= p.d2NextAt) retargetD2(p);
+  if (nowMs >= p.shDetNextAt) retargetShDet(p);
 
-  // Per-param smoothing time constants (seconds).
-  p.tremoloValue += (p.tremoloTarget - p.tremoloValue) * (1 - Math.exp(-dt / 0.6));
-  p.shimmerValue += (p.shimmerTarget - p.shimmerValue) * (1 - Math.exp(-dt / 1.0));
+  // Smooth toward targets. Detunes smooth slowly for a singing chorus feel.
+  p.tremoloValue += (p.tremoloTarget - p.tremoloValue) * (1 - Math.exp(-dt / 1.2));
+  p.shimmerValue += (p.shimmerTarget - p.shimmerValue) * (1 - Math.exp(-dt / 1.2));
   p.breatheValue += (p.breatheTarget - p.breatheValue) * (1 - Math.exp(-dt / 2.0));
+  p.d1Value      += (p.d1Target      - p.d1Value)      * (1 - Math.exp(-dt / 2.5));
+  p.d2Value      += (p.d2Target      - p.d2Value)      * (1 - Math.exp(-dt / 2.5));
+  p.shDetValue   += (p.shDetTarget   - p.shDetValue)   * (1 - Math.exp(-dt / 2.0));
 
   try {
     gainNode.gain.cancelScheduledValues(tNow);
@@ -416,6 +438,27 @@ function stepModulation() {
     filterNode.frequency.setValueAtTime(filterNode.frequency.value, tNow);
     filterNode.frequency.linearRampToValueAtTime(p.breatheValue, tNow + rampDur);
   } catch(e) {}
+  if (oscillator) {
+    try {
+      oscillator.detune.cancelScheduledValues(tNow);
+      oscillator.detune.setValueAtTime(oscillator.detune.value, tNow);
+      oscillator.detune.linearRampToValueAtTime(p.d1Value, tNow + rampDur);
+    } catch(e) {}
+  }
+  if (osc2) {
+    try {
+      osc2.detune.cancelScheduledValues(tNow);
+      osc2.detune.setValueAtTime(osc2.detune.value, tNow);
+      osc2.detune.linearRampToValueAtTime(p.d2Value, tNow + rampDur);
+    } catch(e) {}
+  }
+  if (shimmerOsc) {
+    try {
+      shimmerOsc.detune.cancelScheduledValues(tNow);
+      shimmerOsc.detune.setValueAtTime(shimmerOsc.detune.value, tNow);
+      shimmerOsc.detune.linearRampToValueAtTime(p.shDetValue, tNow + rampDur);
+    } catch(e) {}
+  }
 }
 
 function startWiggle() {
