@@ -197,18 +197,24 @@ let osc2 = null;         // detuned sibling oscillator
 let gainNode = null;     // master envelope (all cutoffs act on this)
 let filterNode = null;   // lowpass, placed before the reverb send
 let voiceNodes = null;   // { oscMix1, oscMix2, dry, wet, convolver }
+let shimmerOsc = null;   // dedicated 2nd-harmonic osc for shimmer LFO
+let shimmerGain = null;
 let wiggleInterval = null;
-let cachedWave = null;
+let modulationInterval = null;
+let modulationParams = null;
 let cachedIR = null;
 
 const CUTOFF_TYPES = ['hard', 'linear', 'exponential', 'midfade', 'rolloff'];
 
-function getPeriodicWave(ctx) {
-  if (cachedWave) return cachedWave;
-  const real = new Float32Array([0, 1.0, 0.3, 0.15, 0.05]);
+function buildRandomWave(ctx) {
+  const h1 = 1.0;
+  const h2 = randBetween(0.1, 0.5);
+  const h3 = randBetween(0.05, 0.25);
+  const h4 = randBetween(0.0, 0.1);
+  const norm = Math.sqrt(h1*h1 + h2*h2 + h3*h3 + h4*h4);
+  const real = new Float32Array([0, h1/norm, h2/norm, h3/norm, h4/norm]);
   const imag = new Float32Array(real.length);
-  cachedWave = ctx.createPeriodicWave(real, imag, { disableNormalization: false });
-  return cachedWave;
+  return ctx.createPeriodicWave(real, imag, { disableNormalization: false });
 }
 
 function getReverbIR(ctx) {
@@ -262,24 +268,31 @@ function startTone() {
   const presetKey = document.getElementById('tone-select').value || 'pure';
   const preset = TONE_PRESETS[presetKey] || TONE_PRESETS.pure;
   const now = ctx.currentTime;
-  const wave = getPeriodicWave(ctx);
 
-  // Master envelope — all cutoff envelopes act here.
+  // Per-round randomised harmonic content.
+  const wave = buildRandomWave(ctx);
+
+  const baseGain = 0.18;
+
+  // Master envelope — click-free exponential attack from true zero.
   gainNode = ctx.createGain();
-  gainNode.gain.setValueAtTime(0, now);
-  gainNode.gain.linearRampToValueAtTime(0.18, now + 0.05);
+  gainNode.gain.setValueAtTime(0.0001, now);
+  gainNode.gain.exponentialRampToValueAtTime(baseGain, now + 0.120);
 
   // Lowpass (before reverb send so rolloff affects both dry and wet).
+  // Starts mid-range so timbre-breathe modulation is seamless.
   filterNode = ctx.createBiquadFilter();
   filterNode.type = 'lowpass';
-  filterNode.frequency.setValueAtTime(20000, now);
+  filterNode.frequency.setValueAtTime(3750, now);
   filterNode.Q.setValueAtTime(0.7, now);
 
-  // Dry / wet split with ~40% wet.
+  // Dry / wet split — per-round random wet 0.25–0.55.
+  const wetLevel = randBetween(0.25, 0.55);
+  const dryLevel = 1 - wetLevel;
   const dry = ctx.createGain();
-  dry.gain.setValueAtTime(0.6, now);
+  dry.gain.setValueAtTime(dryLevel, now);
   const wet = ctx.createGain();
-  wet.gain.setValueAtTime(0.4, now);
+  wet.gain.setValueAtTime(wetLevel, now);
   const convolver = ctx.createConvolver();
   convolver.buffer = getReverbIR(ctx);
 
@@ -298,7 +311,8 @@ function startTone() {
   oscMix1.connect(filterNode);
   oscMix2.connect(filterNode);
 
-  const cents = 4 + Math.random() * 2; // 4–6 cents
+  // Per-round detune spread: 1–8 cents total.
+  const cents = randBetween(1, 8);
   oscillator = ctx.createOscillator();
   oscillator.setPeriodicWave(wave);
   oscillator.frequency.setValueAtTime(preset.freq, now);
@@ -313,12 +327,76 @@ function startTone() {
   osc2.connect(oscMix2);
   osc2.start();
 
+  // Dedicated 2nd-harmonic oscillator whose gain is LFO-modulated for shimmer.
+  shimmerOsc = ctx.createOscillator();
+  shimmerOsc.type = 'sine';
+  shimmerOsc.frequency.setValueAtTime(preset.freq * 2, now);
+  shimmerGain = ctx.createGain();
+  shimmerGain.gain.setValueAtTime(0.1, now);
+  shimmerOsc.connect(shimmerGain);
+  shimmerGain.connect(filterNode);
+  shimmerOsc.start();
+
   voiceNodes = { oscMix1, oscMix2, dry, wet, convolver };
 
+  modulationParams = {
+    baseGain,
+    shimmerPeriod: randBetween(3, 7),
+    tremoloRate: randBetween(0.3, 0.8),
+    breathePeriod: randBetween(6, 12),
+    shimmerPhase: Math.random() * Math.PI * 2,
+    tremoloPhase: Math.random() * Math.PI * 2,
+    breathePhase: Math.random() * Math.PI * 2,
+    startPerf: performance.now(),
+  };
+
   toneStart = performance.now();
+  // Wait for attack to finish so modulation doesn't clobber the ramp.
+  setTimeout(() => { if (gainNode) startModulation(); }, 140);
   if (document.getElementById('wiggly-toggle').checked) {
     setTimeout(() => { if (oscillator) startWiggle(); }, 1000);
   }
+}
+
+function startModulation() {
+  clearInterval(modulationInterval);
+  stepModulation();
+  modulationInterval = setInterval(stepModulation, 50);
+}
+
+function stepModulation() {
+  if (!gainNode || !filterNode || !shimmerGain || !modulationParams) return;
+  const ctx = getAudioCtx();
+  const tNow = ctx.currentTime;
+  const rampDur = 0.08;
+  const elapsed = (performance.now() - modulationParams.startPerf) / 1000;
+
+  // Tremolo on master gain: ±4% around baseGain.
+  const tremPhase = modulationParams.tremoloPhase + 2 * Math.PI * modulationParams.tremoloRate * elapsed;
+  const tremTarget = modulationParams.baseGain * (1 + 0.04 * Math.sin(tremPhase));
+  try {
+    gainNode.gain.cancelScheduledValues(tNow);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, tNow);
+    gainNode.gain.linearRampToValueAtTime(tremTarget, tNow + rampDur);
+  } catch(e) {}
+
+  // Shimmer: swing 2nd-harmonic gain between ~0.02 and 0.18.
+  const shimPhase = modulationParams.shimmerPhase + 2 * Math.PI * (elapsed / modulationParams.shimmerPeriod);
+  const shimTarget = Math.max(0.001, 0.1 + 0.08 * Math.sin(shimPhase));
+  try {
+    shimmerGain.gain.cancelScheduledValues(tNow);
+    shimmerGain.gain.setValueAtTime(shimmerGain.gain.value, tNow);
+    shimmerGain.gain.linearRampToValueAtTime(shimTarget, tNow + rampDur);
+  } catch(e) {}
+
+  // Timbre breathe: lowpass cutoff between 1500–6000 Hz.
+  const brPhase = modulationParams.breathePhase + 2 * Math.PI * (elapsed / modulationParams.breathePeriod);
+  const brTarget = 3750 + 2250 * Math.sin(brPhase);
+  try {
+    filterNode.frequency.cancelScheduledValues(tNow);
+    filterNode.frequency.setValueAtTime(filterNode.frequency.value, tNow);
+    filterNode.frequency.linearRampToValueAtTime(brTarget, tNow + rampDur);
+  } catch(e) {}
 }
 
 function startWiggle() {
@@ -337,6 +415,13 @@ function startWiggle() {
         o.frequency.linearRampToValueAtTime(target, t + dur);
       } catch(e) {}
     });
+    if (shimmerOsc) {
+      try {
+        shimmerOsc.frequency.cancelScheduledValues(t);
+        shimmerOsc.frequency.setValueAtTime(shimmerOsc.frequency.value, t);
+        shimmerOsc.frequency.linearRampToValueAtTime(target * 2, t + dur);
+      } catch(e) {}
+    }
   };
   step();
   wiggleInterval = setInterval(step, 220);
@@ -344,23 +429,38 @@ function startWiggle() {
 
 function stopTone() {
   clearInterval(wiggleInterval); wiggleInterval = null;
+  clearInterval(modulationInterval); modulationInterval = null;
   if (!gainNode || !oscillator) return;
   const ctx = getAudioCtx();
   const o1 = oscillator;
   const o2 = osc2;
+  const sh = shimmerOsc;
+  const shG = shimmerGain;
   const gn = gainNode;
   const filt = filterNode;
   const extras = voiceNodes;
-  oscillator = null; osc2 = null; gainNode = null; filterNode = null; voiceNodes = null;
+  oscillator = null; osc2 = null; gainNode = null; filterNode = null;
+  voiceNodes = null; shimmerOsc = null; shimmerGain = null;
+  modulationParams = null;
 
   const now = ctx.currentTime;
-  const curGain = gn.gain.value;
   const antiClick = 0.04;
   const cutoff = CUTOFF_TYPES[Math.floor(Math.random() * CUTOFF_TYPES.length)];
   let endAt;
 
+  // Cancel all scheduled modulation values and pin each param to its current
+  // value before the cutoff envelope takes over.
   gn.gain.cancelScheduledValues(now);
-  gn.gain.setValueAtTime(curGain, now);
+  gn.gain.setValueAtTime(gn.gain.value, now);
+  if (filt) {
+    filt.frequency.cancelScheduledValues(now);
+    filt.frequency.setValueAtTime(filt.frequency.value, now);
+  }
+  if (shG) {
+    shG.gain.cancelScheduledValues(now);
+    shG.gain.setValueAtTime(shG.gain.value, now);
+  }
+  const curGain = gn.gain.value;
 
   if (cutoff === 'hard') {
     gn.gain.linearRampToValueAtTime(0, now + antiClick);
@@ -391,8 +491,6 @@ function stopTone() {
   } else { // rolloff
     const dur = 1 + Math.random();
     if (filt) {
-      filt.frequency.cancelScheduledValues(now);
-      filt.frequency.setValueAtTime(filt.frequency.value, now);
       filt.frequency.exponentialRampToValueAtTime(200, now + dur);
     }
     gn.gain.setValueAtTime(curGain, now + dur);
@@ -404,6 +502,8 @@ function stopTone() {
   setTimeout(() => {
     try { if (o1) { o1.stop(); o1.disconnect(); } } catch(e){}
     try { if (o2) { o2.stop(); o2.disconnect(); } } catch(e){}
+    try { if (sh) { sh.stop(); sh.disconnect(); } } catch(e){}
+    try { if (shG) shG.disconnect(); } catch(e){}
     try { if (filt) filt.disconnect(); } catch(e){}
     try { if (gn) gn.disconnect(); } catch(e){}
     if (extras) {
