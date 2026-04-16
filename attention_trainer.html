@@ -194,7 +194,10 @@ document.addEventListener('visibilitychange', async () => {
 let audioCtx = null;
 let oscillator = null;
 let gainNode = null;
+let filterNode = null;
 let wiggleInterval = null;
+
+const CUTOFF_TYPES = ['hard', 'linear', 'exponential', 'midfade', 'rolloff'];
 
 const TONE_PRESETS = {
   pure:  { freq: 440, type: 'sine' },
@@ -232,11 +235,16 @@ function startTone() {
   gainNode = ctx.createGain();
   gainNode.gain.setValueAtTime(0, ctx.currentTime);
   gainNode.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.05);
+  filterNode = ctx.createBiquadFilter();
+  filterNode.type = 'lowpass';
+  filterNode.frequency.setValueAtTime(20000, ctx.currentTime);
+  filterNode.Q.setValueAtTime(0.7, ctx.currentTime);
+  filterNode.connect(gainNode);
   gainNode.connect(ctx.destination);
   oscillator = ctx.createOscillator();
   oscillator.type = preset.type;
   oscillator.frequency.setValueAtTime(preset.freq, ctx.currentTime);
-  oscillator.connect(gainNode);
+  oscillator.connect(filterNode);
   oscillator.start();
   toneStart = performance.now();
   if (document.getElementById('wiggly-toggle').checked) {
@@ -265,10 +273,62 @@ function stopTone() {
   clearInterval(wiggleInterval); wiggleInterval = null;
   if (!gainNode || !oscillator) return;
   const ctx = getAudioCtx();
-  gainNode.gain.setValueAtTime(gainNode.gain.value, ctx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.04);
-  setTimeout(() => { try { oscillator.stop(); oscillator.disconnect(); gainNode.disconnect(); } catch(e){} }, 60);
-  oscillator = null; gainNode = null;
+  const osc = oscillator;
+  const gn = gainNode;
+  const filt = filterNode;
+  oscillator = null; gainNode = null; filterNode = null;
+
+  const now = ctx.currentTime;
+  const curGain = gn.gain.value;
+  const antiClick = 0.04;
+  const cutoff = CUTOFF_TYPES[Math.floor(Math.random() * CUTOFF_TYPES.length)];
+  let endAt;
+
+  gn.gain.cancelScheduledValues(now);
+  gn.gain.setValueAtTime(curGain, now);
+
+  if (cutoff === 'hard') {
+    gn.gain.linearRampToValueAtTime(0, now + antiClick);
+    endAt = now + antiClick;
+  } else if (cutoff === 'linear') {
+    const dur = 0.5 + Math.random() * 2.5;
+    gn.gain.linearRampToValueAtTime(0, now + dur);
+    endAt = now + dur;
+  } else if (cutoff === 'exponential') {
+    const dur = 0.5 + Math.random() * 2.5;
+    gn.gain.exponentialRampToValueAtTime(0.0008, now + dur);
+    gn.gain.linearRampToValueAtTime(0, now + dur + antiClick);
+    endAt = now + dur + antiClick;
+  } else if (cutoff === 'midfade') {
+    const dur = 0.5 + Math.random() * 2.5;
+    const cutPct = 0.2 + Math.random() * 0.6;
+    const cutTime = dur * cutPct;
+    gn.gain.linearRampToValueAtTime(0, now + dur);
+    setTimeout(() => {
+      const t = ctx.currentTime;
+      try {
+        gn.gain.cancelScheduledValues(t);
+        gn.gain.setValueAtTime(gn.gain.value, t);
+        gn.gain.linearRampToValueAtTime(0, t + antiClick);
+      } catch(e){}
+    }, cutTime * 1000);
+    endAt = now + cutTime + antiClick;
+  } else { // rolloff
+    const dur = 1 + Math.random();
+    if (filt) {
+      filt.frequency.cancelScheduledValues(now);
+      filt.frequency.setValueAtTime(filt.frequency.value, now);
+      filt.frequency.exponentialRampToValueAtTime(200, now + dur);
+    }
+    gn.gain.setValueAtTime(curGain, now + dur);
+    gn.gain.linearRampToValueAtTime(0, now + dur + antiClick);
+    endAt = now + dur + antiClick;
+  }
+
+  const cleanupMs = Math.max(60, (endAt - now) * 1000 + 40);
+  setTimeout(() => {
+    try { osc.stop(); osc.disconnect(); gn.disconnect(); if (filt) filt.disconnect(); } catch(e){}
+  }, cleanupMs);
   toneStop = performance.now();
 }
 
