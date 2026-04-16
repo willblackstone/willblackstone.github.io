@@ -341,14 +341,22 @@ function startTone() {
 
   modulationParams = {
     baseGain,
-    shimmerPeriod: randBetween(3, 7),
-    tremoloRate: randBetween(0.3, 0.8),
-    breathePeriod: randBetween(6, 12),
     shimmerPhase: Math.random() * Math.PI * 2,
     tremoloPhase: Math.random() * Math.PI * 2,
     breathePhase: Math.random() * Math.PI * 2,
-    startPerf: performance.now(),
+    lastTickPerf: performance.now(),
+    nextRetargetAt: 0,
   };
+  pickModulationTargets(modulationParams);
+  // Start "current" values at the first targets so motion begins smoothly.
+  modulationParams.shimmerPeriod = modulationParams.shimmerPeriodTarget;
+  modulationParams.tremoloRate   = modulationParams.tremoloRateTarget;
+  modulationParams.breathePeriod = modulationParams.breathePeriodTarget;
+  modulationParams.tremoloDepth  = modulationParams.tremoloDepthTarget;
+  modulationParams.shimmerDepth  = modulationParams.shimmerDepthTarget;
+  modulationParams.shimmerCenter = modulationParams.shimmerCenterTarget;
+  modulationParams.breatheDepth  = modulationParams.breatheDepthTarget;
+  modulationParams.breatheCenter = modulationParams.breatheCenterTarget;
 
   toneStart = performance.now();
   // Wait for attack to finish so modulation doesn't clobber the ramp.
@@ -364,34 +372,64 @@ function startModulation() {
   modulationInterval = setInterval(stepModulation, 50);
 }
 
+function pickModulationTargets(p) {
+  p.shimmerPeriodTarget = randBetween(3, 7);
+  p.tremoloRateTarget   = randBetween(0.3, 0.8);
+  p.breathePeriodTarget = randBetween(6, 12);
+  p.tremoloDepthTarget  = randBetween(0.02, 0.06);
+  p.shimmerDepthTarget  = randBetween(0.04, 0.10);
+  p.shimmerCenterTarget = randBetween(0.07, 0.14);
+  p.breatheDepthTarget  = randBetween(1200, 2250);
+  p.breatheCenterTarget = randBetween(2800, 4200);
+  p.nextRetargetAt = performance.now() + randBetween(1800, 4500);
+}
+
 function stepModulation() {
   if (!gainNode || !filterNode || !shimmerGain || !modulationParams) return;
+  const p = modulationParams;
   const ctx = getAudioCtx();
   const tNow = ctx.currentTime;
   const rampDur = 0.08;
-  const elapsed = (performance.now() - modulationParams.startPerf) / 1000;
+  const nowMs = performance.now();
+  const dt = Math.max(0.001, (nowMs - p.lastTickPerf) / 1000);
+  p.lastTickPerf = nowMs;
 
-  // Tremolo on master gain: ±4% around baseGain.
-  const tremPhase = modulationParams.tremoloPhase + 2 * Math.PI * modulationParams.tremoloRate * elapsed;
-  const tremTarget = modulationParams.baseGain * (1 + 0.04 * Math.sin(tremPhase));
+  if (nowMs >= p.nextRetargetAt) pickModulationTargets(p);
+
+  // Smooth each "current" parameter toward its target — ~1.8s time constant
+  // means none of the LFOs ever lock into a steady rhythm.
+  const alpha = 1 - Math.exp(-dt / 1.8);
+  p.shimmerPeriod  += (p.shimmerPeriodTarget  - p.shimmerPeriod)  * alpha;
+  p.tremoloRate    += (p.tremoloRateTarget    - p.tremoloRate)    * alpha;
+  p.breathePeriod  += (p.breathePeriodTarget  - p.breathePeriod)  * alpha;
+  p.tremoloDepth   += (p.tremoloDepthTarget   - p.tremoloDepth)   * alpha;
+  p.shimmerDepth   += (p.shimmerDepthTarget   - p.shimmerDepth)   * alpha;
+  p.shimmerCenter  += (p.shimmerCenterTarget  - p.shimmerCenter)  * alpha;
+  p.breatheDepth   += (p.breatheDepthTarget   - p.breatheDepth)   * alpha;
+  p.breatheCenter  += (p.breatheCenterTarget  - p.breatheCenter)  * alpha;
+
+  // Advance phases using the current instantaneous rate + mild tick jitter
+  // so the period feels organic rather than metronomic.
+  const jitter = 1 + (Math.random() - 0.5) * 0.18;
+  p.tremoloPhase += 2 * Math.PI * p.tremoloRate * dt * jitter;
+  p.shimmerPhase += 2 * Math.PI * (dt / Math.max(0.5, p.shimmerPeriod)) * jitter;
+  p.breathePhase += 2 * Math.PI * (dt / Math.max(1.0, p.breathePeriod)) * jitter;
+
+  const tremTarget = p.baseGain * (1 + p.tremoloDepth * Math.sin(p.tremoloPhase));
+  const shimTarget = Math.max(0.001, p.shimmerCenter + p.shimmerDepth * Math.sin(p.shimmerPhase));
+  const brRaw = p.breatheCenter + p.breatheDepth * Math.sin(p.breathePhase);
+  const brTarget = Math.max(1500, Math.min(6000, brRaw));
+
   try {
     gainNode.gain.cancelScheduledValues(tNow);
     gainNode.gain.setValueAtTime(gainNode.gain.value, tNow);
     gainNode.gain.linearRampToValueAtTime(tremTarget, tNow + rampDur);
   } catch(e) {}
-
-  // Shimmer: swing 2nd-harmonic gain between ~0.02 and 0.18.
-  const shimPhase = modulationParams.shimmerPhase + 2 * Math.PI * (elapsed / modulationParams.shimmerPeriod);
-  const shimTarget = Math.max(0.001, 0.1 + 0.08 * Math.sin(shimPhase));
   try {
     shimmerGain.gain.cancelScheduledValues(tNow);
     shimmerGain.gain.setValueAtTime(shimmerGain.gain.value, tNow);
     shimmerGain.gain.linearRampToValueAtTime(shimTarget, tNow + rampDur);
   } catch(e) {}
-
-  // Timbre breathe: lowpass cutoff between 1500–6000 Hz.
-  const brPhase = modulationParams.breathePhase + 2 * Math.PI * (elapsed / modulationParams.breathePeriod);
-  const brTarget = 3750 + 2250 * Math.sin(brPhase);
   try {
     filterNode.frequency.cancelScheduledValues(tNow);
     filterNode.frequency.setValueAtTime(filterNode.frequency.value, tNow);
