@@ -203,6 +203,7 @@ let wiggleInterval = null;
 let modulationInterval = null;
 let modulationParams = null;
 let cachedIR = null;
+let sessionWave = null;  // periodic wave built once per session, reused each round
 
 const CUTOFF_TYPES = ['hard', 'linear', 'exponential', 'midfade', 'rolloff'];
 
@@ -269,8 +270,8 @@ function startTone() {
   const preset = TONE_PRESETS[presetKey] || TONE_PRESETS.pure;
   const now = ctx.currentTime;
 
-  // Per-round randomised harmonic content.
-  const wave = buildRandomWave(ctx);
+  // Timbre is fixed for the session — use the wave built at session start.
+  const wave = sessionWave || buildRandomWave(ctx);
 
   const baseGain = 0.18;
 
@@ -560,7 +561,8 @@ function stopTone() {
     endAt = now + dur + antiClick;
   }
 
-  const cleanupMs = Math.max(60, (endAt - now) * 1000 + 40);
+  const fadeMs = Math.max(40, (endAt - now) * 1000);
+  const cleanupMs = fadeMs + 40;
   setTimeout(() => {
     try { if (o1) { o1.stop(); o1.disconnect(); } } catch(e){}
     try { if (o2) { o2.stop(); o2.disconnect(); } } catch(e){}
@@ -577,6 +579,7 @@ function stopTone() {
     }
   }, cleanupMs);
   toneStop = performance.now();
+  return fadeMs; // ms until gain reaches zero — caller uses this to time listenStart
 }
 
 function playCue(done) {
@@ -655,20 +658,25 @@ function beginRoundTone() {
   const maxS = parseInt(document.getElementById('tone-max').value) || 60;
   const duration = randBetween(minS * 1000, maxS * 1000);
   roundTimer = setTimeout(() => {
-    stopTone();
-    state = 'listening';
-    listenStart = performance.now();
-    setZone('listening', '◉', 'Tap now!', 'The tone has stopped');
-    listenTimeout = setTimeout(() => {
-      if (state === 'listening') {
-        state = 'missed';
-        setZone('missed', '✕', 'Too slow', 'Tap within 2.5s of the tone stopping');
-        rounds.push({ round: currentRound, rt: null, missed: true });
-        updateStats();
-        addHistory(currentRound, null, true);
-        setTimeout(startRound, 1500);
-      }
-    }, missedWindow);
+    const fadeMs = stopTone();
+    // Keep state = 'waiting' during the fade so early taps are ignored.
+    // Switch to 'listening' and start the RT clock only when gain hits zero.
+    setTimeout(() => {
+      if (!sessionActive) return;
+      state = 'listening';
+      listenStart = performance.now();
+      setZone('listening', '◉', 'Tap now!', 'The tone has stopped');
+      listenTimeout = setTimeout(() => {
+        if (state === 'listening') {
+          state = 'missed';
+          setZone('missed', '✕', 'Too slow', 'Tap within 2.5s of the tone stopping');
+          rounds.push({ round: currentRound, rt: null, missed: true });
+          updateStats();
+          addHistory(currentRound, null, true);
+          setTimeout(startRound, 1500);
+        }
+      }, missedWindow);
+    }, fadeMs);
   }, duration);
 }
 
@@ -701,6 +709,7 @@ function beginSession() {
   sessionStart = performance.now();
   sessionActive = true;
   currentRound = 0;
+  sessionWave = buildRandomWave(getAudioCtx()); // fixed timbre for the whole session
   document.getElementById('stop-btn').disabled = false;
   document.getElementById('dur-select').disabled = true;
   sessionTimer = setInterval(updateTimer, 500);
