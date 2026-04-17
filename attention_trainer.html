@@ -205,7 +205,6 @@ let modulationParams = null;
 let cachedIR = null;
 let sessionWave = null;  // periodic wave built once per session, reused each round
 
-const CUTOFF_TYPES = ['hard', 'linear', 'exponential', 'midfade', 'rolloff'];
 
 function buildRandomWave(ctx) {
   const h1 = 1.0;
@@ -507,8 +506,10 @@ function stopTone() {
   modulationParams = null;
 
   const now = ctx.currentTime;
-  const antiClick = 0.04;
-  const cutoff = CUTOFF_TYPES[Math.floor(Math.random() * CUTOFF_TYPES.length)];
+  // Always a hard cut — duration randomised between 10–80 ms so there is
+  // no consistent "signature" to the silence arriving, but never long enough
+  // to perceive as a fade-out.
+  const cutDur = randBetween(0.010, 0.080);
   let endAt;
 
   // Cancel all scheduled modulation values and pin each param to its current
@@ -523,43 +524,9 @@ function stopTone() {
     shG.gain.cancelScheduledValues(now);
     shG.gain.setValueAtTime(shG.gain.value, now);
   }
-  const curGain = gn.gain.value;
 
-  if (cutoff === 'hard') {
-    gn.gain.linearRampToValueAtTime(0, now + antiClick);
-    endAt = now + antiClick;
-  } else if (cutoff === 'linear') {
-    const dur = 0.5 + Math.random() * 2.5;
-    gn.gain.linearRampToValueAtTime(0, now + dur);
-    endAt = now + dur;
-  } else if (cutoff === 'exponential') {
-    const dur = 0.5 + Math.random() * 2.5;
-    gn.gain.exponentialRampToValueAtTime(0.0008, now + dur);
-    gn.gain.linearRampToValueAtTime(0, now + dur + antiClick);
-    endAt = now + dur + antiClick;
-  } else if (cutoff === 'midfade') {
-    const dur = 0.5 + Math.random() * 2.5;
-    const cutPct = 0.2 + Math.random() * 0.6;
-    const cutTime = dur * cutPct;
-    gn.gain.linearRampToValueAtTime(0, now + dur);
-    setTimeout(() => {
-      const t = ctx.currentTime;
-      try {
-        gn.gain.cancelScheduledValues(t);
-        gn.gain.setValueAtTime(gn.gain.value, t);
-        gn.gain.linearRampToValueAtTime(0, t + antiClick);
-      } catch(e){}
-    }, cutTime * 1000);
-    endAt = now + cutTime + antiClick;
-  } else { // rolloff
-    const dur = 1 + Math.random();
-    if (filt) {
-      filt.frequency.exponentialRampToValueAtTime(200, now + dur);
-    }
-    gn.gain.setValueAtTime(curGain, now + dur);
-    gn.gain.linearRampToValueAtTime(0, now + dur + antiClick);
-    endAt = now + dur + antiClick;
-  }
+  gn.gain.linearRampToValueAtTime(0, now + cutDur);
+  endAt = now + cutDur;
 
   const fadeMs = Math.max(40, (endAt - now) * 1000);
   const cleanupMs = fadeMs + 40;
