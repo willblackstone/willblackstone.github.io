@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Concentration Practice</title>
+<style>
+  :root {
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f5;
+    --color-background-tertiary: #ebebeb;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #737373;
+    --color-text-tertiary: #a3a3a3;
+    --color-border-secondary: #e0e0e0;
+    --color-border-tertiary: #ebebeb;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #141414;
+      --color-background-secondary: #222222;
+      --color-background-tertiary: #2e2e2e;
+      --color-text-primary: #f0f0f0;
+      --color-text-secondary: #888888;
+      --color-text-tertiary: #555555;
+      --color-border-secondary: #333333;
+      --color-border-tertiary: #2a2a2a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Session progress — thin line at top, no numbers */
+  #progress-track {
+    position: fixed; top: 0; left: 0; width: 100%; height: 2px;
+    background: transparent; z-index: 100;
+  }
+  #progress-fill {
+    height: 100%; width: 0%;
+    background: var(--color-border-secondary);
+    transition: width 1s linear;
+  }
+
+  #app { padding: 1.5rem 1rem 1.25rem; max-width: 420px; margin: 0 auto; }
+
+  .control-label {
+    font-size: 11px; color: var(--color-text-secondary);
+    margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .field-select {
+    width: 100%; padding: 8px 10px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-size: 14px; font-family: var(--font-sans);
+  }
+  .tone-input {
+    width: 48px; min-width: 0; padding: 8px 4px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-size: 14px; text-align: center; font-family: var(--font-sans);
+  }
+  .row { display: flex; gap: 8px; align-items: flex-end; }
+
+  /* Central zone */
+  #swipe-zone {
+    width: 100%;
+    height: min(62vw, 270px);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    cursor: pointer;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    background: var(--color-background-secondary);
+    transition: background 2s ease, border-color 2s ease;
+  }
+
+  /* tone is playing */
+  #swipe-zone.playing {
+    background: #EAF1F8;
+    border-color: transparent;
+    transition: background 1.5s ease, border-color 1.5s ease;
+  }
+  @media (prefers-color-scheme: dark) {
+    #swipe-zone.playing { background: #0B1E30; }
+  }
+
+  /* awaiting swipe */
+  #swipe-zone.respond {
+    background: var(--color-background-secondary);
+    border-color: var(--color-border-secondary);
+    transition: background 0.5s ease, border-color 0.5s ease;
+  }
+
+  /* feedback states */
+  #swipe-zone.feedback-correct {
+    background: #EFF5ED;
+    border-color: transparent;
+    transition: background 0.4s ease;
+  }
+  @media (prefers-color-scheme: dark) {
+    #swipe-zone.feedback-correct { background: #0D2118; }
+  }
+  #swipe-zone.feedback-incorrect {
+    background: var(--color-background-secondary);
+    border-color: transparent;
+    transition: background 0.4s ease;
+  }
+
+  #status-icon { font-size: 26px; line-height: 1; color: var(--color-text-tertiary); }
+  #status-text {
+    font-size: 15px; font-weight: 400;
+    color: var(--color-text-primary);
+    margin-top: 10px; letter-spacing: 0.01em;
+  }
+  #status-sub { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; }
+
+  /* swipe direction hints — only visible during 'respond' */
+  #swipe-hints {
+    margin-top: 20px;
+    display: none;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .swipe-hint {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--color-text-tertiary);
+    letter-spacing: 0.02em;
+  }
+  .hint-arrow { width: 14px; text-align: center; }
+
+  .btn {
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    color: var(--color-text-primary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 20px; font-size: 14px; cursor: pointer;
+    font-family: var(--font-sans);
+  }
+  .btn:hover { background: var(--color-background-secondary); }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); border: 0;
+  }
+</style>
+</head>
+<body>
+<div id="progress-track"><div id="progress-fill"></div></div>
+
+<div id="app">
+  <h1 class="sr-only">Concentration practice</h1>
+
+  <div style="margin-bottom: 1.25rem;">
+    <div class="row" style="margin-bottom: 10px;">
+      <div style="flex: 1.2;">
+        <div class="control-label">Duration</div>
+        <select id="dur-select" class="field-select">
+          <option value="2">2 min</option>
+          <option value="3">3 min</option>
+          <option value="4">4 min</option>
+          <option value="5">5 min</option>
+          <option value="6">6 min</option>
+          <option value="7">7 min</option>
+          <option value="8">8 min</option>
+          <option value="9">9 min</option>
+          <option value="10" selected>10 min</option>
+          <option value="15">15 min</option>
+          <option value="20">20 min</option>
+          <option value="25">25 min</option>
+          <option value="30">30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <div class="control-label">Tone length (s)</div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <input type="number" id="tone-min" min="2" max="30" value="3" class="tone-input">
+          <span style="color: var(--color-text-secondary); font-size: 13px; flex-shrink: 0;">–</span>
+          <input type="number" id="tone-max" min="5" max="120" value="10" class="tone-input">
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="control-label">Tone</div>
+      <select id="tone-select" class="field-select">
+        <option value="pure" selected>Pure (A4)</option>
+        <option value="warm">Warm (E4)</option>
+        <option value="soft">Soft (G4)</option>
+        <option value="bell">Bell (C5)</option>
+        <option value="low">Low (D4)</option>
+        <option value="flute">Flute (D5)</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="swipe-zone">
+    <div id="status-icon">◉</div>
+    <div id="status-text">Tap to begin</div>
+    <div id="status-sub"></div>
+    <div id="swipe-hints">
+      <div class="swipe-hint"><span class="hint-arrow">↑</span> Release</div>
+      <div class="swipe-hint"><span class="hint-arrow">→</span> Drop</div>
+      <div class="swipe-hint"><span class="hint-arrow">↓</span> Cut</div>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+    <button class="btn" id="stop-btn" onclick="endSession()" disabled>End session</button>
+  </div>
+</div>
+
+<script>
+// ─── Wake lock ────────────────────────────────────────────────────────────────
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock && document.visibilityState === 'visible') await requestWakeLock();
+});
+
+// ─── Audio engine (preserved exactly) ────────────────────────────────────────
+
+let audioCtx = null;
+let oscillator = null;   // primary osc
+let osc2 = null;         // detuned sibling
+let gainNode = null;     // master envelope
+let filterNode = null;   // lowpass before reverb send
+let voiceNodes = null;   // { oscMix1, oscMix2, dry, wet, convolver }
+let shimmerOsc = null;   // 2nd-harmonic shimmer osc
+let shimmerGain = null;
+let wiggleInterval = null;
+let modulationInterval = null;
+let modulationParams = null;
+let cachedIR = null;
+let sessionWave = null;  // fixed timbre per session
+
+function buildRandomWave(ctx) {
+  const h1 = 1.0;
+  const h2 = randBetween(0.1, 0.5);
+  const h3 = randBetween(0.05, 0.25);
+  const h4 = randBetween(0.0, 0.1);
+  const norm = Math.sqrt(h1*h1 + h2*h2 + h3*h3 + h4*h4);
+  const real = new Float32Array([0, h1/norm, h2/norm, h3/norm, h4/norm]);
+  const imag = new Float32Array(real.length);
+  return ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+}
+
+function getReverbIR(ctx) {
+  if (cachedIR) return cachedIR;
+  const duration = 2.5;
+  const rate = ctx.sampleRate;
+  const length = Math.max(1, Math.floor(rate * duration));
+  const ir = ctx.createBuffer(2, length, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = ir.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      const t = i / length;
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 3);
+    }
+  }
+  cachedIR = ir;
+  return ir;
+}
+
+const TONE_PRESETS = {
+  pure:  { freq: 440,    type: 'sine' },
+  warm:  { freq: 330,    type: 'triangle' },
+  soft:  { freq: 392,    type: 'sine' },
+  bell:  { freq: 523.25, type: 'sine' },
+  low:   { freq: 293.66, type: 'sine' },
+  flute: { freq: 587.33, type: 'sine' },
+};
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function startTone() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const presetKey = document.getElementById('tone-select').value || 'pure';
+  const preset = TONE_PRESETS[presetKey] || TONE_PRESETS.pure;
+  const now = ctx.currentTime;
+
+  // Timbre is fixed for the session — use the wave built at session start.
+  const wave = sessionWave || buildRandomWave(ctx);
+
+  const baseGain = 0.18;
+
+  // Master envelope — click-free exponential attack from true zero.
+  gainNode = ctx.createGain();
+  gainNode.gain.setValueAtTime(0.0001, now);
+  gainNode.gain.exponentialRampToValueAtTime(baseGain, now + 0.120);
+
+  // Lowpass (before reverb send so rolloff affects both dry and wet).
+  filterNode = ctx.createBiquadFilter();
+  filterNode.type = 'lowpass';
+  filterNode.frequency.setValueAtTime(3750, now);
+  filterNode.Q.setValueAtTime(0.7, now);
+
+  // Dry / wet split — per-round random wet 0.25–0.55.
+  const wetLevel = randBetween(0.25, 0.55);
+  const dryLevel = 1 - wetLevel;
+  const dry = ctx.createGain();
+  dry.gain.setValueAtTime(dryLevel, now);
+  const wet = ctx.createGain();
+  wet.gain.setValueAtTime(wetLevel, now);
+  const convolver = ctx.createConvolver();
+  convolver.buffer = getReverbIR(ctx);
+
+  filterNode.connect(dry);
+  filterNode.connect(convolver);
+  convolver.connect(wet);
+  dry.connect(gainNode);
+  wet.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  // Two detuned oscillators, equal-gain mix.
+  const oscMix1 = ctx.createGain();
+  const oscMix2 = ctx.createGain();
+  oscMix1.gain.setValueAtTime(0.4, now);
+  oscMix2.gain.setValueAtTime(0.4, now);
+  oscMix1.connect(filterNode);
+  oscMix2.connect(filterNode);
+
+  // Detune is the primary rhythm source: two oscillators at fixed offset
+  // produce a constant beat frequency. Give each osc its own random-walk
+  // detune so the beat rate itself wanders unpredictably.
+  const d1Init = randBetween(-6, 0);
+  const d2Init = randBetween(0, 6);
+  oscillator = ctx.createOscillator();
+  oscillator.setPeriodicWave(wave);
+  oscillator.frequency.setValueAtTime(preset.freq, now);
+  oscillator.detune.setValueAtTime(d1Init, now);
+  oscillator.connect(oscMix1);
+  oscillator.start();
+
+  osc2 = ctx.createOscillator();
+  osc2.setPeriodicWave(wave);
+  osc2.frequency.setValueAtTime(preset.freq, now);
+  osc2.detune.setValueAtTime(d2Init, now);
+  osc2.connect(oscMix2);
+  osc2.start();
+
+  // Shimmer osc: not locked to exact 2× (that beats rigidly against the
+  // 2nd harmonic of the chorus oscillators). Drift its detune too.
+  const shDetInit = randBetween(-20, 20);
+  shimmerOsc = ctx.createOscillator();
+  shimmerOsc.type = 'sine';
+  shimmerOsc.frequency.setValueAtTime(preset.freq * 2, now);
+  shimmerOsc.detune.setValueAtTime(shDetInit, now);
+  shimmerGain = ctx.createGain();
+  shimmerGain.gain.setValueAtTime(0.08, now);
+  shimmerOsc.connect(shimmerGain);
+  shimmerGain.connect(filterNode);
+  shimmerOsc.start();
+
+  voiceNodes = { oscMix1, oscMix2, dry, wet, convolver };
+
+  modulationParams = {
+    baseGain,
+    lastTickPerf: performance.now(),
+    tremoloValue: baseGain,  shimmerValue: 0.08, breatheValue: 3750,
+    tremoloTarget: baseGain, shimmerTarget: 0.08, breatheTarget: 3750,
+    tremoloNextAt: 0, shimmerNextAt: 0, breatheNextAt: 0,
+    d1Value: d1Init, d2Value: d2Init, shDetValue: shDetInit,
+    d1Target: d1Init, d2Target: d2Init, shDetTarget: shDetInit,
+    d1NextAt: 0, d2NextAt: 0, shDetNextAt: 0,
+  };
+
+  // Wait for attack to finish so modulation doesn't clobber the ramp.
+  setTimeout(() => { if (gainNode) startModulation(); }, 140);
+}
+
+function startModulation() {
+  clearInterval(modulationInterval);
+  stepModulation();
+  modulationInterval = setInterval(stepModulation, 50);
+}
+
+// Each parameter retargets on its own irregular schedule. No shared phase,
+// no sine — motion is a smoothed random walk so nothing lands on a rhythm.
+function retargetTremolo(p) {
+  p.tremoloTarget = p.baseGain * randBetween(0.96, 1.04);
+  p.tremoloNextAt = performance.now() + randBetween(600, 3500);
+}
+function retargetShimmer(p) {
+  p.shimmerTarget = randBetween(0.03, 0.14);
+  p.shimmerNextAt = performance.now() + randBetween(600, 3500);
+}
+function retargetBreathe(p) {
+  p.breatheTarget = randBetween(1500, 6000);
+  p.breatheNextAt = performance.now() + randBetween(1500, 7000);
+}
+function retargetD1(p) {
+  p.d1Target = randBetween(-7, 7);
+  p.d1NextAt = performance.now() + randBetween(700, 3000);
+}
+function retargetD2(p) {
+  p.d2Target = randBetween(-7, 7);
+  p.d2NextAt = performance.now() + randBetween(700, 3000);
+}
+function retargetShDet(p) {
+  p.shDetTarget = randBetween(-30, 30);
+  p.shDetNextAt = performance.now() + randBetween(500, 2500);
+}
+
+function stepModulation() {
+  if (!gainNode || !filterNode || !shimmerGain || !modulationParams) return;
+  const p = modulationParams;
+  const ctx = getAudioCtx();
+  const tNow = ctx.currentTime;
+  const rampDur = 0.08;
+  const nowMs = performance.now();
+  const dt = Math.max(0.001, (nowMs - p.lastTickPerf) / 1000);
+  p.lastTickPerf = nowMs;
+
+  if (nowMs >= p.tremoloNextAt) retargetTremolo(p);
+  if (nowMs >= p.shimmerNextAt) retargetShimmer(p);
+  if (nowMs >= p.breatheNextAt) retargetBreathe(p);
+  if (nowMs >= p.d1NextAt) retargetD1(p);
+  if (nowMs >= p.d2NextAt) retargetD2(p);
+  if (nowMs >= p.shDetNextAt) retargetShDet(p);
+
+  // Smooth toward targets. Detunes smooth slowly for a singing chorus feel.
+  p.tremoloValue += (p.tremoloTarget - p.tremoloValue) * (1 - Math.exp(-dt / 1.2));
+  p.shimmerValue += (p.shimmerTarget - p.shimmerValue) * (1 - Math.exp(-dt / 1.2));
+  p.breatheValue += (p.breatheTarget - p.breatheValue) * (1 - Math.exp(-dt / 2.0));
+  p.d1Value      += (p.d1Target      - p.d1Value)      * (1 - Math.exp(-dt / 2.5));
+  p.d2Value      += (p.d2Target      - p.d2Value)      * (1 - Math.exp(-dt / 2.5));
+  p.shDetValue   += (p.shDetTarget   - p.shDetValue)   * (1 - Math.exp(-dt / 2.0));
+
+  try {
+    gainNode.gain.cancelScheduledValues(tNow);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, tNow);
+    gainNode.gain.linearRampToValueAtTime(p.tremoloValue, tNow + rampDur);
+  } catch(e) {}
+  try {
+    shimmerGain.gain.cancelScheduledValues(tNow);
+    shimmerGain.gain.setValueAtTime(shimmerGain.gain.value, tNow);
+    shimmerGain.gain.linearRampToValueAtTime(Math.max(0.001, p.shimmerValue), tNow + rampDur);
+  } catch(e) {}
+  try {
+    filterNode.frequency.cancelScheduledValues(tNow);
+    filterNode.frequency.setValueAtTime(filterNode.frequency.value, tNow);
+    filterNode.frequency.linearRampToValueAtTime(p.breatheValue, tNow + rampDur);
+  } catch(e) {}
+  if (oscillator) {
+    try {
+      oscillator.detune.cancelScheduledValues(tNow);
+      oscillator.detune.setValueAtTime(oscillator.detune.value, tNow);
+      oscillator.detune.linearRampToValueAtTime(p.d1Value, tNow + rampDur);
+    } catch(e) {}
+  }
+  if (osc2) {
+    try {
+      osc2.detune.cancelScheduledValues(tNow);
+      osc2.detune.setValueAtTime(osc2.detune.value, tNow);
+      osc2.detune.linearRampToValueAtTime(p.d2Value, tNow + rampDur);
+    } catch(e) {}
+  }
+  if (shimmerOsc) {
+    try {
+      shimmerOsc.detune.cancelScheduledValues(tNow);
+      shimmerOsc.detune.setValueAtTime(shimmerOsc.detune.value, tNow);
+      shimmerOsc.detune.linearRampToValueAtTime(p.shDetValue, tNow + rampDur);
+    } catch(e) {}
+  }
+}
+
+// endingType: 'release' | 'drop' | 'cut'
+// Returns fadeMs — milliseconds until gain reaches zero.
+// The UI uses this to time the transition into the respond state.
+function stopTone(endingType) {
+  clearInterval(wiggleInterval); wiggleInterval = null;
+  clearInterval(modulationInterval); modulationInterval = null;
+  if (!gainNode || !oscillator) return 0;
+
+  const ctx = getAudioCtx();
+  const o1  = oscillator;
+  const o2_ = osc2;
+  const sh  = shimmerOsc;
+  const shG = shimmerGain;
+  const gn  = gainNode;
+  const filt = filterNode;
+  const extras = voiceNodes;
+
+  // Null out globals immediately so no concurrent modulation fires.
+  oscillator = null; osc2 = null; gainNode = null; filterNode = null;
+  voiceNodes = null; shimmerOsc = null; shimmerGain = null;
+  modulationParams = null;
+
+  const now = ctx.currentTime;
+
+  // Cancel all scheduled modulation values and pin to current value
+  // before the endpoint envelope takes over.
+  gn.gain.cancelScheduledValues(now);
+  gn.gain.setValueAtTime(gn.gain.value, now);
+  if (filt) {
+    filt.frequency.cancelScheduledValues(now);
+    filt.frequency.setValueAtTime(filt.frequency.value, now);
+  }
+  if (shG) {
+    shG.gain.cancelScheduledValues(now);
+    shG.gain.setValueAtTime(shG.gain.value, now);
+  }
+
+  // Three perceptibly distinct ending shapes:
+  //   Release — slow, gentle fade   2–4 s
+  //   Drop    — medium fade         0.5–1.5 s
+  //   Cut     — near-instant        40 ms anti-click ramp
+  let fadeDur;
+  if (endingType === 'release') {
+    fadeDur = randBetween(2.0, 4.0);
+  } else if (endingType === 'drop') {
+    fadeDur = randBetween(0.5, 1.5);
+  } else {
+    fadeDur = 0.040;
+  }
+
+  gn.gain.linearRampToValueAtTime(0, now + fadeDur);
+
+  const fadeMs = fadeDur * 1000;
+  const cleanupMs = fadeMs + 300;
+
+  setTimeout(() => {
+    try { if (o1)  { o1.stop();  o1.disconnect();  } } catch(e) {}
+    try { if (o2_) { o2_.stop(); o2_.disconnect(); } } catch(e) {}
+    try { if (sh)  { sh.stop();  sh.disconnect();  } } catch(e) {}
+    try { if (shG) shG.disconnect(); } catch(e) {}
+    try { if (filt) filt.disconnect(); } catch(e) {}
+    try { if (gn) gn.disconnect(); } catch(e) {}
+    if (extras) {
+      try { extras.oscMix1.disconnect(); } catch(e) {}
+      try { extras.oscMix2.disconnect(); } catch(e) {}
+      try { extras.dry.disconnect(); } catch(e) {}
+      try { extras.wet.disconnect(); } catch(e) {}
+      try { extras.convolver.disconnect(); } catch(e) {}
+    }
+  }, cleanupMs);
+
+  return fadeMs;
+}
+
+function playEndChime() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const t0 = ctx.currentTime;
+  const notes = [523.25, 659.25, 783.99];
+  const len = 0.35;
+  const gap = 0.12;
+  notes.forEach((f, i) => {
+    const start = t0 + i * gap;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(0.16, start + 0.02);
+    g.gain.linearRampToValueAtTime(0, start + len);
+    g.connect(ctx.destination);
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f, start);
+    o.connect(g);
+    o.start(start);
+    o.stop(start + len + 0.05);
+  });
+}
+
+function randBetween(a, b) { return a + Math.random() * (b - a); }
+
+// ─── Session / round logic ────────────────────────────────────────────────────
+
+// States: idle | pause | playing | respond | feedback | done
+let state = 'idle';
+let sessionActive = false;
+let sessionDuration = 0;
+let sessionStart = 0;
+let sessionTimer = null;
+let roundTimer = null;
+let pauseTimeout = null;
+let feedbackTimeout = null;
+let currentEndingType = null;
+
+const ENDING_NAMES = { release: 'Release', drop: 'Drop', cut: 'Cut' };
+
+function setZone(cls, icon, text, sub) {
+  document.getElementById('swipe-zone').className = cls || '';
+  document.getElementById('status-icon').textContent = icon || '';
+  document.getElementById('status-text').textContent = text || '';
+  document.getElementById('status-sub').textContent = sub || '';
+}
+
+function showHints(visible) {
+  document.getElementById('swipe-hints').style.display = visible ? 'flex' : 'none';
+}
+
+function startRound() {
+  if (!sessionActive) return;
+  showHints(false);
+  state = 'pause';
+  // Silence between rounds is part of the practice — no UI activity.
+  setZone('', '', '', '');
+  pauseTimeout = setTimeout(() => {
+    if (!sessionActive) return;
+    beginTone();
+  }, randBetween(3000, 6000));
+}
+
+function beginTone() {
+  if (!sessionActive) return;
+  state = 'playing';
+  // During the tone: just the background color shift. No instruction.
+  setZone('playing', '', '', '');
+  showHints(false);
+
+  const endings = ['release', 'drop', 'cut'];
+  currentEndingType = endings[Math.floor(Math.random() * endings.length)];
+
+  startTone();
+
+  const minS = parseInt(document.getElementById('tone-min').value) || 3;
+  const maxS = parseInt(document.getElementById('tone-max').value) || 10;
+  const toneDur = randBetween(minS * 1000, maxS * 1000);
+
+  roundTimer = setTimeout(() => {
+    if (!sessionActive) return;
+    const fadeMs = stopTone(currentEndingType);
+    // Keep the zone in 'playing' state throughout the entire fade — the
+    // meditator should perceive the ending through listening, not through
+    // a UI change. Only reveal the swipe hints once the tone is fully silent.
+    setTimeout(() => {
+      if (!sessionActive) return;
+      state = 'respond';
+      setZone('respond', '', '', '');
+      showHints(true);
+    }, fadeMs);
+  }, toneDur);
+}
+
+function handleGuess(guess) {
+  if (state !== 'respond') return;
+  state = 'feedback';
+  showHints(false);
+
+  const correct = guess === currentEndingType;
+  const actualName = ENDING_NAMES[currentEndingType];
+
+  if (correct) {
+    setZone('feedback-correct', '◎', 'Correct', actualName);
+  } else {
+    setZone('feedback-incorrect', '◌', 'That was a ' + actualName.toLowerCase(), '');
+  }
+
+  feedbackTimeout = setTimeout(startRound, randBetween(2000, 3000));
+}
+
+function beginSession() {
+  if (sessionActive) return;
+  sessionDuration = parseInt(document.getElementById('dur-select').value) * 60 * 1000;
+  sessionStart = performance.now();
+  sessionActive = true;
+  sessionWave = buildRandomWave(getAudioCtx());
+  document.getElementById('stop-btn').disabled = false;
+  document.getElementById('dur-select').disabled = true;
+  document.getElementById('tone-select').disabled = true;
+  document.getElementById('tone-min').disabled = true;
+  document.getElementById('tone-max').disabled = true;
+  sessionTimer = setInterval(updateProgress, 500);
+  requestWakeLock();
+  startRound();
+}
+
+function updateProgress() {
+  if (!sessionActive) return;
+  const elapsed = performance.now() - sessionStart;
+  const remaining = Math.max(0, sessionDuration - elapsed);
+  if (remaining <= 0) { endSession(); return; }
+  const pct = (elapsed / sessionDuration) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function endSession() {
+  const wasActive = sessionActive;
+  sessionActive = false;
+  state = 'done';
+  clearInterval(sessionTimer);
+  clearTimeout(roundTimer);
+  clearTimeout(pauseTimeout);
+  clearTimeout(feedbackTimeout);
+  stopTone('cut');
+  if (wasActive) { try { playEndChime(); } catch(e) {} }
+  releaseWakeLock();
+  showHints(false);
+  setZone('', '◉', 'Session complete', '');
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('stop-btn').disabled = true;
+  document.getElementById('dur-select').disabled = false;
+  document.getElementById('tone-select').disabled = false;
+  document.getElementById('tone-min').disabled = false;
+  document.getElementById('tone-max').disabled = false;
+}
+
+// ─── Gesture handling ─────────────────────────────────────────────────────────
+// Swipe up   → Release
+// Swipe right → Drop
+// Swipe down  → Cut
+// Minimum swipe distance: 40px
+// A tap (no significant movement) in idle/done state starts the session.
+
+const zone = document.getElementById('swipe-zone');
+let pStartX = 0, pStartY = 0;
+let pActive = false;
+
+zone.addEventListener('pointerdown', e => {
+  pStartX = e.clientX;
+  pStartY = e.clientY;
+  pActive = true;
+  try { zone.setPointerCapture(e.pointerId); } catch(err) {}
+});
+
+zone.addEventListener('pointerup', e => {
+  if (!pActive) return;
+  pActive = false;
+  const dx = e.clientX - pStartX;
+  const dy = e.clientY - pStartY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  if (state === 'idle' || state === 'done') {
+    beginSession();
+    return;
+  }
+
+  if (state === 'respond' && dist >= 40) {
+    if (Math.abs(dy) >= Math.abs(dx)) {
+      handleGuess(dy < 0 ? 'release' : 'cut');
+    } else if (dx > 0) {
+      handleGuess('drop');
+    }
+    // left swipe: unrecognised — user can try again
+  }
+});
+
+zone.addEventListener('pointercancel', () => { pActive = false; });
+</script>
+</body>
+</html>
