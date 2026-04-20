@@ -220,9 +220,9 @@
     <div id="status-text">Tap to begin</div>
     <div id="status-sub"></div>
     <div id="swipe-hints">
-      <div class="swipe-hint"><span class="hint-arrow">↑</span> Release</div>
-      <div class="swipe-hint"><span class="hint-arrow">→</span> Drop</div>
-      <div class="swipe-hint"><span class="hint-arrow">↓</span> Cut</div>
+      <div class="swipe-hint"><span class="hint-arrow">↑</span> Slow</div>
+      <div class="swipe-hint"><span class="hint-arrow">→</span> Mid</div>
+      <div class="swipe-hint"><span class="hint-arrow">↓</span> Fast</div>
     </div>
   </div>
 
@@ -497,10 +497,10 @@ function stepModulation() {
   }
 }
 
-// endingType: 'release' | 'drop' | 'cut'
+// fadeDurSec: fade duration in seconds (computed by caller from gap model).
 // Returns fadeMs — milliseconds until gain reaches zero.
 // The UI uses this to time the transition into the respond state.
-function stopTone(endingType) {
+function stopTone(fadeDurSec) {
   clearInterval(wiggleInterval); wiggleInterval = null;
   clearInterval(modulationInterval); modulationInterval = null;
   if (!gainNode || !oscillator) return 0;
@@ -534,22 +534,9 @@ function stopTone(endingType) {
     shG.gain.setValueAtTime(shG.gain.value, now);
   }
 
-  // Three perceptibly distinct ending shapes:
-  //   Release — slow, gentle fade   2–4 s
-  //   Drop    — medium fade         0.5–1.5 s
-  //   Cut     — near-instant        40 ms anti-click ramp
-  let fadeDur;
-  if (endingType === 'release') {
-    fadeDur = randBetween(2.0, 4.0);
-  } else if (endingType === 'drop') {
-    fadeDur = randBetween(0.5, 1.5);
-  } else {
-    fadeDur = 0.040;
-  }
+  gn.gain.linearRampToValueAtTime(0, now + fadeDurSec);
 
-  gn.gain.linearRampToValueAtTime(0, now + fadeDur);
-
-  const fadeMs = fadeDur * 1000;
+  const fadeMs = fadeDurSec * 1000;
   const cleanupMs = fadeMs + 300;
 
   setTimeout(() => {
@@ -598,6 +585,48 @@ function randBetween(a, b) { return a + Math.random() * (b - a); }
 
 // ─── Session / round logic ────────────────────────────────────────────────────
 
+// ── Adaptive difficulty: gap model ──────────────────────────────────────────
+// Three ending durations are spaced symmetrically around a fixed center.
+// `gap` is the distance between adjacent endings; it narrows as skill builds.
+//
+//   slow = center + gap   (initially ~1000 ms)
+//   mid  = center         (always    ~600 ms)
+//   fast = center - gap   (initially ~200 ms, floor 10 ms)
+//
+// Adaptation is streak-gated: 3 correct in a row to narrow, 2 wrong in a row
+// to widen. A single wrong answer holds the current level.
+
+const DISC_CENTER   = 600;  // ms — fixed midpoint
+const GAP_MAX       = 400;  // ms — initial spread (and reset ceiling)
+const GAP_MIN       = 3;    // ms — floor (sub-perceptual territory)
+const NARROW_AFTER  = 3;    // consecutive correct answers required to level up
+const WIDEN_AFTER   = 2;    // consecutive incorrect answers required to level down
+const NARROW_FACTOR = 0.90; // gap shrinks 10% per level-up
+const WIDEN_FACTOR  = 1.25; // gap grows 25% per level-down
+
+let gap             = GAP_MAX;
+let correctStreak   = 0;
+let incorrectStreak = 0;
+
+function adaptDifficulty(wasCorrect) {
+  if (wasCorrect) {
+    incorrectStreak = 0;
+    correctStreak++;
+    if (correctStreak >= NARROW_AFTER) {
+      gap = Math.max(GAP_MIN, gap * NARROW_FACTOR);
+      correctStreak = 0;
+    }
+  } else {
+    correctStreak = 0;
+    incorrectStreak++;
+    if (incorrectStreak >= WIDEN_AFTER) {
+      gap = Math.min(GAP_MAX, gap * WIDEN_FACTOR);
+      incorrectStreak = 0;
+    }
+    // single wrong answer: hold — no change to gap
+  }
+}
+
 // States: idle | pause | playing | respond | feedback | done
 let state = 'idle';
 let sessionActive = false;
@@ -609,7 +638,7 @@ let pauseTimeout = null;
 let feedbackTimeout = null;
 let currentEndingType = null;
 
-const ENDING_NAMES = { release: 'Release', drop: 'Drop', cut: 'Cut' };
+const ENDING_NAMES = { slow: 'Slow', mid: 'Mid', fast: 'Fast' };
 
 function setZone(cls, icon, text, sub) {
   document.getElementById('swipe-zone').className = cls || '';
@@ -631,7 +660,7 @@ function startRound() {
   pauseTimeout = setTimeout(() => {
     if (!sessionActive) return;
     beginTone();
-  }, randBetween(3000, 6000));
+  }, randBetween(500, 1500));
 }
 
 function beginTone() {
@@ -641,8 +670,19 @@ function beginTone() {
   setZone('playing', '', '', '');
   showHints(false);
 
-  const endings = ['release', 'drop', 'cut'];
+  const endings = ['slow', 'mid', 'fast'];
   currentEndingType = endings[Math.floor(Math.random() * endings.length)];
+
+  // Compute this round's fade durations from the current gap.
+  // Small random jitter (±8%) keeps each instance of the same category
+  // from being identical, without affecting discriminability.
+  const jitter = () => 1 + randBetween(-0.08, 0.08);
+  const fadeDurations = {
+    slow: Math.max(0.010, (DISC_CENTER + gap) / 1000 * jitter()),
+    mid:  Math.max(0.010,  DISC_CENTER        / 1000 * jitter()),
+    fast: Math.max(0.010, (DISC_CENTER - gap) / 1000 * jitter()),
+  };
+  const currentFadeSec = fadeDurations[currentEndingType];
 
   startTone();
 
@@ -652,7 +692,7 @@ function beginTone() {
 
   roundTimer = setTimeout(() => {
     if (!sessionActive) return;
-    const fadeMs = stopTone(currentEndingType);
+    const fadeMs = stopTone(currentFadeSec);
     // Keep the zone in 'playing' state throughout the entire fade — the
     // meditator should perceive the ending through listening, not through
     // a UI change. Only reveal the swipe hints once the tone is fully silent.
@@ -673,10 +713,12 @@ function handleGuess(guess) {
   const correct = guess === currentEndingType;
   const actualName = ENDING_NAMES[currentEndingType];
 
+  adaptDifficulty(correct);
+
   if (correct) {
     setZone('feedback-correct', '◎', 'Correct', actualName);
   } else {
-    setZone('feedback-incorrect', '◌', 'That was a ' + actualName.toLowerCase(), '');
+    setZone('feedback-incorrect', '◌', 'That was the ' + actualName.toLowerCase(), '');
   }
 
   feedbackTimeout = setTimeout(startRound, randBetween(2000, 3000));
@@ -687,6 +729,9 @@ function beginSession() {
   sessionDuration = parseInt(document.getElementById('dur-select').value) * 60 * 1000;
   sessionStart = performance.now();
   sessionActive = true;
+  gap = GAP_MAX;
+  correctStreak = 0;
+  incorrectStreak = 0;
   sessionWave = buildRandomWave(getAudioCtx());
   document.getElementById('stop-btn').disabled = false;
   document.getElementById('dur-select').disabled = true;
@@ -715,7 +760,7 @@ function endSession() {
   clearTimeout(roundTimer);
   clearTimeout(pauseTimeout);
   clearTimeout(feedbackTimeout);
-  stopTone('cut');
+  stopTone(0.040);
   if (wasActive) { try { playEndChime(); } catch(e) {} }
   releaseWakeLock();
   showHints(false);
@@ -729,9 +774,9 @@ function endSession() {
 }
 
 // ─── Gesture handling ─────────────────────────────────────────────────────────
-// Swipe up   → Release
-// Swipe right → Drop
-// Swipe down  → Cut
+// Swipe up    → Slow
+// Swipe right → Mid
+// Swipe down  → Fast
 // Minimum swipe distance: 40px
 // A tap (no significant movement) in idle/done state starts the session.
 
@@ -760,9 +805,9 @@ zone.addEventListener('pointerup', e => {
 
   if (state === 'respond' && dist >= 40) {
     if (Math.abs(dy) >= Math.abs(dx)) {
-      handleGuess(dy < 0 ? 'release' : 'cut');
+      handleGuess(dy < 0 ? 'slow' : 'fast');
     } else if (dx > 0) {
-      handleGuess('drop');
+      handleGuess('mid');
     }
     // left swipe: unrecognised — user can try again
   }
