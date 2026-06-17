@@ -1,0 +1,275 @@
+
+<style>
+  .roll-app { padding: 1rem 0; font-family: var(--font-sans); }
+  h2.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+  .seg-group { display: flex; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); overflow: hidden; }
+  .seg-btn { padding: 6px 14px; font-size: 13px; background: transparent; border: none; cursor: pointer; color: var(--color-text-secondary); transition: background 0.12s; }
+  .seg-btn:not(:last-child) { border-right: 0.5px solid var(--color-border-secondary); }
+  .seg-btn.active { background: var(--color-background-secondary); color: var(--color-text-primary); font-weight: 500; }
+  .seg-btn:hover:not(.active) { background: var(--color-background-secondary); }
+  .label { font-size: 13px; color: var(--color-text-secondary); margin-right: 2px; }
+  .pos-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+  .pos-btn { padding: 5px 10px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: transparent; cursor: pointer; color: var(--color-text-secondary); transition: background 0.12s; }
+  .pos-btn:hover { background: var(--color-background-secondary); }
+  .pos-btn.beat-btn { border-color: #85B7EB; color: #185FA5; }
+  .pos-btn.e-btn { border-color: #AFA9EC; color: #3C3489; }
+  .pos-btn.and-btn { border-color: #5DCAA5; color: #0F6E56; }
+  .pos-btn.ah-btn { border-color: #EF9F27; color: #633806; }
+  .pos-btn.trip2-btn { border-color: #AFA9EC; color: #3C3489; }
+  .pos-btn.trip3-btn { border-color: #5DCAA5; color: #0F6E56; }
+  .pos-btn.selected { font-weight: 500; }
+  .pos-btn.beat-btn.selected { background: #E6F1FB; }
+  .pos-btn.e-btn.selected { background: #EEEDFE; }
+  .pos-btn.and-btn.selected { background: #E1F5EE; }
+  .pos-btn.ah-btn.selected { background: #FAEEDA; }
+  .pos-btn.trip2-btn.selected { background: #EEEDFE; }
+  .pos-btn.trip3-btn.selected { background: #E1F5EE; }
+  .pos-btn.none-btn.selected { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .grid-outer { overflow-x: auto; }
+  table.roll-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  table.roll-table th { font-weight: 500; font-size: 12px; color: var(--color-text-secondary); text-align: center; padding: 6px 3px; border-bottom: 0.5px solid var(--color-border-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  table.roll-table th.roll-col { text-align: left; width: 90px; }
+  table.roll-table th.spans-col { width: 48px; }
+  table.roll-table th.start-col { background: var(--color-background-secondary); border-bottom: 2px solid #378ADD; color: var(--color-text-primary); font-weight: 500; }
+  table.roll-table td { padding: 5px 3px; border-bottom: 0.5px solid var(--color-border-tertiary); text-align: center; font-size: 12px; color: var(--color-text-secondary); }
+  table.roll-table td.roll-name { text-align: left; font-weight: 500; color: var(--color-text-primary); font-size: 13px; white-space: nowrap; }
+  table.roll-table td.start-col { background: var(--color-background-secondary); }
+  table.roll-table tr.highlighted-row td { background: color-mix(in srgb, var(--color-background-primary) 60%, #E6F1FB); }
+  table.roll-table tr.highlighted-row td.start-col { background: color-mix(in srgb, var(--color-background-secondary) 60%, #E6F1FB); }
+  table.roll-table tr.highlighted-row td.land-highlight { background: #0C447C; color: white; border-radius: 4px; }
+  .cell-land { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .land-beat { background: #E6F1FB; color: #0C447C; }
+  .land-e { background: #EEEDFE; color: #3C3489; }
+  .land-and { background: #E1F5EE; color: #085041; }
+  .land-ah { background: #FAEEDA; color: #633806; }
+  .land-8th-beat { background: #E6F1FB; color: #0C447C; }
+  .land-8th-and { background: #E1F5EE; color: #085041; }
+  .land-trip1 { background: #E6F1FB; color: #0C447C; }
+  .land-trip2 { background: #EEEDFE; color: #3C3489; }
+  .land-trip3 { background: #E1F5EE; color: #085041; }
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-text-secondary); }
+  .leg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+  .summary-bar { font-size: 13px; color: var(--color-text-primary); margin-bottom: 1rem; padding: 8px 12px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); min-height: 36px; line-height: 1.5; }
+  .summary-bar.empty { color: var(--color-text-secondary); font-size: 12px; }
+</style>
+
+<div class="roll-app">
+  <h2 class="sr-only">Double stroke roll landing calculator: select a subdivision and start position to see where each roll ends.</h2>
+
+  <div class="controls">
+    <span class="label">Subdivision:</span>
+    <div class="seg-group">
+      <button class="seg-btn active" onclick="setSub('16th')">16th notes</button>
+      <button class="seg-btn" onclick="setSub('8th')">8th notes</button>
+      <button class="seg-btn" onclick="setSub('triplet')">Triplets</button>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+    <span class="label">Start position:</span>
+    <button class="pos-btn none-btn selected" onclick="setStart(-1)">all</button>
+  </div>
+  <div id="pos-picker" class="pos-picker"></div>
+
+  <div id="summary-bar" class="summary-bar empty">Select a start position to highlight landings.</div>
+  <div id="legend" class="legend"></div>
+  <div class="grid-outer">
+    <div id="table-wrap"></div>
+  </div>
+</div>
+
+<script>
+const ROLLS = [
+  { name: '5-stroke', strokes: 5 },
+  { name: '7-stroke', strokes: 7 },
+  { name: '9-stroke', strokes: 9 },
+  { name: '11-stroke', strokes: 11 },
+  { name: '13-stroke', strokes: 13 },
+  { name: '15-stroke', strokes: 15 },
+  { name: '17-stroke', strokes: 17 },
+];
+
+const SUBS = {
+  '16th': {
+    positions: ['1','e','&','a','2','e','&','a','3','e','&','a','4','e','&','a'],
+    label: '16th notes (4/4)',
+    btnClass: (i) => {
+      const classes = ['beat-btn','e-btn','and-btn','ah-btn'];
+      return classes[i % 4];
+    },
+    colorClass: (i) => {
+      const classes = ['land-beat','land-e','land-and','land-ah'];
+      return classes[i % 4];
+    },
+    legend: [
+      {bg:'#B5D4F4', label:'Beat (1 2 3 4)'},
+      {bg:'#CECBF6', label:'"e"'},
+      {bg:'#9FE1CB', label:'"&"'},
+      {bg:'#FAC775', label:'"a"'},
+    ]
+  },
+  '8th': {
+    positions: ['1','&','2','&','3','&','4','&'],
+    label: '8th notes (4/4)',
+    btnClass: (i) => i % 2 === 0 ? 'beat-btn' : 'and-btn',
+    colorClass: (i) => i % 2 === 0 ? 'land-8th-beat' : 'land-8th-and',
+    legend: [
+      {bg:'#B5D4F4', label:'Beat (1 2 3 4)'},
+      {bg:'#9FE1CB', label:'"&"'},
+    ]
+  },
+  'triplet': {
+    positions: ['1','2','3','2','2','3','3','2','3','4','2','3'],
+    label: '8th note triplets (4/4)',
+    btnClass: (i) => { const c = ['beat-btn','trip2-btn','trip3-btn']; return c[i % 3]; },
+    colorClass: (i) => { const c = ['land-trip1','land-trip2','land-trip3']; return c[i % 3]; },
+    legend: [
+      {bg:'#B5D4F4', label:'Beat'},
+      {bg:'#CECBF6', label:'2nd triplet'},
+      {bg:'#9FE1CB', label:'3rd triplet'},
+    ]
+  }
+};
+
+const TRIP_LABELS = ['1','trip','let','2','trip','let','3','trip','let','4','trip','let'];
+
+let currentSub = '16th';
+let selectedStart = -1;
+
+function getPositions(sub) {
+  if (sub === 'triplet') return TRIP_LABELS;
+  return SUBS[sub].positions;
+}
+
+function spansFor(roll) {
+  return Math.ceil(roll.strokes / 2);
+}
+
+function setSub(sub) {
+  currentSub = sub;
+  selectedStart = -1;
+  document.querySelectorAll('.seg-btn').forEach(b => {
+    const t = b.textContent.trim();
+    b.classList.toggle('active',
+      (sub === '16th' && t.startsWith('16')) ||
+      (sub === '8th' && t.startsWith('8th')) ||
+      (sub === 'triplet' && t.startsWith('Tri'))
+    );
+  });
+  renderPicker();
+  render();
+}
+
+function setStart(idx) {
+  selectedStart = idx;
+  document.querySelectorAll('.pos-btn').forEach((b, i) => {
+    if (idx === -1) b.classList.toggle('selected', b.classList.contains('none-btn'));
+    else b.classList.toggle('selected', !b.classList.contains('none-btn') && parseInt(b.dataset.idx) === idx);
+  });
+  render();
+}
+
+function renderPicker() {
+  const sub = SUBS[currentSub];
+  const positions = getPositions(currentSub);
+  const n = positions.length;
+  const picker = document.getElementById('pos-picker');
+
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const cls = sub.btnClass(i);
+    html += `<button class="pos-btn ${cls}" data-idx="${i}" onclick="setStart(${i})">${positions[i]}</button>`;
+  }
+  picker.innerHTML = html;
+
+  document.querySelectorAll('.pos-btn').forEach(b => {
+    if (b.classList.contains('none-btn')) b.classList.toggle('selected', selectedStart === -1);
+    else b.classList.toggle('selected', parseInt(b.dataset.idx) === selectedStart);
+  });
+}
+
+function render() {
+  const sub = SUBS[currentSub];
+  const positions = getPositions(currentSub);
+  const n = positions.length;
+
+  const legEl = document.getElementById('legend');
+  legEl.innerHTML = sub.legend.map(l =>
+    `<div class="leg-item"><span class="leg-dot" style="background:${l.bg}"></span>${l.label}</div>`
+  ).join('');
+
+  const summaryEl = document.getElementById('summary-bar');
+  if (selectedStart === -1) {
+    summaryEl.className = 'summary-bar empty';
+    summaryEl.innerHTML = 'Select a start position to highlight landings for that position.';
+  } else {
+    const startLabel = positions[selectedStart];
+    const lines = ROLLS.map(roll => {
+      const spans = spansFor(roll);
+      if (spans > n) return null;
+      const landIdx = (selectedStart + spans - 1) % n;
+      const landLabel = positions[landIdx];
+      return `<strong style="font-weight:500">${roll.name}</strong> → lands on <strong style="font-weight:500">${landLabel}</strong>`;
+    }).filter(Boolean);
+    summaryEl.className = 'summary-bar';
+    summaryEl.innerHTML = `Starting on <strong style="font-weight:500">${startLabel}</strong>: &nbsp;` + lines.join(' &nbsp;·&nbsp; ');
+  }
+
+  let html = '<table class="roll-table"><thead><tr>';
+  html += '<th class="roll-col">Roll</th>';
+  html += '<th class="spans-col">Spans</th>';
+  for (let i = 0; i < n; i++) {
+    const isStart = (selectedStart === i);
+    html += `<th class="${isStart ? 'start-col' : ''}">${positions[i]}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  ROLLS.forEach(roll => {
+    const spans = spansFor(roll);
+    const isHighlighted = selectedStart !== -1 && spans <= n;
+    const landIdx = selectedStart !== -1 ? (selectedStart + spans - 1) % n : -1;
+
+    html += `<tr class="${isHighlighted ? 'highlighted-row' : ''}">`;
+    html += `<td class="roll-name">${roll.name}</td>`;
+    html += `<td style="font-size:12px;color:var(--color-text-secondary);text-align:center">${spans}</td>`;
+
+    if (spans > n) {
+      for (let i = 0; i < n; i++) {
+        html += `<td style="color:var(--color-text-secondary);font-size:11px">&gt;1 bar</td>`;
+      }
+    } else {
+      for (let i = 0; i < n; i++) {
+        const isStartCol = (selectedStart === i);
+        const isLandCol = (isHighlighted && i === landIdx);
+        const cls = sub.colorClass(i < n ? (selectedStart !== -1 ? landIdx : i) : i);
+
+        if (isHighlighted) {
+          if (isStartCol) {
+            html += `<td class="start-col"><span style="font-size:11px;color:var(--color-text-secondary)">▶</span></td>`;
+          } else if (isLandCol) {
+            const landLabel = positions[landIdx];
+            const landCls = sub.colorClass(landIdx);
+            html += `<td><span class="cell-land ${landCls}" style="outline:2px solid #185FA5;outline-offset:1px">${landLabel}</span></td>`;
+          } else {
+            html += `<td></td>`;
+          }
+        } else {
+          const theLandIdx = (i + spans - 1) % n;
+          const landLabel = positions[theLandIdx];
+          const landCls = sub.colorClass(theLandIdx);
+          html += `<td><span class="cell-land ${landCls}">${landLabel}</span></td>`;
+        }
+      }
+    }
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('table-wrap').innerHTML = html;
+}
+
+renderPicker();
+render();
+</script>
