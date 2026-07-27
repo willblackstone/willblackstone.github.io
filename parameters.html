@@ -217,12 +217,13 @@
             margin-bottom: 0.75rem;
         }
 
-        /* Style and Focus are two flavours of the same thing — imagined vs.
+        /* Imagine and Perceive are two flavours of the same thing — imagined vs.
            physical. "One at a time" mode stops them competing for attention. */
         .attention-mode {
             display: flex;
             justify-content: center;
             gap: 0.75rem;
+            margin-top: 1.5rem;
             margin-bottom: 1rem;
         }
 
@@ -879,12 +880,12 @@
             </div>
             
             <div class="card style-card" onclick="randomizeStyle()">
-                <div class="card-label">Style</div>
+                <div class="card-label">Imagine</div>
                 <div class="card-value" id="style">—</div>
             </div>
             
             <div class="card foa-card" onclick="randomizeFoA()">
-                <div class="card-label">Focus of Attention</div>
+                <div class="card-label">Perceive</div>
                 <div class="card-value" id="foa">—</div>
             </div>
 
@@ -928,14 +929,14 @@
         </div>
         
         <div class="attention-mode">
-            <button class="tempo-mode-btn active" id="btn-mode-both" onclick="setAttentionMode('both')">Style + Focus</button>
+            <button class="tempo-mode-btn active" id="btn-mode-both" onclick="setAttentionMode('both')">Imagine + Perceive</button>
             <button class="tempo-mode-btn" id="btn-mode-either" onclick="setAttentionMode('either')">One at a time</button>
         </div>
 
         <div class="individual-buttons">
             <button class="btn-dynamic" onclick="randomizeDynamic()">Dynamic</button>
-            <button class="btn-style" onclick="randomizeStyle()">Style</button>
-            <button class="btn-foa" onclick="randomizeFoA()">Focus</button>
+            <button class="btn-style" onclick="randomizeStyle()">Imagine</button>
+            <button class="btn-foa" onclick="randomizeFoA()">Perceive</button>
         </div>
 
         <div class="buttons-container">
@@ -973,7 +974,7 @@
         </div>
         
         <div class="keyboard-hint">
-            Press <kbd>Space</kbd> to randomize all, or <kbd>D</kbd> <kbd>S</kbd> <kbd>F</kbd> for individual parameters
+            Press <kbd>Space</kbd> to randomize all, or <kbd>D</kbd> <kbd>I</kbd> <kbd>P</kbd> for individual parameters
         </div>
     </div>
 
@@ -992,9 +993,9 @@
             </p>
 
             <div class="help-section style">
-                <h3>Style — what you want</h3>
+                <h3>Imagine — what you want</h3>
                 <p>
-                    Style is the <strong>imaginal</strong> channel. A character, a
+                    Imagine is the <strong>imaginal</strong> channel. A character, a
                     circumstance, an image, a way of meaning it. It's the target: the
                     thing you're trying to hear before you play a note.
                 </p>
@@ -1005,9 +1006,9 @@
             </div>
 
             <div class="help-section foa">
-                <h3>Focus of Attention — where you stand</h3>
+                <h3>Perceive — where you stand</h3>
                 <p>
-                    Focus is the <strong>perceptual</strong> channel. A sensation or a
+                    Perceive is the <strong>perceptual</strong> channel. A sensation or a
                     sound you can actually put your attention on. Every item notices
                     something; none of them instruct you to do something. That's
                     deliberate — technical self-correction is the thing that gets you
@@ -1026,20 +1027,20 @@
                     they just sit in different rooms. The useful way to hold them:
                 </p>
                 <p class="help-key">
-                    Style is <strong>what you want</strong>.<br>
-                    Focus is <strong>where you stand while getting it</strong>.
+                    Imagine is <strong>what you want</strong>.<br>
+                    Perceive is <strong>where you stand while getting it</strong>.
                 </p>
                 <p>
-                    The style is the destination; the focus is the vantage point you
-                    watch it from. That's why the focus never needs to describe the
-                    sound — the style already did.
+                    Imagine is the destination; Perceive is the vantage point you
+                    watch it from. That's why Perceive never needs to describe the
+                    sound — Imagine already did.
                 </p>
             </div>
 
             <div class="help-section">
                 <h3>The two modes</h3>
                 <p>
-                    <strong>Style + Focus</strong> gives you both at once. The work is
+                    <strong>Imagine + Perceive</strong> gives you both at once. The work is
                     reconciling them — holding an imagined intention while your
                     attention rests somewhere specific. Harder, and worth it.
                 </p>
@@ -1084,13 +1085,13 @@
             </div>
 
             <div class="edit-section style">
-                <h3>Styles <span class="count" id="style-count"></span></h3>
+                <h3>Imagine <span class="count" id="style-count"></span></h3>
                 <textarea id="edit-styles"></textarea>
                 <div class="edit-hint">One item per line</div>
             </div>
 
             <div class="edit-section foa">
-                <h3>Focus of Attention <span class="count" id="foa-count"></span></h3>
+                <h3>Perceive <span class="count" id="foa-count"></span></h3>
                 <textarea id="edit-foa"></textarea>
                 <div class="edit-hint">One item per line</div>
             </div>
@@ -1209,10 +1210,10 @@
             'Baroque ornament', 'Field recording', 'Broken music box'
         ];
 
-        // Focus of Attention is the *perceptual* channel: awareness of a
+        // Perceive is the *perceptual* channel: awareness of a
         // sensation or a sound. Never an instruction to the body and never an
         // internal state to achieve — noticing, not doing. Imagined
-        // circumstances, characters and moods belong in Styles.
+        // circumstances, characters and moods belong in Imagine.
         const defaultFocusOfAttention = [
             // Sound Production
             'Pitch center', 'Tone quality', 'Beginning of note', 'End of note',
@@ -1329,7 +1330,7 @@
 
         // Review parameters
         const defaultReviewParams = [
-            'Focus of attention',
+            'Perceiving',
             'Hearing ahead'
         ];
         let reviewParams = JSON.parse(localStorage.getItem('reviewParams')) || [...defaultReviewParams];
@@ -1525,9 +1526,9 @@
                 randomizeAll();
             } else if (e.key.toLowerCase() === 'd') {
                 randomizeDynamic();
-            } else if (e.key.toLowerCase() === 's') {
+            } else if (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 's') {
                 randomizeStyle();
-            } else if (e.key.toLowerCase() === 'f') {
+            } else if (e.key.toLowerCase() === 'p' || e.key.toLowerCase() === 'f') {
                 randomizeFoA();
             }
         });
@@ -1735,8 +1736,8 @@
             
             document.getElementById('review-params').innerHTML = `
                 <span><span class="param-label">Dynamic:</span> <span class="dynamic-val">${dynamic}</span></span>
-                <span><span class="param-label">Style:</span> <span class="style-val">${style}</span></span>
-                <span><span class="param-label">Focus:</span> <span class="foa-val">${foa}</span></span>
+                <span><span class="param-label">Imagine:</span> <span class="style-val">${style}</span></span>
+                <span><span class="param-label">Perceive:</span> <span class="foa-val">${foa}</span></span>
                 <span><span class="param-label">Tempo:</span> <span class="tempo-val">${tempo} BPM</span></span>
             `;
             
