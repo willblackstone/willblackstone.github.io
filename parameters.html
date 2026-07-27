@@ -723,6 +723,56 @@
             transform: none;
         }
 
+        .help-lede {
+            color: #ccc;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 1.75rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .help-section {
+            margin-bottom: 1.75rem;
+        }
+
+        .help-section h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 600;
+            color: #aaa;
+            margin-bottom: 0.6rem;
+        }
+
+        .help-section.style h3 { color: #4ecdc4; }
+        .help-section.foa h3 { color: #ffe66d; }
+
+        .help-section p {
+            color: #b0b0b0;
+            line-height: 1.65;
+            margin-bottom: 0.7rem;
+        }
+
+        .help-section strong, .help-lede em {
+            color: #e8e8e8;
+            font-weight: 600;
+        }
+
+        .help-lede em { font-style: normal; }
+
+        .help-eg {
+            font-size: 0.9rem;
+            font-style: italic;
+            color: #777 !important;
+        }
+
+        .help-key {
+            border-left: 2px solid rgba(255, 255, 255, 0.15);
+            padding-left: 1rem;
+            line-height: 1.8 !important;
+        }
+
         .edit-section {
             margin-bottom: 2rem;
         }
@@ -890,6 +940,7 @@
 
         <div class="buttons-container">
             <button class="btn-edit" onclick="openEditor()">Edit Parameters</button>
+            <button class="btn-edit" onclick="openHelp()">How This Works</button>
         </div>
 
         <!-- Review Panel Popup -->
@@ -923,6 +974,98 @@
         
         <div class="keyboard-hint">
             Press <kbd>Space</kbd> to randomize all, or <kbd>D</kbd> <kbd>S</kbd> <kbd>F</kbd> for individual parameters
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal">
+            <h2>
+                How This Works
+                <button class="modal-close" onclick="closeHelp()">&times;</button>
+            </h2>
+
+            <p class="help-lede">
+                This app exists to put your imagination before your sound — so that
+                you're working on <em>what you want to hear</em> rather than how to
+                produce it.
+            </p>
+
+            <div class="help-section style">
+                <h3>Style — what you want</h3>
+                <p>
+                    Style is the <strong>imaginal</strong> channel. A character, a
+                    circumstance, an image, a way of meaning it. It's the target: the
+                    thing you're trying to hear before you play a note.
+                </p>
+                <p class="help-eg">
+                    "As if someone just walked in" &middot; "Silk over gravel" &middot;
+                    "A liar telling the truth"
+                </p>
+            </div>
+
+            <div class="help-section foa">
+                <h3>Focus of Attention — where you stand</h3>
+                <p>
+                    Focus is the <strong>perceptual</strong> channel. A sensation or a
+                    sound you can actually put your attention on. Every item notices
+                    something; none of them instruct you to do something. That's
+                    deliberate — technical self-correction is the thing that gets you
+                    in your own way.
+                </p>
+                <p class="help-eg">
+                    "Sounds that are not you" &middot; "Where you feel the sound in your
+                    body" &middot; "The sound as it arrives, not as you planned it"
+                </p>
+            </div>
+
+            <div class="help-section">
+                <h3>Why they feel like the same thing</h3>
+                <p>
+                    Because they nearly are. Both are places to put your attention —
+                    they just sit in different rooms. The useful way to hold them:
+                </p>
+                <p class="help-key">
+                    Style is <strong>what you want</strong>.<br>
+                    Focus is <strong>where you stand while getting it</strong>.
+                </p>
+                <p>
+                    The style is the destination; the focus is the vantage point you
+                    watch it from. That's why the focus never needs to describe the
+                    sound — the style already did.
+                </p>
+            </div>
+
+            <div class="help-section">
+                <h3>The two modes</h3>
+                <p>
+                    <strong>Style + Focus</strong> gives you both at once. The work is
+                    reconciling them — holding an imagined intention while your
+                    attention rests somewhere specific. Harder, and worth it.
+                </p>
+                <p>
+                    <strong>One at a time</strong> gives you one or the other. A single
+                    clear intention with nothing competing for it. Use it when holding
+                    both turns into thinking about both.
+                </p>
+                <p>
+                    Neither is the correct one. They're different practices.
+                </p>
+            </div>
+
+            <div class="help-section">
+                <h3>Using it</h3>
+                <p>
+                    Take the first reading that arrives. The prompts are provocations,
+                    not instructions — if one seems wrong for the material, that
+                    friction is usually the interesting part. Anything that consistently
+                    doesn't work for you can be deleted in Edit Parameters.
+                </p>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-save" onclick="closeHelp()">Got it</button>
+            </div>
         </div>
     </div>
 
@@ -1338,10 +1481,25 @@
         document.getElementById('edit-foa').addEventListener('input', updateCounts);
         document.getElementById('edit-review-params').addEventListener('input', updateCounts);
 
+        // Help modal
+        function openHelp() {
+            document.getElementById('help-modal').classList.add('active');
+        }
+
+        function closeHelp() {
+            document.getElementById('help-modal').classList.remove('active');
+        }
+
         // Close modal on overlay click
         document.getElementById('modal').addEventListener('click', (e) => {
             if (e.target.id === 'modal') {
                 closeEditor();
+            }
+        });
+
+        document.getElementById('help-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'help-modal') {
+                closeHelp();
             }
         });
 
@@ -1351,6 +1509,13 @@
             if (document.getElementById('modal').classList.contains('active')) {
                 if (e.key === 'Escape') {
                     closeEditor();
+                }
+                return;
+            }
+
+            if (document.getElementById('help-modal').classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    closeHelp();
                 }
                 return;
             }
