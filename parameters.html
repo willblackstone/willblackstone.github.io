@@ -94,6 +94,10 @@
             font-size: 1.6rem;
         }
 
+        /* Longer imaginative prompts need to shrink to fit the card */
+        .card-value.len-long { font-size: 1.25rem; }
+        .card-value.len-xlong { font-size: 1.05rem; }
+
         .foa-card .card-value {
             color: #ffe66d;
             font-size: 1.4rem;
@@ -211,6 +215,19 @@
 
         .countin-controls {
             margin-bottom: 0.75rem;
+        }
+
+        /* Style and Focus are two flavours of the same thing — imagined vs.
+           physical. "One at a time" mode stops them competing for attention. */
+        .attention-mode {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-inactive {
+            opacity: 0.2;
         }
 
         .tempo-mode {
@@ -860,6 +877,11 @@
             <button class="randomize-all" onclick="randomizeAll()">Randomize All</button>
         </div>
         
+        <div class="attention-mode">
+            <button class="tempo-mode-btn active" id="btn-mode-both" onclick="setAttentionMode('both')">Style + Focus</button>
+            <button class="tempo-mode-btn" id="btn-mode-either" onclick="setAttentionMode('either')">One at a time</button>
+        </div>
+
         <div class="individual-buttons">
             <button class="btn-dynamic" onclick="randomizeDynamic()">Dynamic</button>
             <button class="btn-style" onclick="randomizeStyle()">Style</button>
@@ -974,41 +996,193 @@
             // Jazz/Contemporary
             'Swinging', 'Laid-back', 'On top', 'Behind the beat', 'In the pocket',
             'Conversational', 'Bluesy', 'Angular', 'Sparse', 'Dense',
-            'Cool', 'Hot', 'Earthy', 'Ethereal', 'Gutsy'
+            'Cool', 'Hot', 'Earthy', 'Ethereal', 'Gutsy',
+
+            // As if — imagined circumstance
+            'As if telling a secret', 'As if arriving late to something wonderful',
+            'As if remembering, not playing', 'As if the room were much larger',
+            'As if someone just walked in', 'As if it were the last time',
+            'As if you had all the time in the world', 'As if you were slightly out of breath',
+            'As if answering a question', 'As if asking one',
+            'As if someone were sleeping next door', 'As if trying to convince someone',
+            'As if you already knew the ending', 'As if you didn\'t',
+            'As if underwater', 'As if suspended mid-air',
+            'As if the melody were borrowed from someone else',
+            'As if you were being overheard', 'As if nobody could hear you',
+            'As if it were folk music from a country that doesn\'t exist',
+
+            // Voices & characters
+            'A child explaining something important', 'An old person remembering',
+            'A stranger being kind', 'Someone trying not to cry',
+            'Someone who has just forgiven', 'A tour guide who loves their city',
+            'A liar telling the truth', 'A priest', 'A comedian',
+            'A drunk uncle at a wedding', 'A cat deciding whether to move',
+            'Someone waking up', 'Someone falling asleep',
+            'A letter never sent', 'A eulogy', 'A love note',
+            'A rumour spreading', 'A confession', 'A dare',
+            'Two people talking over each other', 'One person, thinking aloud',
+
+            // Places & weather
+            'Late-night kitchen', 'Empty cathedral', 'Crowded train',
+            'First warm day of spring', 'Fog', 'Static electricity before a storm',
+            'Rain on a tin roof', 'Snow already fallen', 'Heat haze',
+            'Low winter sun', 'Streetlight through curtains', 'Candlelight',
+            'A field at dusk', 'A corridor', 'A doorway',
+            'Underground', 'From a distance', 'Very close to the ear',
+
+            // Materials & texture
+            'Silk over gravel', 'Ink in water', 'Sandpaper',
+            'Polished stone', 'Wet clay', 'Frayed rope',
+            'Cold glass', 'Old wood', 'Melting wax',
+            'Something fragile you are carrying', 'Something heavy you are putting down',
+            'Rust', 'Feathers', 'Steam',
+
+            // Motion & shape
+            'Downhill', 'Uphill', 'Circling', 'Spiralling inward',
+            'Falling and catching itself', 'Always leaning forward',
+            'Arriving before it leaves', 'Never quite landing',
+            'Gathering', 'Unravelling', 'Blooming', 'Receding',
+            'One long exhale', 'Interrupted', 'Insisting',
+            'Getting away with something', 'Reluctant', 'Inevitable',
+
+            // Imaginative instructions
+            'Play the silence, not the notes', 'Let each note be a decision',
+            'Make one note the most important', 'Make no note important',
+            'Start in the middle of the story', 'Leave something out',
+            'Say it twice, differently', 'Change your mind halfway',
+            'Play what you\'d play if you were better', 'Play it as an accompaniment to something unheard',
+            'Follow the sound, don\'t lead it', 'Play the shape before the sound',
+            'Imagine the sound first, then match it', 'Sing it internally, play second',
+            'Play it as if it were already beautiful', 'Play someone else\'s version',
+            'Play it too slowly to be nervous', 'Give it more room than it needs',
+            'Commit to the first idea', 'Refuse the obvious choice',
+
+            // Genre & idiom transplants
+            'Gospel', 'Lullaby', 'Sea shanty', 'Funeral march',
+            'Nursery rhyme', 'Hymn', 'Lament', 'Dance nobody knows the steps to',
+            'Film score under dialogue', 'Opening credits', 'End credits',
+            'Radio jingle', 'Protest song', 'Work song',
+            'Something you hum without noticing', 'Something ceremonial',
+            'Baroque ornament', 'Field recording', 'Broken music box'
         ];
 
+        // Focus of Attention is the *perceptual* channel: awareness of a
+        // sensation or a sound. Never an instruction to the body and never an
+        // internal state to achieve — noticing, not doing. Imagined
+        // circumstances, characters and moods belong in Styles.
         const defaultFocusOfAttention = [
             // Sound Production
             'Pitch center', 'Tone quality', 'Beginning of note', 'End of note',
             'Middle of note', 'Note transitions', 'Release of sound',
             'Resonance', 'Overtones', 'Core of sound', 'Projection',
-            
-            // Physical Awareness
-            'Weight of body', 'Softness of eyes', 'Relaxed jaw',
-            'Open throat', 'Low shoulders', 'Grounded feet',
-            'Balanced posture', 'Free neck', 'Soft hands',
-            'Breath support', 'Back expansion',
-            
-            // Spatial/Environmental
+            'The very first millisecond', 'The moment sound becomes silence',
+            'How the note starts moving', 'Where the note stops growing',
+            'The edge of the sound', 'The centre of the sound',
+            'Consistency between notes', 'The seam between two notes',
+            'Where the pitch settles', 'The tail of each note',
+
+            // Sensation — noticed, not corrected
+            'Weight of body', 'Points of contact', 'Vibration you can feel',
+            'Temperature of the air', 'Temperature of your hands',
+            'The weight of the instrument', 'Where your instrument touches you',
+            'Where you feel the sound in your body', 'Where your weight is',
+            'What is moving and what is still', 'Where the effort actually lives',
+            'Effort level, out of ten', 'The first sensation you notice',
+            'What your hands are doing without you',
+            'Whatever is easiest right now', 'What the air feels like',
+
+            // Breath, as sensation
+            'The turn from in to out', 'The pause before the breath',
+            'The breath before the first note', 'Recovery between phrases',
+            'The moment before you begin',
+
+            // Listening
+            'Listening deeply', 'Listening to the room, not yourself',
+            'The sound after you stop', 'What the sound does at a distance',
+            'Listening as if to a recording', 'Hearing the note before it sounds',
+            'The gap between what you heard and what came out',
+            'The quietest thing you can hear', 'Sound behind you',
+            'Listening without correcting', 'One voice inside the sound',
+            'The silence between the notes', 'The stillness before you begin',
+            'Sounds that are not you', 'Listening as if you had never heard it',
+            'The sound as it arrives, not as you planned it',
+            'Whatever you notice first', 'The sound you did not expect',
+
+            // Spatial / Environmental
             'Sound of room', 'Space around you', 'Sound traveling outward',
             'Sound returning', 'Filling the space', 'Intimate projection',
-            
-            // Musical Elements
-            'Rhythmic placement', 'Melodic shape', 'Harmonic color',
-            'Dynamic contour', 'Phrase direction', 'Musical line',
-            'Breath rhythm', 'Pulse feeling', 'Groove center',
-            
-            // Mindfulness/Internal
-            'Place of ease', 'Center of calm', 'Inner stillness',
-            'Present moment', 'Letting go', 'Non-judgment',
-            'Curious observation', 'Acceptance', 'Effortlessness',
-            'Joy in sound', 'Connection to music', 'Listening deeply'
+            'The far wall', 'The ceiling', 'The space just past your instrument',
+            'Direction of the sound', 'How far away the sound seems',
+
+            // Time & pulse
+            'Rhythmic placement', 'Breath rhythm', 'Pulse feeling', 'Groove center',
+            'Where the pulse lives in your body', 'The space between beats',
+            'Subdivision underneath', 'The beat you are travelling towards',
+            'Length of notes, not their starts',
+            'The end of the bar', 'Time passing steadily regardless',
+
+            // Musical shape
+            'Melodic shape', 'Harmonic color', 'Dynamic contour',
+            'Phrase direction', 'Musical line',
+            'The highest note of the phrase', 'The destination of the phrase',
+            'The one note that matters most', 'Where the phrase turns around',
+            'Continuity across the whole line',
+
+            // What your attention is doing
+            'Where your attention actually went', 'Attention wide, not narrow',
+            'Attention on one thing only', 'Noticing when you left',
+            'Staying with it to the very end', 'Nothing else in the room',
+            'What you noticed but ignored', 'What you were avoiding hearing'
         ];
 
+        // Items retired from the defaults and stripped from saved lists on
+        // migration: instructions to the body, technical/mechanical prompts,
+        // and internal states to achieve. All of them direct rather than notice.
+        const retiredDefaults = {
+            focusOfAttention: [
+                'Softness of eyes', 'Relaxed jaw', 'Open throat',
+                'Low shoulders', 'Grounded feet', 'Balanced posture',
+                'Free neck', 'Soft hands', 'Breath support',
+                'Back expansion', 'Weight in the heels', 'Width across the collarbones',
+                'Length through the spine', 'The floor pushing back', 'Softness behind the eyes',
+                'Space between the teeth', 'Tongue resting low', 'Unclenched hands',
+                'The back of the head floating up', 'Ribs moving sideways', 'Belly free to move',
+                'Knees unlocked', 'Where you are gripping unnecessarily', 'The smallest effort that works',
+                'Only the muscles doing the work', 'What you can stop doing', 'Speed of the air',
+                'Quantity of the air', 'Breathing in the tempo', 'Breath that matches the phrase',
+                'Silent inhalation', 'Not holding at the top', 'Pressure, and less of it',
+                'Fingers arriving, not landing', 'Fingertips only', 'Sound going down, not out',
+                'Not rushing the easy bits', 'Place of ease', 'Center of calm',
+                'Inner stillness', 'Letting go', 'Present moment',
+                'Non-judgment', 'Curious observation', 'Acceptance',
+                'Effortlessness', 'Joy in sound', 'Connection to music'
+            ]
+        };
+
+        // Bump when defaults gain new items, so saved lists pick them up
+        // without losing anything the user added or deliberately kept.
+        const DEFAULTS_VERSION = 4;
+
+        function loadList(key, defaults) {
+            const saved = JSON.parse(localStorage.getItem(key));
+            if (!saved) return [...defaults];
+            if (Number(localStorage.getItem('defaultsVersion')) >= DEFAULTS_VERSION) return saved;
+            const retired = retiredDefaults[key] || [];
+            const kept = saved.filter(item => !retired.includes(item));
+            return kept.concat(defaults.filter(item => !kept.includes(item)));
+        }
+
         // Current active values (load from localStorage or use defaults)
-        let dynamics = JSON.parse(localStorage.getItem('dynamics')) || [...defaultDynamics];
-        let styles = JSON.parse(localStorage.getItem('styles')) || [...defaultStyles];
-        let focusOfAttention = JSON.parse(localStorage.getItem('focusOfAttention')) || [...defaultFocusOfAttention];
+        let dynamics = loadList('dynamics', defaultDynamics);
+        let styles = loadList('styles', defaultStyles);
+        let focusOfAttention = loadList('focusOfAttention', defaultFocusOfAttention);
+        // Persist the merge so it survives the version bump below
+        if (Number(localStorage.getItem('defaultsVersion')) < DEFAULTS_VERSION) {
+            if (localStorage.getItem('dynamics')) localStorage.setItem('dynamics', JSON.stringify(dynamics));
+            if (localStorage.getItem('styles')) localStorage.setItem('styles', JSON.stringify(styles));
+            if (localStorage.getItem('focusOfAttention')) localStorage.setItem('focusOfAttention', JSON.stringify(focusOfAttention));
+        }
+        localStorage.setItem('defaultsVersion', DEFAULTS_VERSION);
 
         // Review parameters
         const defaultReviewParams = [
@@ -1026,6 +1200,9 @@
             element.classList.add('changing');
             setTimeout(() => {
                 element.textContent = newValue;
+                element.classList.remove('len-long', 'len-xlong');
+                if (newValue.length > 40) element.classList.add('len-xlong');
+                else if (newValue.length > 20) element.classList.add('len-long');
                 element.classList.remove('changing');
             }, 150);
         }
@@ -1035,18 +1212,48 @@
         }
 
         function randomizeStyle() {
+            if (attentionMode === 'either') setActiveAttention('style');
             animateChange('style', getRandomItem(styles));
         }
 
         function randomizeFoA() {
+            if (attentionMode === 'either') setActiveAttention('foa');
             animateChange('foa', getRandomItem(focusOfAttention));
         }
 
         function randomizeAll() {
             randomizeDynamic();
-            setTimeout(randomizeStyle, 50);
-            setTimeout(randomizeFoA, 100);
+            if (attentionMode === 'either') {
+                setTimeout(Math.random() < 0.5 ? randomizeStyle : randomizeFoA, 50);
+            } else {
+                setTimeout(randomizeStyle, 50);
+                setTimeout(randomizeFoA, 100);
+            }
         }
+
+        // Attention mode: both parameters at once, or one at a time
+        let attentionMode = localStorage.getItem('attentionMode') || 'both';
+
+        function setAttentionMode(mode) {
+            attentionMode = mode;
+            localStorage.setItem('attentionMode', mode);
+            document.getElementById('btn-mode-both').classList.toggle('active', mode === 'both');
+            document.getElementById('btn-mode-either').classList.toggle('active', mode === 'either');
+            if (mode === 'both') {
+                document.querySelector('.style-card').classList.remove('card-inactive');
+                document.querySelector('.foa-card').classList.remove('card-inactive');
+            }
+        }
+
+        function setActiveAttention(which) {
+            document.querySelector('.style-card').classList.toggle('card-inactive', which !== 'style');
+            document.querySelector('.foa-card').classList.toggle('card-inactive', which !== 'foa');
+            const other = document.getElementById(which === 'style' ? 'foa' : 'style');
+            other.textContent = '—';
+            other.classList.remove('len-long', 'len-xlong');
+        }
+
+        setAttentionMode(attentionMode);
 
         // Editor functions
         function openEditor() {
