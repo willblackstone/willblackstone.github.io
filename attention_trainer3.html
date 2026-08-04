@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Practice</title>
+<style>
+  :root {
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f5;
+    --color-background-tertiary: #ebebeb;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #737373;
+    --color-text-tertiary: #a3a3a3;
+    --color-border-secondary: #e0e0e0;
+    --color-border-tertiary: #ebebeb;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #141414;
+      --color-background-secondary: #222222;
+      --color-background-tertiary: #2e2e2e;
+      --color-text-primary: #f0f0f0;
+      --color-text-secondary: #888888;
+      --color-text-tertiary: #555555;
+      --color-border-secondary: #333333;
+      --color-border-tertiary: #2a2a2a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  #progress-track {
+    position: fixed; top: 0; left: 0; width: 100%; height: 2px;
+    background: transparent; z-index: 100;
+  }
+  #progress-fill {
+    height: 100%; width: 0%;
+    background: var(--color-border-secondary);
+    transition: width 1s linear;
+  }
+
+  #app { padding: 1.5rem 1rem 1.25rem; max-width: 420px; margin: 0 auto; }
+
+  .control-label {
+    font-size: 11px; color: var(--color-text-secondary);
+    margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .field-select {
+    width: 100%; padding: 8px 10px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-size: 14px; font-family: var(--font-sans);
+  }
+  .num-input {
+    width: 48px; min-width: 0; padding: 8px 4px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-size: 14px; text-align: center; font-family: var(--font-sans);
+  }
+  .row { display: flex; gap: 8px; align-items: flex-end; }
+  .range { display: flex; gap: 6px; align-items: center; }
+  .dash { color: var(--color-text-secondary); font-size: 13px; flex-shrink: 0; }
+
+  /* The pad. Deliberately inert during a session: it must never signal the
+     tone's onset or offset, or the practice becomes watching instead of
+     listening. Its appearance changes only between idle / active / done. */
+  #pad {
+    width: 100%;
+    height: min(75vw, 320px);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    cursor: pointer;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    background: var(--color-background-secondary);
+    transition: background 1.5s ease;
+  }
+  #pad.active { background: var(--color-background-tertiary); }
+
+  #pad-icon { font-size: 26px; line-height: 1; color: var(--color-text-tertiary); }
+  #pad-text {
+    font-size: 15px; font-weight: 400;
+    color: var(--color-text-secondary);
+    margin-top: 10px; letter-spacing: 0.01em; text-align: center;
+    padding: 0 1.5rem;
+  }
+
+  .btn {
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    color: var(--color-text-primary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 20px; font-size: 14px; cursor: pointer;
+    font-family: var(--font-sans);
+  }
+  .btn:hover { background: var(--color-background-secondary); }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* Summary — shown only after the session ends. */
+  #summary { display: none; margin-top: 1.25rem; }
+  .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--color-border-tertiary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md); overflow: hidden;
+  }
+  .stat {
+    background: var(--color-background-primary);
+    padding: 12px 14px;
+  }
+  .stat-label {
+    font-size: 10px; color: var(--color-text-secondary);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .stat-value {
+    font-size: 20px; margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-unit { font-size: 12px; color: var(--color-text-secondary); margin-left: 2px; }
+
+  /* Latency over the course of the session — the vigilance decrement is the
+     interesting shape here, not any single number. */
+  #trace-wrap { margin-top: 1rem; }
+  #trace {
+    display: flex; align-items: flex-end; gap: 2px;
+    height: 56px; margin-top: 8px;
+  }
+  .bar { flex: 1; min-width: 2px; background: var(--color-border-secondary); border-radius: 1px; }
+  .bar.lapse { background: var(--color-text-tertiary); }
+  .caption { font-size: 11px; color: var(--color-text-tertiary); margin-top: 6px; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); border: 0;
+  }
+</style>
+</head>
+<body>
+<div id="progress-track"><div id="progress-fill"></div></div>
+
+<div id="app">
+  <h1 class="sr-only">Contact practice</h1>
+
+  <div id="controls" style="margin-bottom: 1.25rem;">
+    <div class="row" style="margin-bottom: 10px;">
+      <div style="flex: 1.2;">
+        <div class="control-label">Duration</div>
+        <select id="dur-select" class="field-select">
+          <option value="2">2 min</option>
+          <option value="3">3 min</option>
+          <option value="5">5 min</option>
+          <option value="8">8 min</option>
+          <option value="10" selected>10 min</option>
+          <option value="15">15 min</option>
+          <option value="20">20 min</option>
+          <option value="30">30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <div class="control-label">Tone (s)</div>
+        <div class="range">
+          <input type="number" id="tone-min" min="1" max="30" value="3" class="num-input">
+          <span class="dash">–</span>
+          <input type="number" id="tone-max" min="2" max="120" value="12" class="num-input">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex: 1.2;">
+        <div class="control-label">Tone</div>
+        <select id="tone-select" class="field-select">
+          <option value="pure" selected>Pure (A4)</option>
+          <option value="warm">Warm (E4)</option>
+          <option value="soft">Soft (G4)</option>
+          <option value="bell">Bell (C5)</option>
+          <option value="low">Low (D4)</option>
+          <option value="flute">Flute (D5)</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <div class="control-label">Silence (s)</div>
+        <div class="range">
+          <input type="number" id="sil-min" min="1" max="30" value="3" class="num-input">
+          <span class="dash">–</span>
+          <input type="number" id="sil-max" min="2" max="120" value="15" class="num-input">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pad">
+    <div id="pad-icon">◉</div>
+    <div id="pad-text">Hold while you hear the tone.<br>Let go the moment it's gone.</div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+    <button class="btn" id="start-btn">Begin</button>
+    <button class="btn" id="stop-btn" disabled>End session</button>
+  </div>
+
+  <div id="summary">
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat-label">Onset — median</div>
+        <div class="stat-value"><span id="s-onset">—</span><span class="stat-unit">ms</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Offset — median</div>
+        <div class="stat-value"><span id="s-offset">—</span><span class="stat-unit">ms</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Lapses</div>
+        <div class="stat-value"><span id="s-lapses">—</span><span class="stat-unit" id="s-lapse-of"></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Anticipations</div>
+        <div class="stat-value"><span id="s-false">—</span></div>
+      </div>
+    </div>
+    <div id="trace-wrap">
+      <div class="control-label">Onset latency across the session</div>
+      <div id="trace"></div>
+      <div class="caption" id="trace-caption"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Wake lock ────────────────────────────────────────────────────────────────
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock && document.visibilityState === 'visible') await requestWakeLock();
+});
+
+// ─── Audio engine ─────────────────────────────────────────────────────────────
+// Carried over from the discrimination trainer. Two changes: the attack is
+// shorter (the onset needs a definite edge to react to, while staying
+// click-free), and modulation stops the instant the fade begins so nothing is
+// moving while the ear is trying to find the moment of silence.
+
+let audioCtx = null;
+let oscillator = null;
+let osc2 = null;
+let gainNode = null;
+let filterNode = null;
+let voiceNodes = null;
+let shimmerOsc = null;
+let shimmerGain = null;
+let modulationInterval = null;
+let modulationParams = null;
+let cachedIR = null;
+let sessionWave = null;
+
+const ATTACK_SEC = 0.060;  // click-free but definite
+const FADE_SEC   = 0.250;  // short enough that "gone" is a moment, not a guess
+
+function randBetween(a, b) { return a + Math.random() * (b - a); }
+
+// Truncated exponential: flat hazard rate, so time already spent waiting tells
+// you nothing about how much is left. Without this the intervals become
+// predictable late in their range and the practice turns into anticipation.
+function waitInterval(minS, maxS) {
+  const min = minS * 1000, max = maxS * 1000;
+  const span = Math.max(1, max - min);
+  const mean = span / 2.2;
+  let v;
+  do { v = -Math.log(1 - Math.random()) * mean; } while (v > span);
+  return min + v;
+}
+
+function buildRandomWave(ctx) {
+  const h1 = 1.0;
+  const h2 = randBetween(0.1, 0.5);
+  const h3 = randBetween(0.05, 0.25);
+  const h4 = randBetween(0.0, 0.1);
+  const norm = Math.sqrt(h1*h1 + h2*h2 + h3*h3 + h4*h4);
+  const real = new Float32Array([0, h1/norm, h2/norm, h3/norm, h4/norm]);
+  const imag = new Float32Array(real.length);
+  return ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+}
+
+function getReverbIR(ctx) {
+  if (cachedIR) return cachedIR;
+  const duration = 2.5;
+  const rate = ctx.sampleRate;
+  const length = Math.max(1, Math.floor(rate * duration));
+  const ir = ctx.createBuffer(2, length, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = ir.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      const t = i / length;
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 3);
+    }
+  }
+  cachedIR = ir;
+  return ir;
+}
+
+const TONE_PRESETS = {
+  pure:  { freq: 440,    type: 'sine' },
+  warm:  { freq: 330,    type: 'triangle' },
+  soft:  { freq: 392,    type: 'sine' },
+  bell:  { freq: 523.25, type: 'sine' },
+  low:   { freq: 293.66, type: 'sine' },
+  flute: { freq: 587.33, type: 'sine' },
+};
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function startTone() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const presetKey = document.getElementById('tone-select').value || 'pure';
+  const preset = TONE_PRESETS[presetKey] || TONE_PRESETS.pure;
+  const now = ctx.currentTime;
+
+  const wave = sessionWave || buildRandomWave(ctx);
+  const baseGain = 0.18;
+
+  gainNode = ctx.createGain();
+  gainNode.gain.setValueAtTime(0.0001, now);
+  gainNode.gain.exponentialRampToValueAtTime(baseGain, now + ATTACK_SEC);
+
+  filterNode = ctx.createBiquadFilter();
+  filterNode.type = 'lowpass';
+  filterNode.frequency.setValueAtTime(3750, now);
+  filterNode.Q.setValueAtTime(0.7, now);
+
+  const wetLevel = randBetween(0.25, 0.55);
+  const dry = ctx.createGain();
+  dry.gain.setValueAtTime(1 - wetLevel, now);
+  const wet = ctx.createGain();
+  wet.gain.setValueAtTime(wetLevel, now);
+  const convolver = ctx.createConvolver();
+  convolver.buffer = getReverbIR(ctx);
+
+  filterNode.connect(dry);
+  filterNode.connect(convolver);
+  convolver.connect(wet);
+  dry.connect(gainNode);
+  wet.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  const oscMix1 = ctx.createGain();
+  const oscMix2 = ctx.createGain();
+  oscMix1.gain.setValueAtTime(0.4, now);
+  oscMix2.gain.setValueAtTime(0.4, now);
+  oscMix1.connect(filterNode);
+  oscMix2.connect(filterNode);
+
+  const d1Init = randBetween(-6, 0);
+  const d2Init = randBetween(0, 6);
+  oscillator = ctx.createOscillator();
+  oscillator.setPeriodicWave(wave);
+  oscillator.frequency.setValueAtTime(preset.freq, now);
+  oscillator.detune.setValueAtTime(d1Init, now);
+  oscillator.connect(oscMix1);
+  oscillator.start();
+
+  osc2 = ctx.createOscillator();
+  osc2.setPeriodicWave(wave);
+  osc2.frequency.setValueAtTime(preset.freq, now);
+  osc2.detune.setValueAtTime(d2Init, now);
+  osc2.connect(oscMix2);
+  osc2.start();
+
+  const shDetInit = randBetween(-20, 20);
+  shimmerOsc = ctx.createOscillator();
+  shimmerOsc.type = 'sine';
+  shimmerOsc.frequency.setValueAtTime(preset.freq * 2, now);
+  shimmerOsc.detune.setValueAtTime(shDetInit, now);
+  shimmerGain = ctx.createGain();
+  shimmerGain.gain.setValueAtTime(0.08, now);
+  shimmerOsc.connect(shimmerGain);
+  shimmerGain.connect(filterNode);
+  shimmerOsc.start();
+
+  voiceNodes = { oscMix1, oscMix2, dry, wet, convolver };
+
+  modulationParams = {
+    baseGain,
+    lastTickPerf: performance.now(),
+    tremoloValue: baseGain,  shimmerValue: 0.08, breatheValue: 3750,
+    tremoloTarget: baseGain, shimmerTarget: 0.08, breatheTarget: 3750,
+    tremoloNextAt: 0, shimmerNextAt: 0, breatheNextAt: 0,
+    d1Value: d1Init, d2Value: d2Init, shDetValue: shDetInit,
+    d1Target: d1Init, d2Target: d2Init, shDetTarget: shDetInit,
+    d1NextAt: 0, d2NextAt: 0, shDetNextAt: 0,
+  };
+
+  setTimeout(() => { if (gainNode) startModulation(); }, ATTACK_SEC * 1000 + 20);
+}
+
+function startModulation() {
+  clearInterval(modulationInterval);
+  stepModulation();
+  modulationInterval = setInterval(stepModulation, 50);
+}
+
+function retargetTremolo(p) {
+  p.tremoloTarget = p.baseGain * randBetween(0.96, 1.04);
+  p.tremoloNextAt = performance.now() + randBetween(600, 3500);
+}
+function retargetShimmer(p) {
+  p.shimmerTarget = randBetween(0.03, 0.14);
+  p.shimmerNextAt = performance.now() + randBetween(600, 3500);
+}
+function retargetBreathe(p) {
+  p.breatheTarget = randBetween(1500, 6000);
+  p.breatheNextAt = performance.now() + randBetween(1500, 7000);
+}
+function retargetD1(p) {
+  p.d1Target = randBetween(-7, 7);
+  p.d1NextAt = performance.now() + randBetween(700, 3000);
+}
+function retargetD2(p) {
+  p.d2Target = randBetween(-7, 7);
+  p.d2NextAt = performance.now() + randBetween(700, 3000);
+}
+function retargetShDet(p) {
+  p.shDetTarget = randBetween(-30, 30);
+  p.shDetNextAt = performance.now() + randBetween(500, 2500);
+}
+
+function stepModulation() {
+  if (!gainNode || !filterNode || !shimmerGain || !modulationParams) return;
+  const p = modulationParams;
+  const ctx = getAudioCtx();
+  const tNow = ctx.currentTime;
+  const rampDur = 0.08;
+  const nowMs = performance.now();
+  const dt = Math.max(0.001, (nowMs - p.lastTickPerf) / 1000);
+  p.lastTickPerf = nowMs;
+
+  if (nowMs >= p.tremoloNextAt) retargetTremolo(p);
+  if (nowMs >= p.shimmerNextAt) retargetShimmer(p);
+  if (nowMs >= p.breatheNextAt) retargetBreathe(p);
+  if (nowMs >= p.d1NextAt) retargetD1(p);
+  if (nowMs >= p.d2NextAt) retargetD2(p);
+  if (nowMs >= p.shDetNextAt) retargetShDet(p);
+
+  p.tremoloValue += (p.tremoloTarget - p.tremoloValue) * (1 - Math.exp(-dt / 1.2));
+  p.shimmerValue += (p.shimmerTarget - p.shimmerValue) * (1 - Math.exp(-dt / 1.2));
+  p.breatheValue += (p.breatheTarget - p.breatheValue) * (1 - Math.exp(-dt / 2.0));
+  p.d1Value      += (p.d1Target      - p.d1Value)      * (1 - Math.exp(-dt / 2.5));
+  p.d2Value      += (p.d2Target      - p.d2Value)      * (1 - Math.exp(-dt / 2.5));
+  p.shDetValue   += (p.shDetTarget   - p.shDetValue)   * (1 - Math.exp(-dt / 2.0));
+
+  try {
+    gainNode.gain.cancelScheduledValues(tNow);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, tNow);
+    gainNode.gain.linearRampToValueAtTime(p.tremoloValue, tNow + rampDur);
+  } catch(e) {}
+  try {
+    shimmerGain.gain.cancelScheduledValues(tNow);
+    shimmerGain.gain.setValueAtTime(shimmerGain.gain.value, tNow);
+    shimmerGain.gain.linearRampToValueAtTime(Math.max(0.001, p.shimmerValue), tNow + rampDur);
+  } catch(e) {}
+  try {
+    filterNode.frequency.cancelScheduledValues(tNow);
+    filterNode.frequency.setValueAtTime(filterNode.frequency.value, tNow);
+    filterNode.frequency.linearRampToValueAtTime(p.breatheValue, tNow + rampDur);
+  } catch(e) {}
+  if (oscillator) {
+    try {
+      oscillator.detune.cancelScheduledValues(tNow);
+      oscillator.detune.setValueAtTime(oscillator.detune.value, tNow);
+      oscillator.detune.linearRampToValueAtTime(p.d1Value, tNow + rampDur);
+    } catch(e) {}
+  }
+  if (osc2) {
+    try {
+      osc2.detune.cancelScheduledValues(tNow);
+      osc2.detune.setValueAtTime(osc2.detune.value, tNow);
+      osc2.detune.linearRampToValueAtTime(p.d2Value, tNow + rampDur);
+    } catch(e) {}
+  }
+  if (shimmerOsc) {
+    try {
+      shimmerOsc.detune.cancelScheduledValues(tNow);
+      shimmerOsc.detune.setValueAtTime(shimmerOsc.detune.value, tNow);
+      shimmerOsc.detune.linearRampToValueAtTime(p.shDetValue, tNow + rampDur);
+    } catch(e) {}
+  }
+}
+
+// Returns fade duration in ms. Modulation is killed first: nothing should be
+// moving in the sound while the ear is locating the moment it disappears.
+function stopTone(fadeDurSec) {
+  clearInterval(modulationInterval); modulationInterval = null;
+  if (!gainNode || !oscillator) return 0;
+
+  const ctx = getAudioCtx();
+  const o1 = oscillator, o2_ = osc2, sh = shimmerOsc, shG = shimmerGain;
+  const gn = gainNode, filt = filterNode, extras = voiceNodes;
+
+  oscillator = null; osc2 = null; gainNode = null; filterNode = null;
+  voiceNodes = null; shimmerOsc = null; shimmerGain = null;
+  modulationParams = null;
+
+  const now = ctx.currentTime;
+
+  gn.gain.cancelScheduledValues(now);
+  gn.gain.setValueAtTime(gn.gain.value, now);
+  if (filt) {
+    filt.frequency.cancelScheduledValues(now);
+    filt.frequency.setValueAtTime(filt.frequency.value, now);
+  }
+  if (shG) {
+    shG.gain.cancelScheduledValues(now);
+    shG.gain.setValueAtTime(shG.gain.value, now);
+  }
+
+  gn.gain.linearRampToValueAtTime(0, now + fadeDurSec);
+
+  const fadeMs = fadeDurSec * 1000;
+  setTimeout(() => {
+    try { if (o1)  { o1.stop();  o1.disconnect();  } } catch(e) {}
+    try { if (o2_) { o2_.stop(); o2_.disconnect(); } } catch(e) {}
+    try { if (sh)  { sh.stop();  sh.disconnect();  } } catch(e) {}
+    try { if (shG) shG.disconnect(); } catch(e) {}
+    try { if (filt) filt.disconnect(); } catch(e) {}
+    try { if (gn) gn.disconnect(); } catch(e) {}
+    if (extras) {
+      try { extras.oscMix1.disconnect(); } catch(e) {}
+      try { extras.oscMix2.disconnect(); } catch(e) {}
+      try { extras.dry.disconnect(); } catch(e) {}
+      try { extras.wet.disconnect(); } catch(e) {}
+      try { extras.convolver.disconnect(); } catch(e) {}
+    }
+  }, fadeMs + 300);
+
+  return fadeMs;
+}
+
+function playEndChime() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const t0 = ctx.currentTime;
+  [523.25, 659.25, 783.99].forEach((f, i) => {
+    const start = t0 + i * 0.12;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(0.16, start + 0.02);
+    g.gain.linearRampToValueAtTime(0, start + 0.35);
+    g.connect(ctx.destination);
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f, start);
+    o.connect(g);
+    o.start(start);
+    o.stop(start + 0.40);
+  });
+}
+
+// ─── Session ──────────────────────────────────────────────────────────────────
+//
+// One round = a silence, then a tone. Both lengths drawn from a flat-hazard
+// distribution, so neither edge can be anticipated. The finger goes down at
+// the arrival of sound and comes up at its disappearance; the two latencies
+// are the whole measurement.
+//
+// Deliberately absent: any feedback during the session. A latency shown in the
+// moment turns listening into racing.
+
+const LAPSE_MS       = 500;   // PVT convention — a slow response is a lapse
+const RESPONSE_LIMIT = 4000;  // after this, the round is scored as a miss
+
+// phase: 'idle' | 'silence' | 'tone' | 'fading' | 'gone' | 'done'
+let phase = 'idle';
+let sessionActive = false;
+let sessionDuration = 0;
+let sessionStart = 0;
+let sessionTimer = null;
+let silenceTimeout = null;
+let toneTimeout = null;
+let fadeTimeout = null;
+let missTimeout = null;
+
+let toneOnAt = 0;      // performance.now() at audio start
+let toneGoneAt = 0;    // performance.now() at the end of the fade
+let round = null;
+let fingerDown = false;
+
+const onsetLatencies  = [];   // {ms, lapse} in session order
+const offsetLatencies = [];
+let falseStarts = 0;          // press with no tone present
+let missedOnsets = 0;
+let missedOffsets = 0;
+let earlyReleases = 0;
+
+const padEl   = document.getElementById('pad');
+const iconEl  = document.getElementById('pad-icon');
+const textEl  = document.getElementById('pad-text');
+
+function setPad(cls, icon, text) {
+  padEl.className = cls || '';
+  iconEl.textContent = icon || '';
+  textEl.innerHTML = text || '';
+}
+
+function beginSession() {
+  if (sessionActive) return;
+  sessionDuration = parseInt(document.getElementById('dur-select').value) * 60 * 1000;
+  sessionStart = performance.now();
+  sessionActive = true;
+
+  onsetLatencies.length = 0;
+  offsetLatencies.length = 0;
+  falseStarts = 0;
+  missedOnsets = 0;
+  missedOffsets = 0;
+  earlyReleases = 0;
+
+  sessionWave = buildRandomWave(getAudioCtx());
+  getAudioCtx().resume();
+
+  document.getElementById('summary').style.display = 'none';
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('stop-btn').disabled = false;
+  setControlsDisabled(true);
+
+  setPad('active', '', '');
+  sessionTimer = setInterval(updateProgress, 500);
+  requestWakeLock();
+  scheduleSilence();
+}
+
+function setControlsDisabled(d) {
+  ['dur-select','tone-select','tone-min','tone-max','sil-min','sil-max']
+    .forEach(id => { document.getElementById(id).disabled = d; });
+}
+
+function scheduleSilence() {
+  if (!sessionActive) return;
+  phase = 'silence';
+  round = null;
+  const lo = parseFloat(document.getElementById('sil-min').value) || 3;
+  const hi = parseFloat(document.getElementById('sil-max').value) || 15;
+  silenceTimeout = setTimeout(toneOn, waitInterval(Math.min(lo, hi), Math.max(lo, hi)));
+}
+
+function toneOn() {
+  if (!sessionActive) return;
+  phase = 'tone';
+  round = { onsetRecorded: false, offsetRecorded: false, holdover: fingerDown };
+  startTone();
+  toneOnAt = performance.now();
+
+  // If the finger never went up from the previous round, this round's onset
+  // can't be measured — but the round still runs, so the offset is usable
+  // once they let go.
+  if (round.holdover) missedOnsets++;
+
+  const lo = parseFloat(document.getElementById('tone-min').value) || 3;
+  const hi = parseFloat(document.getElementById('tone-max').value) || 12;
+  toneTimeout = setTimeout(toneOff, waitInterval(Math.min(lo, hi), Math.max(lo, hi)));
+}
+
+function toneOff() {
+  if (!sessionActive) return;
+
+  // Never pressed at all — the whole tone went by unnoticed. Checked here
+  // rather than on a timer, so it holds for tones shorter than the response
+  // limit too.
+  if (round && !round.onsetRecorded && !round.holdover) {
+    round.onsetRecorded = true;
+    missedOnsets++;
+  }
+
+  phase = 'fading';
+  const fadeMs = stopTone(FADE_SEC);
+  toneGoneAt = performance.now() + fadeMs;
+
+  fadeTimeout = setTimeout(() => {
+    if (!sessionActive) return;
+    phase = 'gone';
+    // Give them a window to release; if the finger stays down past it, the
+    // offset is a miss and the next silence starts anyway.
+    missTimeout = setTimeout(() => {
+      if (phase === 'gone') {
+        if (round && !round.offsetRecorded) { round.offsetRecorded = true; missedOffsets++; }
+        scheduleSilence();
+      }
+    }, RESPONSE_LIMIT);
+  }, fadeMs);
+}
+
+function onPress() {
+  if (!sessionActive) return;
+  if (phase === 'tone' || phase === 'fading') {
+    if (round && !round.onsetRecorded && !round.holdover) {
+      round.onsetRecorded = true;
+      const ms = performance.now() - toneOnAt;
+      onsetLatencies.push({ ms, lapse: ms > LAPSE_MS });
+    }
+  } else if (phase === 'silence' || phase === 'gone') {
+    // Reaching for a tone that isn't there — expectation running ahead of
+    // listening. Worth counting; it's the other failure mode.
+    falseStarts++;
+  }
+}
+
+function onRelease() {
+  if (!sessionActive) return;
+
+  if (phase === 'tone') {
+    // Let go while the tone is plainly still sounding.
+    earlyReleases++;
+    return;
+  }
+
+  if (phase === 'fading' || phase === 'gone') {
+    if (round && !round.offsetRecorded) {
+      round.offsetRecorded = true;
+      // Measured from the end of the fade. Releasing inside the fade gives a
+      // small negative number — that's real information, not an error.
+      offsetLatencies.push({ ms: performance.now() - toneGoneAt });
+    }
+    if (phase === 'gone') {
+      clearTimeout(missTimeout);
+      scheduleSilence();
+    }
+  }
+}
+
+function updateProgress() {
+  if (!sessionActive) return;
+  const elapsed = performance.now() - sessionStart;
+  if (elapsed >= sessionDuration) { endSession(); return; }
+  document.getElementById('progress-fill').style.width =
+    (elapsed / sessionDuration) * 100 + '%';
+}
+
+function endSession() {
+  const wasActive = sessionActive;
+  sessionActive = false;
+  phase = 'done';
+  clearInterval(sessionTimer);
+  clearTimeout(silenceTimeout);
+  clearTimeout(toneTimeout);
+  clearTimeout(fadeTimeout);
+  clearTimeout(missTimeout);
+  stopTone(0.040);
+  if (wasActive) { try { playEndChime(); } catch(e) {} }
+  releaseWakeLock();
+
+  setPad('', '◉', 'Session complete');
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('stop-btn').disabled = true;
+  setControlsDisabled(false);
+
+  if (wasActive) renderSummary();
+}
+
+function median(arr) {
+  if (!arr.length) return null;
+  const s = arr.slice().sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function renderSummary() {
+  const onsets  = onsetLatencies.map(o => o.ms);
+  const offsets = offsetLatencies.map(o => o.ms);
+  const mOn  = median(onsets);
+  const mOff = median(offsets);
+  const lapses = onsetLatencies.filter(o => o.lapse).length;
+
+  document.getElementById('s-onset').textContent  = mOn  === null ? '—' : Math.round(mOn);
+  document.getElementById('s-offset').textContent = mOff === null ? '—' : Math.round(mOff);
+  document.getElementById('s-lapses').textContent = lapses;
+  document.getElementById('s-lapse-of').textContent =
+    ' of ' + (onsetLatencies.length + missedOnsets);
+  document.getElementById('s-false').textContent = falseStarts;
+
+  const trace = document.getElementById('trace');
+  trace.innerHTML = '';
+  const peak = Math.max(LAPSE_MS, ...onsets, 1);
+  onsetLatencies.forEach(o => {
+    const bar = document.createElement('div');
+    bar.className = 'bar' + (o.lapse ? ' lapse' : '');
+    bar.style.height = Math.max(2, (o.ms / peak) * 56) + 'px';
+    bar.title = Math.round(o.ms) + ' ms';
+    trace.appendChild(bar);
+  });
+
+  const parts = [];
+  if (earlyReleases) parts.push(earlyReleases + ' early release' + (earlyReleases === 1 ? '' : 's'));
+  if (missedOnsets)  parts.push(missedOnsets + ' onset missed');
+  if (missedOffsets) parts.push(missedOffsets + ' offset missed');
+  parts.push('taller is slower; a lapse is over ' + LAPSE_MS + ' ms');
+  document.getElementById('trace-caption').textContent = parts.join(' · ');
+
+  document.getElementById('summary').style.display = 'block';
+}
+
+// ─── Input ────────────────────────────────────────────────────────────────────
+
+padEl.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (fingerDown) return;
+  fingerDown = true;
+  try { padEl.setPointerCapture(e.pointerId); } catch(err) {}
+  onPress();
+});
+
+function liftFinger() {
+  if (!fingerDown) return;
+  fingerDown = false;
+  onRelease();
+}
+
+padEl.addEventListener('pointerup', liftFinger);
+padEl.addEventListener('pointercancel', liftFinger);
+padEl.addEventListener('lostpointercapture', liftFinger);
+
+// Spacebar as an alternative on desktop — holding a mouse button for a long
+// session is unpleasant, and the key press is a cleaner edge anyway.
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space' || e.repeat) return;
+  e.preventDefault();
+  if (!fingerDown) { fingerDown = true; onPress(); }
+});
+document.addEventListener('keyup', e => {
+  if (e.code !== 'Space') return;
+  e.preventDefault();
+  liftFinger();
+});
+
+document.getElementById('start-btn').addEventListener('click', beginSession);
+document.getElementById('stop-btn').addEventListener('click', endSession);
+</script>
+</body>
+</html>
