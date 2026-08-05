@@ -137,6 +137,8 @@
     font-variant-numeric: tabular-nums;
   }
   .stat-unit { font-size: 12px; color: var(--color-text-secondary); margin-left: 2px; }
+  .contour-stat { display: none; }
+  #summary.contour .contour-stat { display: block; }
 
   /* Latency over the course of the session — the vigilance decrement is the
      interesting shape here, not any single number. */
@@ -163,6 +165,23 @@
   <h1 class="sr-only">Contact practice</h1>
 
   <div id="controls" style="margin-bottom: 1.25rem;">
+    <div class="row" style="margin-bottom: 10px;">
+      <div style="flex: 1.2;">
+        <div class="control-label">Mode</div>
+        <select id="mode-select" class="field-select">
+          <option value="contact" selected>Contact</option>
+          <option value="contour">Contact + contour</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <div class="control-label">Contour</div>
+        <select id="speed-select" class="field-select">
+          <option value="gentle">Gentle</option>
+          <option value="moderate" selected>Moderate</option>
+          <option value="quick">Quick</option>
+        </select>
+      </div>
+    </div>
     <div class="row" style="margin-bottom: 10px;">
       <div style="flex: 1.2;">
         <div class="control-label">Duration</div>
@@ -213,7 +232,8 @@
 
   <div id="pad">
     <div id="pad-icon">◉</div>
-    <div id="pad-text">Hold while you hear the tone.<br>Let go the moment it's gone.</div>
+    <div id="pad-text" data-contact="Hold while you hear the tone.<br>Let go the moment it's gone."
+         data-contour="Hold while you hear the tone.<br>Ride the pitch up and down.<br>Let go the moment it's gone.">Hold while you hear the tone.<br>Let go the moment it's gone.</div>
   </div>
 
   <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
@@ -238,6 +258,14 @@
       <div class="stat">
         <div class="stat-label">Anticipations</div>
         <div class="stat-value"><span id="s-false">—</span></div>
+      </div>
+      <div class="stat contour-stat">
+        <div class="stat-label">Step response</div>
+        <div class="stat-value"><span id="s-turn">—</span><span class="stat-unit">ms</span></div>
+      </div>
+      <div class="stat contour-stat">
+        <div class="stat-label">Tracking</div>
+        <div class="stat-value"><span id="s-track">—</span><span class="stat-unit">%</span></div>
       </div>
     </div>
     <div id="trace-wrap">
@@ -285,6 +313,22 @@ let sessionWave = null;
 const ATTACK_SEC = 0.060;  // click-free but definite
 const FADE_SEC   = 0.250;  // short enough that "gone" is a moment, not a guess
 
+// Contour mode. The pitch sits on a semitone grid and steps between degrees —
+// a semitone or a whole tone at a time — rather than sliding continuously. A
+// held pitch can be settled into; a sliding one can only be chased, and there
+// is nothing to notice a change *from*.
+const STEP_CENTS   = 100;   // semitone grid
+const MAX_STEPS    = 4;     // ±4 semitones — a major third either side of home
+const GLIDE_TAU    = 0.055; // ~165 ms portamento: a definite move, not a smear
+const INITIAL_HOLD = 2000;  // the tone establishes itself before anything moves
+
+// How long a pitch is held before it steps again.
+const CONTOUR_DWELL = {
+  gentle:   [2200, 4500],
+  moderate: [1400, 3000],
+  quick:    [900,  1800],
+};
+
 function randBetween(a, b) { return a + Math.random() * (b - a); }
 
 // Truncated exponential: flat hazard rate, so time already spent waiting tells
@@ -297,6 +341,29 @@ function waitInterval(minS, maxS) {
   let v;
   do { v = -Math.log(1 - Math.random()) * mean; } while (v > span);
   return min + v;
+}
+
+function newGlide() {
+  const key = document.getElementById('speed-select').value || 'moderate';
+  const [lo, hi] = CONTOUR_DWELL[key] || CONTOUR_DWELL.moderate;
+  return {
+    index: 0, value: 0, target: 0, dir: 0,
+    // Every tone starts at home pitch and stays there long enough to become
+    // a place before it becomes a movement.
+    nextAt: performance.now() + INITIAL_HOLD,
+    loMs: lo, hiMs: hi,
+  };
+}
+
+// Mostly semitones, sometimes a whole tone, never standing still. Direction is
+// free except at the edges of the range, where it reflects inward.
+function pickStep(index) {
+  const mag = Math.random() < 0.7 ? 1 : 2;
+  let dir = Math.random() < 0.5 ? -1 : 1;
+  if (Math.abs(index + dir * mag) > MAX_STEPS) dir = -dir;
+  if (Math.abs(index + dir * mag) <= MAX_STEPS) return dir * mag;
+  if (Math.abs(index + dir) <= MAX_STEPS) return dir;
+  return -dir;
 }
 
 function buildRandomWave(ctx) {
@@ -420,6 +487,7 @@ function startTone() {
     d1Value: d1Init, d2Value: d2Init, shDetValue: shDetInit,
     d1Target: d1Init, d2Target: d2Init, shDetTarget: shDetInit,
     d1NextAt: 0, d2NextAt: 0, shDetNextAt: 0,
+    glide: contourMode ? newGlide() : null,
   };
 
   setTimeout(() => { if (gainNode) startModulation(); }, ATTACK_SEC * 1000 + 20);
@@ -480,6 +548,24 @@ function stepModulation() {
   p.d2Value      += (p.d2Target      - p.d2Value)      * (1 - Math.exp(-dt / 2.5));
   p.shDetValue   += (p.shDetTarget   - p.shDetValue)   * (1 - Math.exp(-dt / 2.0));
 
+  // Contour: a stepped pitch in cents, added on top of the chorus detune. The
+  // chorus wander is ±7 cents and stays pure texture underneath.
+  let glideCents = 0;
+  if (p.glide) {
+    const g = p.glide;
+    if (nowMs >= g.nextAt) {
+      const delta = pickStep(g.index);
+      g.index += delta;
+      g.target = g.index * STEP_CENTS;
+      g.dir = Math.sign(delta);
+      g.nextAt = nowMs + randBetween(g.loMs, g.hiMs);
+      onPitchStep(g.dir, nowMs);
+    }
+    g.value += (g.target - g.value) * (1 - Math.exp(-dt / GLIDE_TAU));
+    glideCents = g.value;
+    trackContour(g.value, nowMs);
+  }
+
   try {
     gainNode.gain.cancelScheduledValues(tNow);
     gainNode.gain.setValueAtTime(gainNode.gain.value, tNow);
@@ -499,21 +585,22 @@ function stepModulation() {
     try {
       oscillator.detune.cancelScheduledValues(tNow);
       oscillator.detune.setValueAtTime(oscillator.detune.value, tNow);
-      oscillator.detune.linearRampToValueAtTime(p.d1Value, tNow + rampDur);
+      oscillator.detune.linearRampToValueAtTime(p.d1Value + glideCents, tNow + rampDur);
     } catch(e) {}
   }
   if (osc2) {
     try {
       osc2.detune.cancelScheduledValues(tNow);
       osc2.detune.setValueAtTime(osc2.detune.value, tNow);
-      osc2.detune.linearRampToValueAtTime(p.d2Value, tNow + rampDur);
+      osc2.detune.linearRampToValueAtTime(p.d2Value + glideCents, tNow + rampDur);
     } catch(e) {}
   }
   if (shimmerOsc) {
     try {
       shimmerOsc.detune.cancelScheduledValues(tNow);
       shimmerOsc.detune.setValueAtTime(shimmerOsc.detune.value, tNow);
-      shimmerOsc.detune.linearRampToValueAtTime(p.shDetValue, tNow + rampDur);
+      // Same cents offset keeps the shimmer a true octave while it glides.
+      shimmerOsc.detune.linearRampToValueAtTime(p.shDetValue + glideCents, tNow + rampDur);
     } catch(e) {}
   }
 }
@@ -599,6 +686,7 @@ function playEndChime() {
 
 const LAPSE_MS       = 500;   // PVT convention — a slow response is a lapse
 const RESPONSE_LIMIT = 4000;  // after this, the round is scored as a miss
+const TURN_LIMIT     = 2500;  // unanswered pitch reversal — scored as missed
 
 // phase: 'idle' | 'silence' | 'tone' | 'fading' | 'gone' | 'done'
 let phase = 'idle';
@@ -623,6 +711,59 @@ let missedOnsets = 0;
 let missedOffsets = 0;
 let earlyReleases = 0;
 
+// ── Contour tracking ────────────────────────────────────────────────────────
+// The finger's vertical position is the readout channel; the measurement is
+// how quickly it turns after the pitch turns. Absolute accuracy is ignored on
+// purpose — that is where motor practice would accumulate and masquerade as
+// improving attention.
+
+const MOVE_THRESH = 0.05;     // fraction of pad height that counts as answering
+
+let contourMode = false;
+let fingerNorm  = 0.5;        // 1 = top of pad = high pitch
+let pendingMove = null;       // {dir, at, ref} — a step awaiting an answer
+const turnLatencies = [];
+let missedTurns = 0;
+let wrongTurns  = 0;
+let corrN = 0, corrSx = 0, corrSy = 0, corrSxx = 0, corrSyy = 0, corrSxy = 0;
+
+// Each step is its own event, including consecutive steps in the same
+// direction — the question is only "did the hand go the way the sound went",
+// never "did it go the right distance". Distance is where motor practice would
+// accumulate and pass itself off as improving attention.
+function onPitchStep(dir, nowMs) {
+  if (!contourMode) return;
+  if (pendingMove) missedTurns++;   // the previous step was never answered
+  pendingMove = { dir, at: nowMs, ref: fingerNorm };
+}
+
+function trackContour(glideValue, nowMs) {
+  if (!contourMode || phase !== 'tone') return;
+
+  if (pendingMove && nowMs - pendingMove.at > TURN_LIMIT) {
+    missedTurns++;
+    pendingMove = null;
+  }
+
+  // Correlation is not the score — it is the guard. A finger held still
+  // correlates at zero, so doing nothing cannot look like doing something.
+  if (fingerDown) {
+    const x = glideValue / (MAX_STEPS * STEP_CENTS);
+    const y = (fingerNorm - 0.5) * 2;
+    corrN++; corrSx += x; corrSy += y;
+    corrSxx += x * x; corrSyy += y * y; corrSxy += x * y;
+  }
+}
+
+function onFingerMove(nowMs) {
+  if (!contourMode || !fingerDown || phase !== 'tone' || !pendingMove) return;
+  const moved = fingerNorm - pendingMove.ref;
+  if (Math.abs(moved) < MOVE_THRESH) return;
+  if (Math.sign(moved) === pendingMove.dir) turnLatencies.push(nowMs - pendingMove.at);
+  else wrongTurns++;
+  pendingMove = null;
+}
+
 const padEl   = document.getElementById('pad');
 const iconEl  = document.getElementById('pad-icon');
 const textEl  = document.getElementById('pad-text');
@@ -646,6 +787,13 @@ function beginSession() {
   missedOffsets = 0;
   earlyReleases = 0;
 
+  contourMode = document.getElementById('mode-select').value === 'contour';
+  turnLatencies.length = 0;
+  missedTurns = 0;
+  wrongTurns = 0;
+  pendingMove = null;
+  corrN = 0; corrSx = 0; corrSy = 0; corrSxx = 0; corrSyy = 0; corrSxy = 0;
+
   sessionWave = buildRandomWave(getAudioCtx());
   getAudioCtx().resume();
 
@@ -661,7 +809,8 @@ function beginSession() {
 }
 
 function setControlsDisabled(d) {
-  ['dur-select','tone-select','tone-min','tone-max','sil-min','sil-max']
+  ['dur-select','tone-select','tone-min','tone-max','sil-min','sil-max',
+   'mode-select','speed-select']
     .forEach(id => { document.getElementById(id).disabled = d; });
 }
 
@@ -678,6 +827,8 @@ function toneOn() {
   if (!sessionActive) return;
   phase = 'tone';
   round = { onsetRecorded: false, offsetRecorded: false, holdover: fingerDown };
+  // Fresh contour state each round — a turn cannot span a silence.
+  pendingMove = null;
   startTone();
   toneOnAt = performance.now();
 
@@ -809,6 +960,20 @@ function renderSummary() {
     ' of ' + (onsetLatencies.length + missedOnsets);
   document.getElementById('s-false').textContent = falseStarts;
 
+  const summaryEl = document.getElementById('summary');
+  summaryEl.classList.toggle('contour', contourMode);
+  if (contourMode) {
+    const mTurn = median(turnLatencies);
+    document.getElementById('s-turn').textContent =
+      mTurn === null ? '—' : Math.round(mTurn);
+    const denom = Math.sqrt((corrSxx - corrSx * corrSx / corrN) *
+                            (corrSyy - corrSy * corrSy / corrN));
+    const r = (corrN > 10 && denom > 0)
+      ? (corrSxy - corrSx * corrSy / corrN) / denom : null;
+    document.getElementById('s-track').textContent =
+      r === null ? '—' : Math.round(Math.max(0, r) * 100);
+  }
+
   const trace = document.getElementById('trace');
   trace.innerHTML = '';
   const peak = Math.max(LAPSE_MS, ...onsets, 1);
@@ -824,6 +989,8 @@ function renderSummary() {
   if (earlyReleases) parts.push(earlyReleases + ' early release' + (earlyReleases === 1 ? '' : 's'));
   if (missedOnsets)  parts.push(missedOnsets + ' onset missed');
   if (missedOffsets) parts.push(missedOffsets + ' offset missed');
+  if (contourMode && missedTurns) parts.push(missedTurns + ' step' + (missedTurns === 1 ? '' : 's') + ' unanswered');
+  if (contourMode && wrongTurns)  parts.push(wrongTurns + ' went the wrong way');
   parts.push('taller is slower; a lapse is over ' + LAPSE_MS + ' ms');
   document.getElementById('trace-caption').textContent = parts.join(' · ');
 
@@ -832,12 +999,26 @@ function renderSummary() {
 
 // ─── Input ────────────────────────────────────────────────────────────────────
 
+function readFinger(e) {
+  const r = padEl.getBoundingClientRect();
+  if (!r.height) return;
+  fingerNorm = Math.min(1, Math.max(0, 1 - (e.clientY - r.top) / r.height));
+}
+
 padEl.addEventListener('pointerdown', e => {
   e.preventDefault();
   if (fingerDown) return;
   fingerDown = true;
+  readFinger(e);
   try { padEl.setPointerCapture(e.pointerId); } catch(err) {}
   onPress();
+});
+
+padEl.addEventListener('pointermove', e => {
+  if (!fingerDown) return;
+  e.preventDefault();
+  readFinger(e);
+  onFingerMove(performance.now());
 });
 
 function liftFinger() {
@@ -862,6 +1043,17 @@ document.addEventListener('keyup', e => {
   e.preventDefault();
   liftFinger();
 });
+
+const modeSelect = document.getElementById('mode-select');
+function syncModeText() {
+  const t = document.getElementById('pad-text');
+  if (phase !== 'idle' && phase !== 'done') return;
+  t.innerHTML = modeSelect.value === 'contour' ? t.dataset.contour : t.dataset.contact;
+  document.getElementById('speed-select').style.opacity =
+    modeSelect.value === 'contour' ? '1' : '0.4';
+}
+modeSelect.addEventListener('change', syncModeText);
+syncModeText();
 
 document.getElementById('start-btn').addEventListener('click', beginSession);
 document.getElementById('stop-btn').addEventListener('click', endSession);
