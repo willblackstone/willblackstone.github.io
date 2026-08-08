@@ -315,6 +315,12 @@ let sessionWave = null;
 
 const ATTACK_SEC = 0.060;  // click-free but definite
 const FADE_SEC   = 0.250;  // short enough that "gone" is a moment, not a guess
+// Straight mode stops as abruptly as is physically safe. A ramp to true zero
+// over 8 ms spans about three cycles at these frequencies — below the ~10 ms
+// mark nothing reads as gradual, and above ~5 ms nothing clicks. Ending the
+// ramp at exactly zero is what prevents the click; stopping the oscillator
+// outright would leave a step discontinuity mid-waveform, which is the pop.
+const STRAIGHT_FADE_SEC = 0.008;
 
 // Contour mode. The pitch sits on a semitone grid and steps between degrees —
 // a semitone or a whole tone at a time — rather than sliding continuously. A
@@ -912,7 +918,7 @@ function toneOff() {
   }
 
   phase = 'fading';
-  const fadeMs = stopTone(FADE_SEC);
+  const fadeMs = stopTone(straightMode ? STRAIGHT_FADE_SEC : FADE_SEC);
   toneGoneAt = performance.now() + fadeMs;
 
   fadeTimeout = setTimeout(() => {
