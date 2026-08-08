@@ -169,6 +169,7 @@
       <div style="flex: 1.2;">
         <div class="control-label">Mode</div>
         <select id="mode-select" class="field-select">
+          <option value="straight">Straight</option>
           <option value="contact" selected>Contact</option>
           <option value="contour">Contact + contour</option>
         </select>
@@ -232,7 +233,9 @@
 
   <div id="pad">
     <div id="pad-icon">◉</div>
-    <div id="pad-text" data-contact="Hold while you hear the tone.<br>Let go the moment it's gone."
+    <div id="pad-text"
+         data-straight="Hold while you hear the tone.<br>Let go the moment it's gone."
+         data-contact="Hold while you hear the tone.<br>Let go the moment it's gone."
          data-contour="Hold while you hear the tone.<br>Ride the pitch up and down.<br>Let go the moment it's gone.">Hold while you hear the tone.<br>Let go the moment it's gone.</div>
   </div>
 
@@ -415,6 +418,8 @@ function startTone() {
   const preset = TONE_PRESETS[presetKey] || TONE_PRESETS.pure;
   const now = ctx.currentTime;
 
+  if (straightMode) { startStraightTone(ctx, preset, now); return; }
+
   const wave = sessionWave || buildRandomWave(ctx);
   const baseGain = 0.18;
 
@@ -491,6 +496,56 @@ function startTone() {
   };
 
   setTimeout(() => { if (gainNode) startModulation(); }, ATTACK_SEC * 1000 + 20);
+}
+
+// Straight mode: one oscillator, nothing moving. No detuned sibling (two
+// oscillators beat against each other, which is undulation by another name),
+// no shimmer, no tremolo, no filter breathing, no random harmonics. The
+// reverb is kept but pinned at the midpoint of the range the other modes
+// draw from, so this sits in the same room as them rather than sounding like
+// a different instrument — but identically, round after round.
+const STRAIGHT_WET = 0.40;
+
+function startStraightTone(ctx, preset, now) {
+  const baseGain = 0.18;
+
+  gainNode = ctx.createGain();
+  gainNode.gain.setValueAtTime(0.0001, now);
+  gainNode.gain.exponentialRampToValueAtTime(baseGain, now + ATTACK_SEC);
+
+  filterNode = ctx.createBiquadFilter();
+  filterNode.type = 'lowpass';
+  filterNode.frequency.setValueAtTime(3750, now);
+  filterNode.Q.setValueAtTime(0.7, now);
+
+  const dry = ctx.createGain();
+  dry.gain.setValueAtTime(1 - STRAIGHT_WET, now);
+  const wet = ctx.createGain();
+  wet.gain.setValueAtTime(STRAIGHT_WET, now);
+  const convolver = ctx.createConvolver();
+  convolver.buffer = getReverbIR(ctx);
+
+  filterNode.connect(dry);
+  filterNode.connect(convolver);
+  convolver.connect(wet);
+  dry.connect(gainNode);
+  wet.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  const oscMix1 = ctx.createGain();
+  oscMix1.gain.setValueAtTime(0.8, now);
+  oscMix1.connect(filterNode);
+
+  // The preset's plain waveform, not the session's random harmonic mix.
+  oscillator = ctx.createOscillator();
+  oscillator.type = preset.type;
+  oscillator.frequency.setValueAtTime(preset.freq, now);
+  oscillator.detune.setValueAtTime(0, now);
+  oscillator.connect(oscMix1);
+  oscillator.start();
+
+  voiceNodes = { oscMix1, dry, wet, convolver };
+  modulationParams = null;   // nothing to step; stepModulation stays asleep
 }
 
 function startModulation() {
@@ -719,8 +774,9 @@ let earlyReleases = 0;
 
 const MOVE_THRESH = 0.05;     // fraction of pad height that counts as answering
 
-let contourMode = false;
-let fingerNorm  = 0.5;        // 1 = top of pad = high pitch
+let contourMode  = false;
+let straightMode = false;
+let fingerNorm   = 0.5;       // 1 = top of pad = high pitch
 let pendingMove = null;       // {dir, at, ref} — a step awaiting an answer
 const turnLatencies = [];
 let missedTurns = 0;
@@ -787,7 +843,9 @@ function beginSession() {
   missedOffsets = 0;
   earlyReleases = 0;
 
-  contourMode = document.getElementById('mode-select').value === 'contour';
+  const mode = document.getElementById('mode-select').value;
+  contourMode  = mode === 'contour';
+  straightMode = mode === 'straight';
   turnLatencies.length = 0;
   missedTurns = 0;
   wrongTurns = 0;
@@ -1048,7 +1106,7 @@ const modeSelect = document.getElementById('mode-select');
 function syncModeText() {
   const t = document.getElementById('pad-text');
   if (phase !== 'idle' && phase !== 'done') return;
-  t.innerHTML = modeSelect.value === 'contour' ? t.dataset.contour : t.dataset.contact;
+  t.innerHTML = t.dataset[modeSelect.value] || t.dataset.contact;
   document.getElementById('speed-select').style.opacity =
     modeSelect.value === 'contour' ? '1' : '0.4';
 }
