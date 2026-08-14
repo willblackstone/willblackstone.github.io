@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Noting</title>
+<style>
+  :root {
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f5;
+    --color-background-tertiary: #ebebeb;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #737373;
+    --color-text-tertiary: #a3a3a3;
+    --color-border-secondary: #e0e0e0;
+    --color-border-tertiary: #ebebeb;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #141414;
+      --color-background-secondary: #222222;
+      --color-background-tertiary: #2e2e2e;
+      --color-text-primary: #f0f0f0;
+      --color-text-secondary: #888888;
+      --color-text-tertiary: #555555;
+      --color-border-secondary: #333333;
+      --color-border-tertiary: #2a2a2a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  #progress-track {
+    position: fixed; top: 0; left: 0; width: 100%; height: 2px;
+    background: transparent; z-index: 100;
+  }
+  #progress-fill {
+    height: 100%; width: 0%;
+    background: var(--color-border-secondary);
+    transition: width 0.4s linear;
+  }
+
+  #app { padding: 1.5rem 1rem 1.25rem; max-width: 420px; margin: 0 auto; }
+
+  .control-label {
+    font-size: 11px; color: var(--color-text-secondary);
+    margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .field-select {
+    width: 100%; padding: 8px 10px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-size: 14px; font-family: var(--font-sans);
+  }
+  .num-input {
+    width: 48px; min-width: 0; padding: 8px 4px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-size: 14px; text-align: center; font-family: var(--font-sans);
+  }
+  .row { display: flex; gap: 8px; align-items: flex-end; }
+  .range { display: flex; gap: 6px; align-items: center; }
+  .dash { color: var(--color-text-secondary); font-size: 13px; flex-shrink: 0; }
+  .caption { font-size: 11px; color: var(--color-text-tertiary); margin-top: 6px; }
+
+  /* The pad. During a session it carries the count and nothing else — no
+     progress ring, no pace, no encouragement. The ear keeps the rhythm; the
+     eye is only there for the number, and only when it looks. */
+  #pad {
+    width: 100%;
+    height: min(75vw, 320px);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    background: var(--color-background-secondary);
+    transition: background 0.35s ease;
+  }
+  #pad.active { background: var(--color-background-tertiary); }
+  /* The tap flash is deliberately faint and brief: acknowledgement, not
+     reward. The reward is the chime, and it only comes every nth note. */
+  #pad.flash { background: var(--color-background-secondary); transition: none; }
+
+  #pad-icon { font-size: 26px; line-height: 1; color: var(--color-text-tertiary); }
+  #pad-count {
+    display: none;
+    font-size: clamp(56px, 22vw, 96px);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+  }
+  #pad.running #pad-count { display: block; }
+  #pad.running #pad-icon { display: none; }
+  #pad-text {
+    font-size: 15px; font-weight: 400;
+    color: var(--color-text-secondary);
+    margin-top: 10px; letter-spacing: 0.01em; text-align: center;
+    padding: 0 1.5rem;
+  }
+  /* Cycle dots: how far through the current chime group this note sits.
+     Visible only if you look — the information is really in the rising pitch. */
+  #cycle { display: none; gap: 6px; margin-top: 14px; }
+  #pad.running #cycle { display: flex; }
+  .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--color-border-secondary);
+    transition: background 0.2s ease;
+  }
+  .dot.on { background: var(--color-text-tertiary); }
+
+  .btn {
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    color: var(--color-text-primary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 20px; font-size: 14px; cursor: pointer;
+    font-family: var(--font-sans);
+  }
+  .btn:hover { background: var(--color-background-secondary); }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn-small { padding: 8px 12px; font-size: 13px; color: var(--color-text-secondary); }
+
+  #summary { display: none; margin-top: 1.25rem; }
+  .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--color-border-tertiary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md); overflow: hidden;
+  }
+  .stat { background: var(--color-background-primary); padding: 12px 14px; }
+  .stat-label {
+    font-size: 10px; color: var(--color-text-secondary);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .stat-value { font-size: 20px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .stat-unit { font-size: 12px; color: var(--color-text-secondary); margin-left: 2px; }
+
+  #trace-wrap { margin-top: 1rem; }
+  #trace { display: flex; align-items: flex-end; gap: 2px; height: 56px; margin-top: 8px; }
+  .bar { flex: 1; min-width: 2px; background: var(--color-border-secondary); border-radius: 1px; }
+  .bar.gap { background: var(--color-text-tertiary); }
+
+  #lifetime {
+    margin-top: 1.5rem; padding-top: 1rem;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    font-size: 11px; color: var(--color-text-tertiary);
+    display: flex; justify-content: space-between;
+  }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); border: 0;
+  }
+</style>
+</head>
+<body>
+<div id="progress-track"><div id="progress-fill"></div></div>
+
+<div id="app">
+  <h1 class="sr-only">Noting</h1>
+
+  <div id="controls" style="margin-bottom: 1.25rem;">
+    <div class="row" style="margin-bottom: 10px;">
+      <div style="flex: 1.2;">
+        <div class="control-label">Session</div>
+        <select id="target-select" class="field-select">
+          <option value="open">Open — no end</option>
+          <optgroup label="By notes">
+            <option value="n:54">54 notes</option>
+            <option value="n:108" selected>108 notes</option>
+            <option value="n:216">216 notes</option>
+            <option value="n:324">324 notes</option>
+            <option value="n:540">540 notes</option>
+            <option value="n:1080">1080 notes</option>
+          </optgroup>
+          <optgroup label="By time">
+            <option value="t:5">5 min</option>
+            <option value="t:10">10 min</option>
+            <option value="t:15">15 min</option>
+            <option value="t:20">20 min</option>
+            <option value="t:30">30 min</option>
+            <option value="t:45">45 min</option>
+            <option value="t:60">60 min</option>
+          </optgroup>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <div class="control-label">Chime / count</div>
+        <div class="range">
+          <input type="number" id="chime-every" min="1" max="12" value="3" class="num-input">
+          <span class="dash">×</span>
+          <input type="number" id="chimes-per-call" min="1" max="12" value="3" class="num-input">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex: 1.2;">
+        <div class="control-label">Voice</div>
+        <select id="voice-select" class="field-select">
+          <option value="speak" selected>Speak the count</option>
+          <option value="chord">Chord only</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <div class="control-label">Tone</div>
+        <select id="tone-select" class="field-select">
+          <option value="bell" selected>Bell</option>
+          <option value="wood">Wood</option>
+          <option value="glass">Glass</option>
+          <option value="bowl">Bowl</option>
+        </select>
+      </div>
+    </div>
+    <div class="caption" id="scheme-caption"></div>
+  </div>
+
+  <div id="pad">
+    <div id="pad-icon">◉</div>
+    <div id="pad-count">0</div>
+    <div id="pad-text">Tap once for every note.</div>
+    <div id="cycle"></div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+    <button class="btn" id="start-btn">Begin</button>
+    <button class="btn btn-small" id="undo-btn" disabled>Undo</button>
+    <button class="btn" id="stop-btn" disabled>End session</button>
+  </div>
+
+  <div id="summary">
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat-label">Notes</div>
+        <div class="stat-value"><span id="s-notes">—</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Duration</div>
+        <div class="stat-value"><span id="s-dur">—</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Pace — median</div>
+        <div class="stat-value"><span id="s-pace">—</span><span class="stat-unit">/min</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Longest gap</div>
+        <div class="stat-value"><span id="s-gap">—</span><span class="stat-unit">s</span></div>
+      </div>
+    </div>
+    <div id="trace-wrap">
+      <div class="control-label">Interval between notes</div>
+      <div id="trace"></div>
+      <div class="caption" id="trace-caption"></div>
+    </div>
+  </div>
+
+  <div id="lifetime">
+    <span id="lt-notes"></span>
+    <span id="lt-sessions"></span>
+  </div>
+</div>
+
+<script>
+// ─── Wake lock ────────────────────────────────────────────────────────────────
+
+let wakeLock = null;
+async function requestWakeLock() {
+  try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+}
+function releaseWakeLock() {
+  try { if (wakeLock) wakeLock.release(); } catch(e) {}
+  wakeLock = null;
+}
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock && document.visibilityState === 'visible') await requestWakeLock();
+});
+
+// ─── Audio ────────────────────────────────────────────────────────────────────
+//
+// One bell per chime, struck with inharmonic partials and a long exponential
+// tail through a small reverb. The tail matters more than the strike: a note
+// that keeps ringing after the tap is what makes the interval feel spacious
+// rather than metronomic.
+
+let audioCtx = null;
+let cachedIR = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function getReverbIR(ctx) {
+  if (cachedIR) return cachedIR;
+  const duration = 2.2;
+  const rate = ctx.sampleRate;
+  const length = Math.max(1, Math.floor(rate * duration));
+  const ir = ctx.createBuffer(2, length, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = ir.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      const t = i / length;
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 3);
+    }
+  }
+  cachedIR = ir;
+  return ir;
+}
+
+// Partial ratios and their relative weights. Real struck metal is inharmonic;
+// exact integer partials sound like a synthesiser and stop being pleasant
+// after the two-hundredth repetition.
+const TONE_VOICES = {
+  bell:  { partials: [[1, 1.0, 1.0], [2.01, 0.42, 0.72], [3.02, 0.22, 0.5], [4.21, 0.12, 0.34]],
+           decay: 1.9, attack: 0.004, wet: 0.30, lp: 5200 },
+  wood:  { partials: [[1, 1.0, 1.0], [2.76, 0.30, 0.30], [5.40, 0.14, 0.16]],
+           decay: 0.55, attack: 0.002, wet: 0.16, lp: 4200 },
+  glass: { partials: [[1, 1.0, 1.0], [2.40, 0.55, 0.80], [4.60, 0.30, 0.55], [6.80, 0.15, 0.35]],
+           decay: 2.6, attack: 0.003, wet: 0.38, lp: 7000 },
+  bowl:  { partials: [[1, 1.0, 1.0], [1.99, 0.35, 0.9], [2.98, 0.18, 0.75], [5.44, 0.08, 0.45]],
+           decay: 3.4, attack: 0.012, wet: 0.42, lp: 3600 },
+};
+
+function strike(freq, gain, when, voiceKey) {
+  const ctx = getAudioCtx();
+  const v = TONE_VOICES[voiceKey] || TONE_VOICES.bell;
+  const t0 = (when === undefined ? ctx.currentTime : when) + 0.001;
+
+  const bus = ctx.createGain();
+  bus.gain.value = gain;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = v.lp;
+  bus.connect(lp);
+
+  const dry = ctx.createGain();
+  dry.gain.value = 1 - v.wet;
+  lp.connect(dry);
+  dry.connect(ctx.destination);
+
+  const conv = ctx.createConvolver();
+  conv.buffer = getReverbIR(ctx);
+  const wet = ctx.createGain();
+  wet.gain.value = v.wet;
+  lp.connect(conv);
+  conv.connect(wet);
+  wet.connect(ctx.destination);
+
+  let longest = 0;
+  v.partials.forEach(([ratio, amp, decayScale]) => {
+    const dur = v.decay * decayScale;
+    longest = Math.max(longest, dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(amp, t0 + v.attack);
+    // Exponential decay to near-silence, then a hard zero so nothing lingers
+    // in the graph. setTargetAtTime gives the natural die-away shape.
+    g.gain.setTargetAtTime(0.0001, t0 + v.attack, dur / 4);
+    g.connect(bus);
+
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq * ratio, t0);
+    o.connect(g);
+    o.start(t0);
+    o.stop(t0 + dur + 0.2);
+    o.onended = () => { try { g.disconnect(); o.disconnect(); } catch(e) {} };
+  });
+
+  setTimeout(() => {
+    try { bus.disconnect(); lp.disconnect(); dry.disconnect(); wet.disconnect(); conv.disconnect(); } catch(e) {}
+  }, (longest + 2.8) * 1000);
+}
+
+// A pentatonic scale has no semitone to grate against anything else, so any
+// two of these notes overlapping in the reverb tail still agree.
+const SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51,
+               1567.98, 1760.00, 2093.00, 2349.32];
+
+// The chime for the kth group inside a cycle. The pitch climbs step by step
+// toward the count, so the approach to the next spoken number is audible
+// before it arrives — that is the whole feedback loop, and it costs no
+// attention to read.
+function playChime(stepIndex, stepsTotal, voiceKey) {
+  const i = Math.min(stepIndex, SCALE.length - 1);
+  // Quieter at the bottom of the climb, fuller at the top.
+  const t = stepsTotal > 1 ? stepIndex / (stepsTotal - 1) : 1;
+  strike(SCALE[i], 0.16 + 0.10 * t, undefined, voiceKey);
+}
+
+// The count landing: one gentle chord, root–fourth–fifth, struck together.
+// The climbing chimes are all single notes high in the scale, so a low, wide,
+// simultaneous voicing reads as arrival rather than as another step. Each
+// voice is quieter than a single chime — four notes at once is already louder
+// than one, and the moment should settle, not announce.
+const CHORD_145 = [130.81, 174.61, 196.00, 261.63];   // C3 · F3 · G3 · C4
+
+function playMilestone(voiceKey) {
+  const ctx = getAudioCtx();
+  const t0 = ctx.currentTime;
+  CHORD_145.forEach((f, i) => {
+    // A few milliseconds of spread — below the ~30 ms where the ear starts
+    // hearing an arpeggio, but enough to keep the attacks from stacking into
+    // one hard transient.
+    strike(f, 0.13, t0 + i * 0.008, voiceKey);
+  });
+}
+
+// End of session: the sus chord first, then the resolution. Only the fourth
+// moves — F down to E — everything else is held, so the second chord lands as
+// a settling rather than as a second event. The suspension is what makes the
+// ending sound like an ending; a single chord, however gentle, just stops.
+const CHORD_SUS  = [65.41, 130.81, 174.61, 196.00, 261.63];  // C2 · C3 · F3 · G3 · C4
+const CHORD_TRIAD= [65.41, 130.81, 164.81, 196.00, 261.63];  // C2 · C3 · E3 · G3 · C4
+
+function playEndChime(voiceKey) {
+  const ctx = getAudioCtx();
+  const t0 = ctx.currentTime;
+  CHORD_SUS.forEach((f, i) => {
+    strike(f, i === 0 ? 0.09 : 0.11, t0 + i * 0.010, voiceKey);
+  });
+  // Quieter on the resolution: the first chord is still ringing under it, and
+  // the ear only needs to hear the fourth give way.
+  CHORD_TRIAD.forEach((f, i) => {
+    strike(f, i === 0 ? 0.055 : 0.07, t0 + 1.9 + i * 0.010, voiceKey);
+  });
+}
+
+// Speech sits under the chord, not on top of it: it should arrive as a quiet
+// piece of information you can ignore, never as the loudest thing in the app.
+// Low volume, low pitch, unhurried, and held back until the chord's attack has
+// passed so the two don't compete for the same instant.
+function speakNumber(n) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(String(n));
+    u.rate = 0.8;
+    u.pitch = 0.85;
+    u.volume = 0.4;
+    setTimeout(() => { try { speechSynthesis.speak(u); } catch(e) {} }, 900);
+  } catch(e) {}
+}
+
+// ─── Session ──────────────────────────────────────────────────────────────────
+
+let running = false;
+let noteCount = 0;
+let sessionStart = 0;
+let tickTimer = null;
+let target = { kind: 'open', value: 0 };
+let chimeEvery = 3;
+let chimesPerCall = 3;
+let voiceKey = 'bell';
+let speakMode = true;
+const stamps = [];   // performance.now() of each note, in order
+
+const padEl     = document.getElementById('pad');
+const countEl   = document.getElementById('pad-count');
+const textEl    = document.getElementById('pad-text');
+const cycleEl   = document.getElementById('cycle');
+const fillEl    = document.getElementById('progress-fill');
+const startBtn  = document.getElementById('start-btn');
+const stopBtn   = document.getElementById('stop-btn');
+const undoBtn   = document.getElementById('undo-btn');
+const summaryEl = document.getElementById('summary');
+
+function readSettings() {
+  chimeEvery   = clampInt(document.getElementById('chime-every').value, 1, 12, 3);
+  chimesPerCall= clampInt(document.getElementById('chimes-per-call').value, 1, 12, 3);
+  voiceKey     = document.getElementById('tone-select').value;
+  speakMode    = document.getElementById('voice-select').value === 'speak';
+  const t = document.getElementById('target-select').value;
+  if (t === 'open') target = { kind: 'open', value: 0 };
+  else if (t.startsWith('n:')) target = { kind: 'notes', value: parseInt(t.slice(2), 10) };
+  else target = { kind: 'time', value: parseInt(t.slice(2), 10) * 60 };
+}
+
+function clampInt(v, lo, hi, dflt) {
+  const n = parseInt(v, 10);
+  if (isNaN(n)) return dflt;
+  return Math.min(hi, Math.max(lo, n));
+}
+
+function callEvery() { return chimeEvery * chimesPerCall; }
+
+function syncCaption() {
+  readSettings();
+  const cap = document.getElementById('scheme-caption');
+  let s = `Chime every ${chimeEvery} ${chimeEvery === 1 ? 'note' : 'notes'}, `
+        + `count spoken every ${callEvery()}.`;
+  if (target.kind === 'notes') {
+    const calls = Math.floor(target.value / callEvery());
+    s += ` ${calls} call${calls === 1 ? '' : 's'} to ${target.value}.`;
+    if (target.value % callEvery() !== 0) s += ` (${target.value} is not a multiple of ${callEvery()}.)`;
+  }
+  cap.textContent = s;
+  buildCycleDots();
+}
+
+function buildCycleDots() {
+  cycleEl.innerHTML = '';
+  for (let i = 0; i < chimesPerCall; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    cycleEl.appendChild(d);
+  }
+}
+
+function paintCycleDots() {
+  const chimesDone = Math.floor(noteCount / chimeEvery) % chimesPerCall;
+  // At an exact call boundary the cycle has just completed — show it full for
+  // the moment the number is spoken, then it clears on the next chime.
+  const atCall = noteCount > 0 && noteCount % callEvery() === 0;
+  const lit = atCall ? chimesPerCall : chimesDone;
+  [...cycleEl.children].forEach((d, i) => d.classList.toggle('on', i < lit));
+}
+
+function setControlsDisabled(d) {
+  ['target-select','chime-every','chimes-per-call','voice-select','tone-select']
+    .forEach(id => { document.getElementById(id).disabled = d; });
+}
+
+function beginSession() {
+  readSettings();
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  // iOS will not speak later unless the voice has been used inside a gesture.
+  if (speakMode && 'speechSynthesis' in window) {
+    try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch(e) {}
+  }
+
+  running = true;
+  noteCount = 0;
+  stamps.length = 0;
+  sessionStart = performance.now();
+
+  buildCycleDots();
+  paintCycleDots();
+  countEl.textContent = '0';
+  padEl.classList.add('running', 'active');
+  textEl.textContent = 'Tap once for every note.';
+  summaryEl.style.display = 'none';
+  fillEl.style.width = '0%';
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+  undoBtn.disabled = false;
+  setControlsDisabled(true);
+  requestWakeLock();
+
+  clearInterval(tickTimer);
+  tickTimer = setInterval(onTick, 500);
+}
+
+function onTick() {
+  if (!running) return;
+  if (target.kind === 'time') {
+    const elapsed = (performance.now() - sessionStart) / 1000;
+    fillEl.style.width = Math.min(100, (elapsed / target.value) * 100) + '%';
+    if (elapsed >= target.value) endSession(true);
+  }
+}
+
+function note() {
+  if (!running) return;
+  noteCount++;
+  stamps.push(performance.now());
+  countEl.textContent = String(noteCount);
+  paintCycleDots();
+
+  if (navigator.vibrate) { try { navigator.vibrate(8); } catch(e) {} }
+  flashPad();
+
+  if (noteCount % callEvery() === 0) {
+    playMilestone(voiceKey);
+    if (speakMode) speakNumber(noteCount);
+  } else if (noteCount % chimeEvery === 0) {
+    const step = (Math.floor(noteCount / chimeEvery) % chimesPerCall) - 1;
+    playChime(Math.max(0, step), chimesPerCall, voiceKey);
+  }
+
+  if (target.kind === 'notes') {
+    fillEl.style.width = Math.min(100, (noteCount / target.value) * 100) + '%';
+    if (noteCount >= target.value) {
+      // Let the milestone chord and the spoken number finish before the
+      // closing bell — arriving is the point of the session.
+      setTimeout(() => { if (running) endSession(true); }, 2000);
+    }
+  }
+}
+
+function undo() {
+  if (!running || noteCount === 0) return;
+  noteCount--;
+  stamps.pop();
+  countEl.textContent = String(noteCount);
+  paintCycleDots();
+  if (target.kind === 'notes') {
+    fillEl.style.width = Math.min(100, (noteCount / target.value) * 100) + '%';
+  }
+}
+
+function flashPad() {
+  padEl.classList.remove('active');
+  padEl.classList.add('flash');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      padEl.classList.remove('flash');
+      padEl.classList.add('active');
+    });
+  });
+}
+
+function endSession(reached) {
+  if (!running) return;
+  running = false;
+  clearInterval(tickTimer);
+  releaseWakeLock();
+  padEl.classList.remove('running', 'active');
+  textEl.textContent = reached ? 'Complete.' : 'Ended.';
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  undoBtn.disabled = true;
+  setControlsDisabled(false);
+  fillEl.style.width = '0%';
+  playEndChime(voiceKey);
+  recordLifetime(noteCount);
+  renderSummary();
+}
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+
+function median(arr) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function fmtDuration(sec) {
+  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  return s === 60 ? `${m + 1}:00` : `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function renderSummary() {
+  if (noteCount === 0) return;
+  const totalSec = (performance.now() - sessionStart) / 1000;
+  const gaps = [];
+  for (let i = 1; i < stamps.length; i++) gaps.push((stamps[i] - stamps[i - 1]) / 1000);
+
+  document.getElementById('s-notes').textContent = noteCount;
+  document.getElementById('s-dur').textContent = fmtDuration(totalSec);
+
+  const med = median(gaps);
+  document.getElementById('s-pace').textContent = med ? (60 / med).toFixed(1) : '—';
+  document.getElementById('s-gap').textContent = gaps.length ? Math.max(...gaps).toFixed(1) : '—';
+
+  // Interval trace. A long bar is a long silence between notes — usually
+  // either settling or drifting, and worth knowing which.
+  const trace = document.getElementById('trace');
+  trace.innerHTML = '';
+  if (gaps.length) {
+    // Clip the scale at the 95th percentile so one very long pause doesn't
+    // flatten the rest of the session into nothing.
+    const sorted = [...gaps].sort((a, b) => a - b);
+    const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] || 1;
+    const medGap = med || 1;
+    // Downsample so the bars stay readable on a phone.
+    const maxBars = 60;
+    const stride = Math.ceil(gaps.length / maxBars);
+    for (let i = 0; i < gaps.length; i += stride) {
+      const slice = gaps.slice(i, i + stride);
+      const v = slice.reduce((a, b) => a + b, 0) / slice.length;
+      const bar = document.createElement('div');
+      bar.className = 'bar' + (v > medGap * 2.5 ? ' gap' : '');
+      bar.style.height = Math.max(2, Math.min(100, (v / p95) * 100)) + '%';
+      trace.appendChild(bar);
+    }
+    document.getElementById('trace-caption').textContent =
+      `${gaps.length + 1} notes · median ${medGap.toFixed(1)}s apart`;
+  }
+  summaryEl.style.display = 'block';
+}
+
+// ─── Lifetime tally ───────────────────────────────────────────────────────────
+// The only persistence in the app. It exists because a number that keeps
+// growing across sessions is the cheapest reason to sit down again.
+
+const LS_KEY = 'noting-lifetime-v1';
+
+function readLifetime() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return { notes: 0, sessions: 0 };
+    const o = JSON.parse(raw);
+    return { notes: o.notes || 0, sessions: o.sessions || 0 };
+  } catch(e) { return { notes: 0, sessions: 0 }; }
+}
+
+function recordLifetime(n) {
+  if (n <= 0) return;
+  const lt = readLifetime();
+  lt.notes += n;
+  lt.sessions += 1;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(lt)); } catch(e) {}
+  paintLifetime();
+}
+
+function paintLifetime() {
+  const lt = readLifetime();
+  document.getElementById('lt-notes').textContent =
+    lt.notes ? `${lt.notes.toLocaleString()} notes` : '';
+  document.getElementById('lt-sessions').textContent =
+    lt.sessions ? `${lt.sessions} session${lt.sessions === 1 ? '' : 's'}` : '';
+}
+
+// ─── Input ────────────────────────────────────────────────────────────────────
+// pointerdown only: the note lands the instant the finger touches, and there
+// is no second event to double-count.
+
+padEl.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (running) note();
+  else beginSession();
+});
+padEl.addEventListener('contextmenu', e => e.preventDefault());
+
+document.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (running) note(); else beginSession();
+  } else if (e.code === 'Backspace') {
+    e.preventDefault();
+    undo();
+  } else if (e.code === 'Escape') {
+    if (running) endSession(false);
+  }
+});
+
+startBtn.addEventListener('click', beginSession);
+stopBtn.addEventListener('click', () => endSession(false));
+undoBtn.addEventListener('click', undo);
+
+['chime-every','chimes-per-call','target-select'].forEach(id => {
+  document.getElementById(id).addEventListener('change', syncCaption);
+  document.getElementById(id).addEventListener('input', syncCaption);
+});
+
+syncCaption();
+paintLifetime();
+</script>
+</body>
+</html>
