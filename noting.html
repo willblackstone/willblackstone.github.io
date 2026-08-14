@@ -453,16 +453,83 @@ function playEndChime(voiceKey) {
 // piece of information you can ignore, never as the loudest thing in the app.
 // Low volume, low pitch, unhurried, and held back until the chord's attack has
 // passed so the two don't compete for the same instant.
-function speakNumber(n) {
-  if (!('speechSynthesis' in window)) return;
+//
+// iOS is the awkward case, and every browser on it is WebKit — Chrome
+// included. Two rules there: the first speak() of the page has to happen
+// synchronously inside a user gesture, and an empty-string utterance does not
+// count as that first speak. So the unlock below uses real text at zero
+// volume, and everything after it is only permitted because that one landed.
+
+let speechVoice = null;
+let speechPrimed = false;
+let speechLive = null;   // null = untested, true = heard from, false = never started
+
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = speechSynthesis.getVoices() || [];
+  if (!voices.length) return null;
+  return voices.find(v => v.lang === 'en-GB' && v.localService)
+      || voices.find(v => v.lang === 'en-GB')
+      || voices.find(v => /^en/.test(v.lang) && v.localService)
+      || voices.find(v => /^en/.test(v.lang))
+      || voices[0];
+}
+
+if ('speechSynthesis' in window) {
+  speechVoice = pickVoice();
+  // The list is populated asynchronously in most browsers and is empty on the
+  // first synchronous call.
+  speechSynthesis.addEventListener?.('voiceschanged', () => { speechVoice = pickVoice(); });
+}
+
+// Must be called synchronously from inside a tap/click handler.
+function primeSpeech() {
+  if (speechPrimed || !('speechSynthesis' in window)) return;
   try {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(String(n));
-    u.rate = 0.8;
-    u.pitch = 0.85;
-    u.volume = 0.4;
-    setTimeout(() => { try { speechSynthesis.speak(u); } catch(e) {} }, 900);
+    const u = new SpeechSynthesisUtterance('ok');   // real text: iOS drops ''
+    u.volume = 0;
+    u.rate = 1;
+    if (speechVoice) u.voice = speechVoice;
+    speechSynthesis.speak(u);
+    speechPrimed = true;
   } catch(e) {}
+}
+
+function speakNumber(n) {
+  if (!('speechSynthesis' in window) || !speechPrimed) return;
+  setTimeout(() => {
+    try {
+      // Never cancel() unconditionally — on WebKit that can leave the engine
+      // wedged and silent for the rest of the page's life. Only clear a
+      // previous number if one is somehow still going.
+      if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+      if (speechSynthesis.paused) speechSynthesis.resume();
+
+      if (!speechVoice) speechVoice = pickVoice();
+      const u = new SpeechSynthesisUtterance(String(n));
+      if (speechVoice) u.voice = speechVoice;
+      u.rate = 0.8;
+      u.pitch = 0.85;
+      u.volume = 0.4;
+      u.onstart = () => { speechLive = true; };
+      u.onerror = () => { markSpeechDead(); };
+      speechSynthesis.speak(u);
+      // If nothing has started by now the platform has swallowed it silently,
+      // which is the usual iOS failure — say so rather than leaving the user
+      // waiting for a number that is never coming.
+      setTimeout(() => { if (speechLive === null) markSpeechDead(); }, 1500);
+    } catch(e) { markSpeechDead(); }
+  }, 900);
+}
+
+function markSpeechDead() {
+  if (speechLive === true) return;
+  speechLive = false;
+  const cap = document.getElementById('scheme-caption');
+  if (cap && !cap.dataset.speechWarned) {
+    cap.dataset.speechWarned = '1';
+    cap.textContent += ' — this browser is not speaking the count; the chord still marks it.';
+  }
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
@@ -545,13 +612,13 @@ function setControlsDisabled(d) {
 }
 
 function beginSession() {
-  readSettings();
+  // Both unlocks first and synchronously: this runs inside the tap that
+  // started the session, and neither audio nor speech gets another chance at
+  // a gesture until the user taps again.
+  primeSpeech();
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
-  // iOS will not speak later unless the voice has been used inside a gesture.
-  if (speakMode && 'speechSynthesis' in window) {
-    try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch(e) {}
-  }
+  readSettings();
 
   running = true;
   noteCount = 0;
@@ -743,6 +810,10 @@ function paintLifetime() {
 
 padEl.addEventListener('pointerdown', e => {
   e.preventDefault();
+  // Cheap and idempotent, and it means a session begun from the Begin button
+  // on a page where speech had not yet unlocked still gets a second chance on
+  // the first tap.
+  primeSpeech();
   if (running) note();
   else beginSession();
 });
