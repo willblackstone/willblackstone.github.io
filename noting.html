@@ -218,9 +218,9 @@
     </div>
     <div class="row">
       <div style="flex: 1.2;">
-        <div class="control-label">Voice</div>
+        <div class="control-label">Count</div>
         <select id="voice-select" class="field-select">
-          <option value="speak" selected>Speak the count</option>
+          <option value="tones" selected>Struck in tones</option>
           <option value="chord">Chord only</option>
         </select>
       </div>
@@ -449,87 +449,88 @@ function playEndChime(voiceKey) {
   });
 }
 
-// Speech sits under the chord, not on top of it: it should arrive as a quiet
-// piece of information you can ignore, never as the loudest thing in the app.
-// Low volume, low pitch, unhurried, and held back until the chord's attack has
-// passed so the two don't compete for the same instant.
+// ─── The count, told in tones ─────────────────────────────────────────────────
 //
-// iOS is the awkward case, and every browser on it is WebKit — Chrome
-// included. Two rules there: the first speak() of the page has to happen
-// synchronously inside a user gesture, and an empty-string utterance does not
-// count as that first speak. So the unlock below uses real text at zero
-// volume, and everything after it is only permitted because that one landed.
+// Speech was the obvious way to say a number and the wrong one: iOS discards
+// utterances that don't originate in a gesture, and every browser on the
+// phone is WebKit, so there was no version of it that could be relied on.
+//
+// Instead the number is struck like a clock. Each decimal place has its own
+// pitch, and the digit is how many times that pitch sounds:
+//
+//     thousands  C2   very low
+//     hundreds   C3   low
+//     tens       G4   middle
+//     units      C6   high
+//
+// Because the place lives in the pitch rather than in the position, a zero
+// simply doesn't sound and nothing is ambiguous: 108 is one low and eight
+// high, while 18 is one middle and eight high. You never have to track which
+// group you're in — the pitch tells you, whenever you happen to tune in.
+//
+// The pips are deliberately drier and shorter than the bells. Eight strikes of
+// a 2-second bell is a cloud; eight of these is countable without effort.
 
-let speechVoice = null;
-let speechPrimed = false;
-let speechLive = null;   // null = untested, true = heard from, false = never started
+const PLACE_PITCH = [1046.50, 392.00, 130.81, 65.41];  // units, tens, hundreds, thousands
+const PLACE_GAIN  = [0.085, 0.10, 0.115, 0.115];
+const PIP_SPACING  = 0.185;   // within a digit
+const PLACE_GAP    = 0.42;    // extra silence between places
+const COUNT_DELAY  = 1.15;    // after the chord's attack has passed
 
-function pickVoice() {
-  if (!('speechSynthesis' in window)) return null;
-  const voices = speechSynthesis.getVoices() || [];
-  if (!voices.length) return null;
-  return voices.find(v => v.lang === 'en-GB' && v.localService)
-      || voices.find(v => v.lang === 'en-GB')
-      || voices.find(v => /^en/.test(v.lang) && v.localService)
-      || voices.find(v => /^en/.test(v.lang))
-      || voices[0];
+// A short, dry ping. No reverb send and a fast decay, so repeated strikes stay
+// separate instead of smearing into each other.
+function pip(freq, gain, when) {
+  const ctx = getAudioCtx();
+  const t0 = when;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.006);
+  g.gain.setTargetAtTime(0.0001, t0 + 0.006, 0.075);
+  g.connect(ctx.destination);
+
+  const o = ctx.createOscillator();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  o.connect(g);
+
+  // A quiet octave above gives the pip an edge to count against without
+  // making it sharp.
+  const g2 = ctx.createGain();
+  g2.gain.setValueAtTime(0.0001, t0);
+  g2.gain.exponentialRampToValueAtTime(gain * 0.22, t0 + 0.005);
+  g2.gain.setTargetAtTime(0.0001, t0 + 0.005, 0.045);
+  g2.connect(ctx.destination);
+  const o2 = ctx.createOscillator();
+  o2.type = 'sine';
+  o2.frequency.setValueAtTime(freq * 2, t0);
+  o2.connect(g2);
+
+  [[o, g], [o2, g2]].forEach(([osc, gain_]) => {
+    osc.start(t0);
+    osc.stop(t0 + 0.6);
+    osc.onended = () => { try { osc.disconnect(); gain_.disconnect(); } catch(e) {} };
+  });
 }
 
-if ('speechSynthesis' in window) {
-  speechVoice = pickVoice();
-  // The list is populated asynchronously in most browsers and is empty on the
-  // first synchronous call.
-  speechSynthesis.addEventListener?.('voiceschanged', () => { speechVoice = pickVoice(); });
-}
+// Highest place first, the way a number is read.
+function playCountTones(n) {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const digits = String(Math.min(n, 9999)).split('').map(Number);
+  const places = digits.length;
+  let t = ctx.currentTime + COUNT_DELAY;
 
-// Must be called synchronously from inside a tap/click handler.
-function primeSpeech() {
-  if (speechPrimed || !('speechSynthesis' in window)) return;
-  try {
-    const u = new SpeechSynthesisUtterance('ok');   // real text: iOS drops ''
-    u.volume = 0;
-    u.rate = 1;
-    if (speechVoice) u.voice = speechVoice;
-    speechSynthesis.speak(u);
-    speechPrimed = true;
-  } catch(e) {}
-}
-
-function speakNumber(n) {
-  if (!('speechSynthesis' in window) || !speechPrimed) return;
-  setTimeout(() => {
-    try {
-      // Never cancel() unconditionally — on WebKit that can leave the engine
-      // wedged and silent for the rest of the page's life. Only clear a
-      // previous number if one is somehow still going.
-      if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
-      if (speechSynthesis.paused) speechSynthesis.resume();
-
-      if (!speechVoice) speechVoice = pickVoice();
-      const u = new SpeechSynthesisUtterance(String(n));
-      if (speechVoice) u.voice = speechVoice;
-      u.rate = 0.8;
-      u.pitch = 0.85;
-      u.volume = 0.4;
-      u.onstart = () => { speechLive = true; };
-      u.onerror = () => { markSpeechDead(); };
-      speechSynthesis.speak(u);
-      // If nothing has started by now the platform has swallowed it silently,
-      // which is the usual iOS failure — say so rather than leaving the user
-      // waiting for a number that is never coming.
-      setTimeout(() => { if (speechLive === null) markSpeechDead(); }, 1500);
-    } catch(e) { markSpeechDead(); }
-  }, 900);
-}
-
-function markSpeechDead() {
-  if (speechLive === true) return;
-  speechLive = false;
-  const cap = document.getElementById('scheme-caption');
-  if (cap && !cap.dataset.speechWarned) {
-    cap.dataset.speechWarned = '1';
-    cap.textContent += ' — this browser is not speaking the count; the chord still marks it.';
-  }
+  digits.forEach((digit, i) => {
+    const place = places - 1 - i;          // 0 = units
+    if (digit === 0) return;               // a zero is silence; the pitch disambiguates
+    const freq = PLACE_PITCH[Math.min(place, PLACE_PITCH.length - 1)];
+    const gain = PLACE_GAIN[Math.min(place, PLACE_GAIN.length - 1)];
+    for (let k = 0; k < digit; k++) {
+      pip(freq, gain, t);
+      t += PIP_SPACING;
+    }
+    t += PLACE_GAP;
+  });
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
@@ -542,7 +543,7 @@ let target = { kind: 'open', value: 0 };
 let chimeEvery = 3;
 let chimesPerCall = 3;
 let voiceKey = 'bell';
-let speakMode = true;
+let countInTones = true;
 const stamps = [];   // performance.now() of each note, in order
 
 const padEl     = document.getElementById('pad');
@@ -559,7 +560,7 @@ function readSettings() {
   chimeEvery   = clampInt(document.getElementById('chime-every').value, 1, 12, 3);
   chimesPerCall= clampInt(document.getElementById('chimes-per-call').value, 1, 12, 3);
   voiceKey     = document.getElementById('tone-select').value;
-  speakMode    = document.getElementById('voice-select').value === 'speak';
+  countInTones = document.getElementById('voice-select').value === 'tones';
   const t = document.getElementById('target-select').value;
   if (t === 'open') target = { kind: 'open', value: 0 };
   else if (t.startsWith('n:')) target = { kind: 'notes', value: parseInt(t.slice(2), 10) };
@@ -578,12 +579,13 @@ function syncCaption() {
   readSettings();
   const cap = document.getElementById('scheme-caption');
   let s = `Chime every ${chimeEvery} ${chimeEvery === 1 ? 'note' : 'notes'}, `
-        + `count spoken every ${callEvery()}.`;
+        + `count struck every ${callEvery()}.`;
   if (target.kind === 'notes') {
     const calls = Math.floor(target.value / callEvery());
     s += ` ${calls} call${calls === 1 ? '' : 's'} to ${target.value}.`;
     if (target.value % callEvery() !== 0) s += ` (${target.value} is not a multiple of ${callEvery()}.)`;
   }
+  if (countInTones) s += ' Count: low = hundreds, middle = tens, high = units.';
   cap.textContent = s;
   buildCycleDots();
 }
@@ -612,10 +614,9 @@ function setControlsDisabled(d) {
 }
 
 function beginSession() {
-  // Both unlocks first and synchronously: this runs inside the tap that
-  // started the session, and neither audio nor speech gets another chance at
-  // a gesture until the user taps again.
-  primeSpeech();
+  // Unlock audio first and synchronously: this runs inside the tap that
+  // started the session, and there is no other gesture to lean on until the
+  // user taps again.
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
   readSettings();
@@ -663,7 +664,7 @@ function note() {
 
   if (noteCount % callEvery() === 0) {
     playMilestone(voiceKey);
-    if (speakMode) speakNumber(noteCount);
+    if (countInTones) playCountTones(noteCount);
   } else if (noteCount % chimeEvery === 0) {
     const step = (Math.floor(noteCount / chimeEvery) % chimesPerCall) - 1;
     playChime(Math.max(0, step), chimesPerCall, voiceKey);
@@ -810,10 +811,6 @@ function paintLifetime() {
 
 padEl.addEventListener('pointerdown', e => {
   e.preventDefault();
-  // Cheap and idempotent, and it means a session begun from the Begin button
-  // on a page where speech had not yet unlocked still gets a second chance on
-  // the first tap.
-  primeSpeech();
   if (running) note();
   else beginSession();
 });
@@ -836,7 +833,7 @@ startBtn.addEventListener('click', beginSession);
 stopBtn.addEventListener('click', () => endSession(false));
 undoBtn.addEventListener('click', undo);
 
-['chime-every','chimes-per-call','target-select'].forEach(id => {
+['chime-every','chimes-per-call','target-select','voice-select'].forEach(id => {
   document.getElementById(id).addEventListener('change', syncCaption);
   document.getElementById(id).addEventListener('input', syncCaption);
 });
