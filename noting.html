@@ -536,9 +536,11 @@ const SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51
 // attention to read.
 function playChime(stepIndex, stepsTotal, voiceKey) {
   const i = Math.min(stepIndex, SCALE.length - 1);
-  // Quieter at the bottom of the climb, fuller at the top.
+  // Quieter at the bottom of the climb, fuller at the top. Brought down to
+  // meet the tap sound: the bell's long tail already makes it the larger
+  // event without needing the extra level.
   const t = stepsTotal > 1 ? stepIndex / (stepsTotal - 1) : 1;
-  strike(SCALE[i], 0.16 + 0.10 * t, undefined, voiceKey);
+  strike(SCALE[i], 0.125 + 0.055 * t, undefined, voiceKey);
 }
 
 // ─── The tap itself ───────────────────────────────────────────────────────────
@@ -571,8 +573,11 @@ function playTap(mode, indexInGroup, groupSize) {
   // hundreds of repeats without becoming irritating.
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(mode === 'climb' ? 0.055 : 0.065, t0 + 0.004);
-  g.gain.setTargetAtTime(0.0001, t0 + 0.004, 0.042);
+  // Close to the chime rather than far under it. A tap that whispers while the
+  // chime rings out makes every third note feel like an interruption; sitting
+  // them nearly level turns the chime into an accent within one sound world.
+  g.gain.exponentialRampToValueAtTime(mode === 'climb' ? 0.105 : 0.115, t0 + 0.005);
+  g.gain.setTargetAtTime(0.0001, t0 + 0.005, 0.048);
   g.connect(ctx.destination);
 
   [[1, 1], [2.76, 0.18]].forEach(([ratio, amp]) => {
@@ -650,45 +655,42 @@ function playEndChime(voiceKey) {
 // The pips are deliberately drier and shorter than the bells. Eight strikes of
 // a 2-second bell is a cloud; eight of these is countable without effort.
 
-const PLACE_PITCH = [1046.50, 392.00, 130.81, 65.41];  // units, tens, hundreds, thousands
-const PLACE_GAIN  = [0.085, 0.10, 0.115, 0.115];
-const PIP_SPACING  = 0.185;   // within a digit
-const PLACE_GAP    = 0.42;    // extra silence between places
+const PLACE_PITCH = [783.99, 392.00, 130.81, 65.41];   // units, tens, hundreds, thousands
+const PLACE_GAIN  = [0.05, 0.058, 0.07, 0.07];
+const PIP_SPACING  = 0.092;   // within a digit — twice the old rate
+const PLACE_GAP    = 0.30;    // extra silence between places
 const COUNT_DELAY  = 1.15;    // after the chord's attack has passed
 
-// A short, dry ping. No reverb send and a fast decay, so repeated strikes stay
-// separate instead of smearing into each other.
+// A soft, dry ping. Three things keep it from sounding harsh: a pure sine with
+// no bright partial above it, an attack slow enough to have no click in it,
+// and a top an octave lower than it used to be — the old units pitch sat at
+// C6, right where the ear is most easily hurt.
+//
+// The decay is short to match the faster rate: at this spacing a long tail
+// would smear one pip into the next and the count would stop being countable.
 function pip(freq, gain, when) {
   const ctx = getAudioCtx();
   const t0 = when;
+
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.006);
-  g.gain.setTargetAtTime(0.0001, t0 + 0.006, 0.075);
-  g.connect(ctx.destination);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
+  g.gain.setTargetAtTime(0.0001, t0 + 0.012, 0.030);
+
+  // Rounds off whatever edge the envelope leaves.
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = Math.max(1400, freq * 2.2);
+  g.connect(lp);
+  lp.connect(ctx.destination);
 
   const o = ctx.createOscillator();
   o.type = 'sine';
   o.frequency.setValueAtTime(freq, t0);
   o.connect(g);
-
-  // A quiet octave above gives the pip an edge to count against without
-  // making it sharp.
-  const g2 = ctx.createGain();
-  g2.gain.setValueAtTime(0.0001, t0);
-  g2.gain.exponentialRampToValueAtTime(gain * 0.22, t0 + 0.005);
-  g2.gain.setTargetAtTime(0.0001, t0 + 0.005, 0.045);
-  g2.connect(ctx.destination);
-  const o2 = ctx.createOscillator();
-  o2.type = 'sine';
-  o2.frequency.setValueAtTime(freq * 2, t0);
-  o2.connect(g2);
-
-  [[o, g], [o2, g2]].forEach(([osc, gain_]) => {
-    osc.start(t0);
-    osc.stop(t0 + 0.6);
-    osc.onended = () => { try { osc.disconnect(); gain_.disconnect(); } catch(e) {} };
-  });
+  o.start(t0);
+  o.stop(t0 + 0.35);
+  o.onended = () => { try { o.disconnect(); g.disconnect(); lp.disconnect(); } catch(e) {} };
 }
 
 // How long the whole count will take to strike, in ms — used so the end of a
