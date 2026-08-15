@@ -216,16 +216,24 @@
         </div>
       </div>
     </div>
-    <div class="row">
-      <div style="flex: 1.2;">
+    <div class="row" style="margin-bottom: 10px;">
+      <div style="flex: 1;">
+        <div class="control-label">Every tap</div>
+        <select id="tap-select" class="field-select">
+          <option value="soft" selected>Soft note</option>
+          <option value="climb">Climbing</option>
+          <option value="off">Silent</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
         <div class="control-label">Count</div>
         <select id="voice-select" class="field-select">
-          <option value="tones" selected>Struck in tones</option>
+          <option value="tones" selected>Struck</option>
           <option value="chord">Chord only</option>
         </select>
       </div>
       <div style="flex: 1;">
-        <div class="control-label">Tone</div>
+        <div class="control-label">Bell</div>
         <select id="tone-select" class="field-select">
           <option value="bell" selected>Bell</option>
           <option value="wood">Wood</option>
@@ -235,6 +243,7 @@
       </div>
     </div>
     <div class="caption" id="scheme-caption"></div>
+    <div class="caption" id="wake-status" style="display: none;"></div>
   </div>
 
   <div id="pad">
@@ -284,18 +293,77 @@
 
 <script>
 // ─── Wake lock ────────────────────────────────────────────────────────────────
+//
+// A single request at the start of a session is not enough. The system takes
+// the lock back on its own — on a call, on a notification, on any moment the
+// tab stops being frontmost — and it never gives it back unasked. The old code
+// only re-requested on visibilitychange, so one interruption ended the lock
+// for the rest of the sitting.
+//
+// So: hold an intention (`wantAwake`) rather than a handle, and reassert it
+// from every angle that could plausibly have lost it — the lock's own release
+// event, visibility, focus, pageshow, every tap, and a watchdog that checks
+// twice a minute regardless. Re-requesting a lock that is already held is
+// cheap and idempotent.
 
 let wakeLock = null;
-async function requestWakeLock() {
-  try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+let wantAwake = false;
+let wakeWatchdog = null;
+
+function wakeSupported() { return 'wakeLock' in navigator; }
+
+async function acquireWakeLock() {
+  if (!wantAwake || !wakeSupported()) return;
+  if (document.visibilityState !== 'visible') return;   // the request would only reject
+  if (wakeLock && !wakeLock.released) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    // Fires whenever the system takes it back. This is the event the old
+    // version was missing.
+    wakeLock.addEventListener('release', () => { if (wantAwake) setTimeout(acquireWakeLock, 300); });
+    setWakeStatus(true);
+  } catch(e) {
+    wakeLock = null;
+    setWakeStatus(false, e && e.name === 'NotAllowedError'
+      ? 'Screen lock refused — Low Power Mode blocks it on iOS.'
+      : 'Could not hold the screen awake.');
+  }
 }
-function releaseWakeLock() {
-  try { if (wakeLock) wakeLock.release(); } catch(e) {}
+
+function startWakeLock() {
+  wantAwake = true;
+  if (!wakeSupported()) {
+    setWakeStatus(false, 'This browser cannot hold the screen awake — set Auto-Lock to Never.');
+    return;
+  }
+  acquireWakeLock();
+  clearInterval(wakeWatchdog);
+  wakeWatchdog = setInterval(acquireWakeLock, 30000);
+}
+
+function stopWakeLock() {
+  wantAwake = false;
+  clearInterval(wakeWatchdog);
+  wakeWatchdog = null;
+  try { if (wakeLock && !wakeLock.released) wakeLock.release(); } catch(e) {}
   wakeLock = null;
+  setWakeStatus(null);
 }
-document.addEventListener('visibilitychange', async () => {
-  if (wakeLock && document.visibilityState === 'visible') await requestWakeLock();
+
+['visibilitychange', 'focus', 'pageshow', 'resume'].forEach(evt => {
+  const t = evt === 'visibilitychange' ? document : window;
+  t.addEventListener(evt, () => { if (wantAwake) acquireWakeLock(); });
 });
+
+// Shown only when the lock is not held: silence would look identical to
+// working, and the failure costs a sitting.
+function setWakeStatus(held, msg) {
+  const el = document.getElementById('wake-status');
+  if (!el) return;
+  if (held === null || held === true) { el.style.display = 'none'; el.textContent = ''; return; }
+  el.textContent = msg || 'Screen may lock.';
+  el.style.display = 'block';
+}
 
 // ─── Audio ────────────────────────────────────────────────────────────────────
 //
@@ -308,9 +376,71 @@ let audioCtx = null;
 let cachedIR = null;
 
 function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Safari suspends or 'interrupts' the context on its own — after a phone
+    // call, a lock, a route change. Left alone it stays down, which is why a
+    // tap could land in silence.
+    audioCtx.addEventListener?.('statechange', () => {
+      if (audioCtx.state !== 'running' && keepAliveOn) audioCtx.resume().catch(() => {});
+    });
+  }
   return audioCtx;
 }
+
+// ─── Keeping the audio hardware awake ─────────────────────────────────────────
+//
+// The "sound fading in halfway" was the audio device powering down between
+// notes and having to spin back up on the next one — the first tens of
+// milliseconds of a chime were being eaten by the wake-up. iOS is aggressive
+// about this: with nothing playing, the audio session goes idle within
+// seconds, and noting leaves long gaps by design.
+//
+// The fix is to never actually stop: an inaudible noise floor plays for the
+// whole session, so the hardware is always already running when a chime
+// arrives. It is about -80 dB — far below anything audible, but not digital
+// zero, which some devices optimise away as silence.
+
+let keepAliveSrc = null;
+let keepAliveOn = false;
+
+function startKeepAlive() {
+  const ctx = getAudioCtx();
+  keepAliveOn = true;
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  if (keepAliveSrc) return;
+  const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 2), ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+  const g = ctx.createGain();
+  g.gain.value = 0.0001;
+  g.connect(ctx.destination);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.connect(g);
+  src.start();
+  keepAliveSrc = { src, g };
+}
+
+function stopKeepAlive() {
+  keepAliveOn = false;
+  if (!keepAliveSrc) return;
+  try { keepAliveSrc.src.stop(); keepAliveSrc.src.disconnect(); keepAliveSrc.g.disconnect(); } catch(e) {}
+  keepAliveSrc = null;
+}
+
+// Belt and braces: every tap is a gesture, and a gesture is the one moment a
+// suspended context is always allowed to come back.
+function ensureAudioAwake() {
+  const ctx = getAudioCtx();
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  if (keepAliveOn && !keepAliveSrc) startKeepAlive();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (keepAliveOn && document.visibilityState === 'visible') ensureAudioAwake();
+});
 
 function getReverbIR(ctx) {
   if (cachedIR) return cachedIR;
@@ -409,6 +539,55 @@ function playChime(stepIndex, stepsTotal, voiceKey) {
   // Quieter at the bottom of the climb, fuller at the top.
   const t = stepsTotal > 1 ? stepIndex / (stepsTotal - 1) : 1;
   strike(SCALE[i], 0.16 + 0.10 * t, undefined, voiceKey);
+}
+
+// ─── The tap itself ───────────────────────────────────────────────────────────
+//
+// Every note now answers. This is the layer that carries the practice: a small
+// dry sound, quiet enough to sit under the chimes, arriving the instant the
+// finger lands so the loop between noting and hearing is as short as it can
+// be. Everything above it — chime, chord, count — is punctuation on top.
+//
+// 'climb' walks the tap pitch up through the group, so where you are inside
+// the current three (or nine, or whatever) is audible on every single note
+// rather than only when the chime arrives.
+
+const TAP_BASE = 392.00;                                    // G4
+const TAP_CLIMB = [329.63, 392.00, 440.00, 523.25, 587.33,  // pentatonic ascent
+                   659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98];
+
+function playTap(mode, indexInGroup, groupSize) {
+  if (mode === 'off') return;
+  const ctx = getAudioCtx();
+  const t0 = ctx.currentTime + 0.001;
+
+  let freq = TAP_BASE;
+  if (mode === 'climb') {
+    freq = TAP_CLIMB[Math.min(indexInGroup, TAP_CLIMB.length - 1)];
+  }
+
+  // Short and slightly woody. A sine alone reads as a beep at this rate of
+  // repetition; a touch of the third partial gives it a body that survives
+  // hundreds of repeats without becoming irritating.
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(mode === 'climb' ? 0.055 : 0.065, t0 + 0.004);
+  g.gain.setTargetAtTime(0.0001, t0 + 0.004, 0.042);
+  g.connect(ctx.destination);
+
+  [[1, 1], [2.76, 0.18]].forEach(([ratio, amp]) => {
+    const vg = ctx.createGain();
+    vg.gain.value = amp;
+    vg.connect(g);
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq * ratio, t0);
+    o.connect(vg);
+    o.start(t0);
+    o.stop(t0 + 0.45);
+    o.onended = () => { try { o.disconnect(); vg.disconnect(); } catch(e) {} };
+  });
+  setTimeout(() => { try { g.disconnect(); } catch(e) {} }, 700);
 }
 
 // The count landing: one gentle chord, root–fourth–fifth, struck together.
@@ -512,6 +691,17 @@ function pip(freq, gain, when) {
   });
 }
 
+// How long the whole count will take to strike, in ms — used so the end of a
+// session waits for the number rather than cutting across it.
+function countToneDuration(n) {
+  let t = COUNT_DELAY;
+  String(Math.min(n, 9999)).split('').forEach(d => {
+    const digit = Number(d);
+    if (digit) t += digit * PIP_SPACING + PLACE_GAP;
+  });
+  return t * 1000;
+}
+
 // Highest place first, the way a number is read.
 function playCountTones(n) {
   const ctx = getAudioCtx();
@@ -544,6 +734,7 @@ let chimeEvery = 3;
 let chimesPerCall = 3;
 let voiceKey = 'bell';
 let countInTones = true;
+let tapMode = 'soft';
 const stamps = [];   // performance.now() of each note, in order
 
 const padEl     = document.getElementById('pad');
@@ -561,6 +752,7 @@ function readSettings() {
   chimesPerCall= clampInt(document.getElementById('chimes-per-call').value, 1, 12, 3);
   voiceKey     = document.getElementById('tone-select').value;
   countInTones = document.getElementById('voice-select').value === 'tones';
+  tapMode      = document.getElementById('tap-select').value;
   const t = document.getElementById('target-select').value;
   if (t === 'open') target = { kind: 'open', value: 0 };
   else if (t.startsWith('n:')) target = { kind: 'notes', value: parseInt(t.slice(2), 10) };
@@ -578,8 +770,9 @@ function callEvery() { return chimeEvery * chimesPerCall; }
 function syncCaption() {
   readSettings();
   const cap = document.getElementById('scheme-caption');
-  let s = `Chime every ${chimeEvery} ${chimeEvery === 1 ? 'note' : 'notes'}, `
-        + `count struck every ${callEvery()}.`;
+  let s = tapMode === 'off' ? '' : 'A note on every tap. ';
+  s += `Chime every ${chimeEvery} ${chimeEvery === 1 ? 'note' : 'notes'}, `
+     + `chord and count every ${callEvery()}.`;
   if (target.kind === 'notes') {
     const calls = Math.floor(target.value / callEvery());
     s += ` ${calls} call${calls === 1 ? '' : 's'} to ${target.value}.`;
@@ -609,7 +802,7 @@ function paintCycleDots() {
 }
 
 function setControlsDisabled(d) {
-  ['target-select','chime-every','chimes-per-call','voice-select','tone-select']
+  ['target-select','chime-every','chimes-per-call','voice-select','tone-select','tap-select']
     .forEach(id => { document.getElementById(id).disabled = d; });
 }
 
@@ -619,6 +812,7 @@ function beginSession() {
   // user taps again.
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
+  startKeepAlive();
   readSettings();
 
   running = true;
@@ -637,7 +831,7 @@ function beginSession() {
   stopBtn.disabled = false;
   undoBtn.disabled = false;
   setControlsDisabled(true);
-  requestWakeLock();
+  startWakeLock();
 
   clearInterval(tickTimer);
   tickTimer = setInterval(onTick, 500);
@@ -661,11 +855,20 @@ function note() {
 
   if (navigator.vibrate) { try { navigator.vibrate(8); } catch(e) {} }
   flashPad();
+  ensureAudioAwake();
 
-  if (noteCount % callEvery() === 0) {
+  const atCall  = noteCount % callEvery() === 0;
+  const atChime = noteCount % chimeEvery === 0;
+
+  // Three layers, quietest first. The tap answers every note; the chime marks
+  // the group; the chord marks the count. On a call the chord is the answer to
+  // the tap, so the tap sound would only muddy its attack.
+  if (!atCall) playTap(tapMode, (noteCount - 1) % callEvery(), callEvery());
+
+  if (atCall) {
     playMilestone(voiceKey);
     if (countInTones) playCountTones(noteCount);
-  } else if (noteCount % chimeEvery === 0) {
+  } else if (atChime) {
     const step = (Math.floor(noteCount / chimeEvery) % chimesPerCall) - 1;
     playChime(Math.max(0, step), chimesPerCall, voiceKey);
   }
@@ -673,9 +876,11 @@ function note() {
   if (target.kind === 'notes') {
     fillEl.style.width = Math.min(100, (noteCount / target.value) * 100) + '%';
     if (noteCount >= target.value) {
-      // Let the milestone chord and the spoken number finish before the
-      // closing bell — arriving is the point of the session.
-      setTimeout(() => { if (running) endSession(true); }, 2000);
+      // Let the chord and the struck count finish before the closing bell —
+      // arriving is the point of the session. The count itself takes longer
+      // for a big number, so wait for it rather than a fixed pause.
+      const wait = countInTones ? 1600 + countToneDuration(noteCount) : 2000;
+      setTimeout(() => { if (running) endSession(true); }, wait);
     }
   }
 }
@@ -706,7 +911,10 @@ function endSession(reached) {
   if (!running) return;
   running = false;
   clearInterval(tickTimer);
-  releaseWakeLock();
+  stopWakeLock();
+  // The closing chord still has to sound, so the hardware stays awake until
+  // its tail is gone.
+  setTimeout(stopKeepAlive, 6000);
   padEl.classList.remove('running', 'active');
   textEl.textContent = reached ? 'Complete.' : 'Ended.';
   startBtn.disabled = false;
@@ -833,7 +1041,7 @@ startBtn.addEventListener('click', beginSession);
 stopBtn.addEventListener('click', () => endSession(false));
 undoBtn.addEventListener('click', undo);
 
-['chime-every','chimes-per-call','target-select','voice-select'].forEach(id => {
+['chime-every','chimes-per-call','target-select','voice-select','tap-select'].forEach(id => {
   document.getElementById(id).addEventListener('change', syncCaption);
   document.getElementById(id).addEventListener('input', syncCaption);
 });
