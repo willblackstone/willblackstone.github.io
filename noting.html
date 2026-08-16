@@ -416,11 +416,17 @@ let masterNode = null;
 function getMaster(ctx) {
   if (masterNode) return masterNode;
   const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -10;   // only the peaks
-  comp.knee.value = 22;         // wide, so it is a lean rather than a grab
-  comp.ratio.value = 6;
-  comp.attack.value = 0.004;
-  comp.release.value = 0.22;
+  // A true limiter, not a compressor. At -10 with a wide knee it was leaning on
+  // ordinary taps, which at this lift means the whole mix breathes up and down
+  // around every count — audible as the sound ducking, which is the last thing
+  // this needs. -3 is above where a tap or a chime ever reaches, so nothing is
+  // touched until a chord genuinely threatens full scale, and then it is held
+  // hard rather than squeezed.
+  comp.threshold.value = -3;
+  comp.knee.value = 6;
+  comp.ratio.value = 12;
+  comp.attack.value = 0.003;
+  comp.release.value = 0.25;
   comp.connect(ctx.destination);
   masterNode = comp;
   return masterNode;
@@ -526,13 +532,15 @@ Object.values(TONE_VOICES).forEach(v => {
   v.partials = v.partials.map(([ratio, amp, dec]) => [ratio, amp / total, dec]);
 });
 
-function strike(freq, gain, when, voiceKey) {
+// `scale` lets chords opt into their own trim; everything else takes the mix
+// lift as it stands.
+function strike(freq, gain, when, voiceKey, scale) {
   const ctx = getAudioCtx();
   const v = TONE_VOICES[voiceKey] || TONE_VOICES.chime;
   const t0 = (when === undefined ? ctx.currentTime : when) + 0.001;
 
   const bus = ctx.createGain();
-  bus.gain.value = gain * mixGain();
+  bus.gain.value = gain * (scale === undefined ? mixGain() : scale);
 
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
@@ -673,7 +681,7 @@ function playMilestone() {
     // A few milliseconds of spread — below the ~30 ms where the ear starts
     // hearing an arpeggio, but enough to keep the attacks from stacking into
     // one hard transient.
-    strike(f, 0.085, t0 + i * 0.008, VOICE);
+    strike(f, 0.085, t0 + i * 0.008, VOICE, chordGain());
   });
 }
 
@@ -688,7 +696,7 @@ function playEndChime() {
   const ctx = getAudioCtx();
   const t0 = ctx.currentTime;
   CHORD_SUS.forEach((f, i) => {
-    strike(f, i === 0 ? 0.06 : 0.075, t0 + i * 0.010, VOICE);
+    strike(f, i === 0 ? 0.06 : 0.075, t0 + i * 0.010, VOICE, chordGain());
   });
   // Quieter on the resolution: the first chord is still ringing under it, and
   // the ear only needs to hear the fourth give way.
@@ -696,7 +704,7 @@ function playEndChime() {
   // sooner — much later and the suspension it is resolving would already be
   // gone, and the second chord would sound like a separate event.
   CHORD_TRIAD.forEach((f, i) => {
-    strike(f, i === 0 ? 0.04 : 0.05, t0 + 1.45 + i * 0.010, VOICE);
+    strike(f, i === 0 ? 0.04 : 0.05, t0 + 1.45 + i * 0.010, VOICE, chordGain());
   });
 }
 
@@ -1039,19 +1047,36 @@ function speechWantsSilence() {
 // the voice cannot come down 25%, the wood goes up 33%, which is the same
 // ratio — and then the phone's own volume control sets the absolute level for
 // both at once, which is the control that actually works here.
-// 0.45 rather than the first attempt's 0.75: a third off was nowhere near
-// enough against a voice arriving at full system level, and the limiter on the
-// master bus means the wood can now be lifted this far without the chord
-// clipping when four voices land together.
+// Doubling again, to 4.5x the level everything was balanced at. This is close
+// to the ceiling: digital output stops at 1.0, and a single tap now peaks past
+// half of that, so there is perhaps one more doubling available in the whole
+// system and no more. If the voice still sits above the wood after this, the
+// wood cannot be the thing that moves — the phone's volume is already the only
+// control left, since iOS refuses to lower the voice itself.
 const CAN_SET_SPEECH_VOLUME = !IS_IOS;
-const VOICE_RATIO = 0.45;                 // where the voice should sit against the wood
+const VOICE_RATIO = 0.22;                 // where the voice should sit against the wood
 const WOOD_LIFT = 1 / VOICE_RATIO;        // ...achieved from the other side
+
+// Chords are the problem at this level, not single hits. Four voices struck
+// together sum to roughly four times one, so the untrimmed chord would be well
+// past full scale and the limiter would be flattening every count — which is
+// heard as the sound ducking and coming back, not as loudness. Trimming the
+// chords instead keeps the taps and chimes, the sounds that actually carry the
+// practice, at their full lifted level.
+const CHORD_TRIM = 0.5;
 
 // Only when the voice is in play and cannot be turned down itself. With the
 // struck count, or on a device that honours volume, the wood stays where it
 // was balanced.
 function mixGain() {
   return (countMode === 'spoken' && !speechDead && !CAN_SET_SPEECH_VOLUME) ? WOOD_LIFT : 1;
+}
+
+// Chords only. Returns 1 when nothing is being lifted, so the balance the
+// chords were tuned at is untouched outside spoken mode.
+function chordGain() {
+  const g = mixGain();
+  return g > 1 ? g * CHORD_TRIM : 1;
 }
 
 function applyStrategy(u, s) {
