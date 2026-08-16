@@ -236,6 +236,7 @@
     </div>
     <div class="caption" id="scheme-caption"></div>
     <div class="caption" id="speech-status" style="display: none;"></div>
+    <button class="btn btn-small" id="speech-test" style="display: none; margin-top: 6px;">Test voice</button>
     <div class="caption" id="wake-status" style="display: none;"></div>
   </div>
 
@@ -763,35 +764,53 @@ function playCountTones(n) {
 
 // ─── The count, spoken ────────────────────────────────────────────────────────
 //
-// One thing to be plain about: the speech engine writes straight to the system
-// output and there is no way to route it through Web Audio, so it cannot have
-// the reverb the wood has. Everything below is what softening is actually
-// available — volume well down, rate and pitch lowered so it doesn't sit on
-// top of the practice, and a preference for a full-voiced speaker over a thin
-// one. It will read as closer and drier than the chimes no matter what; if it
-// still cuts across things, the struck count is the genuinely quiet option.
+// Two hard facts about iOS govern everything here, and both were learned the
+// expensive way:
 //
-// Speech also fails silently on iOS more often than it works, so a failure to
-// start is detected and the count falls back to tones — the number gets told
-// either way, which matters more than how.
+// 1. Apple does not enable the Web Speech API in WKWebView. Every browser on
+//    iOS that isn't Safari — Chrome, Firefox, Edge — is WKWebView, so there
+//    `speechSynthesis` is not broken, it is absent. No amount of code fixes
+//    that; the only fix is opening the page in Safari, so the app says so
+//    rather than failing quietly.
+//
+// 2. WebKit drops any utterance that does not originate inside a user gesture,
+//    silently, with no error event. The earlier version of this deferred the
+//    count with setTimeout so it would land after the chord — which took it
+//    out of the gesture and guaranteed it would never speak on iOS, Safari
+//    included. So speech now happens synchronously inside the tap that
+//    completed the count. That is why there is no delay before it, and why
+//    nothing in this path may be made async.
+//
+// The other thing to be plain about: the engine writes straight to system
+// output, so no reverb or filter can reach it. Volume, rate and pitch are all
+// the softening available — and iOS ignores volume on many versions, so on a
+// phone it may simply arrive at system level. If it is too present, the struck
+// count is the genuinely quiet option.
 
 const SPEECH_VOLUME = 0.30;
 const SPEECH_RATE   = 0.82;
 const SPEECH_PITCH  = 0.80;
 
 let speechDead = false;
+let speechReason = '';
 let chosenVoice = null;
-let speechPrimed = false;
+
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+            || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// Safari on iOS is the only iOS browser with speech. The others identify
+// themselves in the UA even though they are all WebKit underneath.
+const IS_IOS_NON_SAFARI = IS_IOS && /CriOS|FxiOS|EdgiOS|OPiOS|GSA/.test(navigator.userAgent);
 
 function speechSupported() {
-  return typeof window !== 'undefined' && 'speechSynthesis' in window
-      && typeof SpeechSynthesisUtterance !== 'undefined';
+  return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
 }
 
-// Fuller voices carry better at low volume; the compact ones get thin and
-// sibilant when you turn them down, which is the opposite of what we want.
+// Fuller voices carry better at low volume; compact ones get thin and sibilant
+// when turned down. Not applied on iOS: assigning a voice object there is one
+// of the known ways an utterance goes silent, and the default is good anyway.
 function pickVoice() {
-  if (chosenVoice || !speechSupported()) return chosenVoice;
+  if (IS_IOS) return null;
+  if (chosenVoice) return chosenVoice;
   const voices = window.speechSynthesis.getVoices() || [];
   if (!voices.length) return null;                    // not loaded yet; try again next call
   const en = voices.filter(v => /^en/i.test(v.lang));
@@ -809,69 +828,85 @@ if (speechSupported() && typeof window.speechSynthesis.addEventListener === 'fun
   window.speechSynthesis.addEventListener('voiceschanged', () => { chosenVoice = null; pickVoice(); });
 }
 
-// iOS only lets speech through if the first speak() of the page happened
-// inside a user gesture, and an empty utterance does not count as that first
-// call — it has to be real text. Volume 0 makes it inaudible.
-function primeSpeech() {
-  if (speechPrimed || !speechSupported()) return;
-  try {
-    const u = new SpeechSynthesisUtterance('ready');
-    u.volume = 0;
-    window.speechSynthesis.speak(u);
-    speechPrimed = true;
-  } catch(e) { speechDead = true; }
+function setSpeechStatus(msg) {
+  const el = document.getElementById('speech-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? '' : 'none';
 }
 
-function markSpeechDead() {
+function markSpeechDead(reason) {
   if (speechDead) return;
   speechDead = true;
-  const el = document.getElementById('speech-status');
-  if (el) {
-    el.textContent = 'This browser did not speak the count — using struck tones instead.';
-    el.style.display = '';
+  speechReason = reason;
+  setSpeechStatus(reason + ' Counting in struck tones instead.');
+}
+
+// Called when the count mode is chosen and again at Begin, so the limitation
+// is known before a session rather than discovered in the middle of one.
+function checkSpeechAvailability() {
+  if (countMode !== 'spoken') { if (!speechDead) setSpeechStatus(''); return; }
+  if (IS_IOS_NON_SAFARI) {
+    markSpeechDead('Apple only allows the speech API in Safari, so the count cannot be spoken in this browser — open this page in Safari for the spoken count.');
+  } else if (!speechSupported()) {
+    markSpeechDead('This browser has no speech support.');
+  } else if (speechDead) {
+    setSpeechStatus(speechReason + ' Counting in struck tones instead.');
+  } else {
+    setSpeechStatus('');
   }
 }
 
+// MUST be called synchronously from within the tap handler — see note 2 above.
+// Nothing here may be deferred, awaited, or wrapped in a timer.
 function speakCount(n) {
   if (speechDead || !speechSupported()) { playCountTones(n); return; }
 
-  // Same delay the struck count uses, so the chord's attack has passed before
-  // anything else arrives.
+  let started = false;
+  let u;
+  try {
+    u = new SpeechSynthesisUtterance(String(n));
+  } catch(e) { markSpeechDead('Speech could not be started.'); playCountTones(n); return; }
+
+  u.volume = SPEECH_VOLUME;
+  u.rate   = SPEECH_RATE;
+  u.pitch  = SPEECH_PITCH;
+  const v = pickVoice();
+  if (v) u.voice = v;
+  u.onstart = () => { started = true; };
+  u.onerror = e => {
+    if (started) return;
+    // 'interrupted' and 'canceled' are our own doing, not a broken engine.
+    if (e && (e.error === 'interrupted' || e.error === 'canceled')) return;
+    markSpeechDead('Speech failed on this device.');
+    playCountTones(n);
+  };
+
+  try {
+    // A previous count still talking is the one case worth cancelling: WebKit
+    // queues rather than replaces, so without this a slow speaker would fall
+    // further behind the practice with every call. Cancelling unconditionally
+    // is avoided — that is one of the ways the engine gets wedged.
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
+    window.speechSynthesis.speak(u);
+  } catch(e) { markSpeechDead('Speech could not be started.'); playCountTones(n); return; }
+
+  // Silence with no error is exactly how WebKit refuses. Give it a moment,
+  // then tell the number the other way.
   setTimeout(() => {
-    let started = false;
-    let u;
-    try {
-      u = new SpeechSynthesisUtterance(String(n));
-    } catch(e) { markSpeechDead(); playCountTones(n); return; }
-
-    u.volume = SPEECH_VOLUME;
-    u.rate   = SPEECH_RATE;
-    u.pitch  = SPEECH_PITCH;
-    const v = pickVoice();
-    if (v) u.voice = v;
-    u.onstart = () => { started = true; };
-    u.onerror = () => { if (!started) { markSpeechDead(); playCountTones(n); } };
-
-    try {
-      // Deliberately not cancel()ing first: an unconditional cancel is one of
-      // the ways WebKit's engine gets wedged, and at this spacing there is
-      // never a previous count still running.
-      window.speechSynthesis.speak(u);
-    } catch(e) { markSpeechDead(); playCountTones(n); return; }
-
-    // If it never starts, it failed quietly — which is exactly how iOS fails.
-    setTimeout(() => {
-      if (!started) { markSpeechDead(); playCountTones(n); }
-    }, 1400);
-  }, COUNT_DELAY * 1000);
+    if (!started && !speechDead) { markSpeechDead('Speech stayed silent on this device.'); }
+    if (!started) playCountTones(n);
+  }, 1200);
 }
 
 // How long to hold the session open for the final count. Once speech has been
-// ruled out the struck timing is exact; while it is still live, allow the
-// delay plus enough for a four-digit number at this rate.
+// ruled out the struck timing is exact; while it is still live, allow enough
+// for a four-digit number at this rate plus the silence check.
 function spokenCountDuration(n) {
   if (speechDead || !speechSupported()) return countToneDuration(n);
-  return COUNT_DELAY * 1000 + 2200;
+  return 2400;
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
@@ -930,6 +965,9 @@ function syncCaption() {
   if (countMode === 'spoken') s += ' The count is spoken.';
   else if (countMode === 'tones') s += ' Count: low = hundreds, middle = tens, high = units.';
   cap.textContent = s;
+  checkSpeechAvailability();
+  document.getElementById('speech-test').style.display =
+    countMode === 'spoken' && !IS_IOS_NON_SAFARI && speechSupported() ? '' : 'none';
   buildCycleDots();
 }
 
@@ -964,8 +1002,7 @@ function beginSession() {
   if (ctx.state === 'suspended') ctx.resume();
   startKeepAlive();
   readSettings();
-  // Must happen inside this same gesture — see primeSpeech.
-  if (countMode === 'spoken') primeSpeech();
+  checkSpeechAvailability();
 
   running = true;
   noteCount = 0;
@@ -1190,6 +1227,33 @@ document.addEventListener('keydown', e => {
   } else if (e.code === 'Escape') {
     if (running) endSession(false);
   }
+});
+
+// A real speak() inside a real tap — the only way to find out whether this
+// device will speak, rather than discovering it mid-session.
+document.getElementById('speech-test').addEventListener('click', () => {
+  if (!speechSupported()) { markSpeechDead('This browser has no speech support.'); return; }
+  let started = false;
+  const u = new SpeechSynthesisUtterance('twenty seven');
+  u.volume = SPEECH_VOLUME;
+  u.rate   = SPEECH_RATE;
+  u.pitch  = SPEECH_PITCH;
+  const v = pickVoice();
+  if (v) u.voice = v;
+  u.onstart = () => {
+    started = true;
+    speechDead = false;          // a working test overrides an earlier verdict
+    speechReason = '';
+    setSpeechStatus('Voice works on this device.');
+  };
+  u.onerror = () => { if (!started) markSpeechDead('Speech failed on this device.'); };
+  try {
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch(e) { markSpeechDead('Speech could not be started.'); return; }
+  setTimeout(() => {
+    if (!started) markSpeechDead('Speech stayed silent on this device.');
+  }, 1200);
 });
 
 startBtn.addEventListener('click', beginSession);
