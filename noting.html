@@ -508,7 +508,7 @@ function strike(freq, gain, when, voiceKey) {
   const t0 = (when === undefined ? ctx.currentTime : when) + 0.001;
 
   const bus = ctx.createGain();
-  bus.gain.value = gain;
+  bus.gain.value = gain * mixGain();
 
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
@@ -606,7 +606,7 @@ function playTap(mode, indexInGroup, groupSize) {
   // Close to the chime rather than far under it. A tap that whispers while the
   // chime rings out makes every third note feel like an interruption; sitting
   // them nearly level turns the chime into an accent within one sound world.
-  g.gain.exponentialRampToValueAtTime(mode === 'climb' ? 0.105 : 0.115, t0 + 0.005);
+  g.gain.exponentialRampToValueAtTime((mode === 'climb' ? 0.105 : 0.115) * mixGain(), t0 + 0.005);
   g.gain.setTargetAtTime(0.0001, t0 + 0.005, 0.048);
 
   // Same ceiling the struck wood has, so the third partial adds body rather
@@ -904,10 +904,7 @@ function speakCount(n) {
   setTimeout(() => {
     if (started) return;
     afterSpeech(speechStrategy);
-    // The reduced volume is the newest thing here and the likeliest culprit,
-    // so give that up before giving up on speech altogether.
-    if (gainAllowed && !speechStrategy.soften) dropSpeechGain();
-    else markSpeechDead('Speech stayed silent on this device — try the Test voice button.');
+    markSpeechDead('Speech stayed silent on this device — try the Test voice button.');
     playCountTones(n);
   }, 1200);
 }
@@ -968,35 +965,36 @@ function speechWantsSilence() {
   return countMode === 'spoken' && !speechDead && speechStrategy.suspend;
 }
 
-// A quarter down from full. Applied on top of whichever method won, including
-// 'plain' — but 'plain' won precisely because it touches nothing, and a volume
-// below 1 is one of the things suspected of silencing iOS speech in the first
-// place. So this is provisional: if a count goes silent while it is on, the
-// reduction is dropped and never tried again. A voice that works is worth more
-// than a voice at the right level.
-const SPEECH_GAIN = 0.75;
-const LS_GAIN = 'noting-speech-gain-v1';
-let gainAllowed = true;
-try { if (localStorage.getItem(LS_GAIN) === 'off') gainAllowed = false; } catch(e) {}
+// Setting volume below 1 is what silences speech on this phone — that was the
+// whole point of making the reduction provisional, and the phone answered.
+// So on iOS the volume property is never touched again, by any path.
+//
+// Which leaves one real lever. "Quieter" only ever means quieter *relative to
+// the practice sounds*, and we own the other side of that mix: the wood. If
+// the voice cannot come down 25%, the wood goes up 33%, which is the same
+// ratio — and then the phone's own volume control sets the absolute level for
+// both at once, which is the control that actually works here.
+const CAN_SET_SPEECH_VOLUME = !IS_IOS;
+const VOICE_RATIO = 0.75;                 // where the voice should sit against the wood
+const WOOD_LIFT = 1 / VOICE_RATIO;        // ...achieved from the other side
 
-function dropSpeechGain() {
-  if (!gainAllowed) return;
-  gainAllowed = false;
-  try { localStorage.setItem(LS_GAIN, 'off'); } catch(e) {}
-  setSpeechStatus('The count went silent at reduced volume, so it is back to full — this device will not take a quieter voice.');
+// Only when the voice is in play and cannot be turned down itself. With the
+// struck count, or on a device that honours volume, the wood stays where it
+// was balanced.
+function mixGain() {
+  return (countMode === 'spoken' && !speechDead && !CAN_SET_SPEECH_VOLUME) ? WOOD_LIFT : 1;
 }
 
 function applyStrategy(u, s) {
   if (s.soften) {
-    u.volume = SPEECH_VOLUME;
-    u.rate   = SPEECH_RATE;
-    u.pitch  = SPEECH_PITCH;
+    u.rate  = SPEECH_RATE;
+    u.pitch = SPEECH_PITCH;
     const v = pickVoice();
     if (v) u.voice = v;
-  } else if (gainAllowed) {
-    // Otherwise leave rate, pitch and voice at their defaults — that is the
-    // point of 'plain' — and take only the level down.
-    u.volume = SPEECH_GAIN;
+    if (CAN_SET_SPEECH_VOLUME) u.volume = SPEECH_VOLUME;
+  } else if (CAN_SET_SPEECH_VOLUME) {
+    // 'plain' wins by touching nothing, so off iOS take only the level down.
+    u.volume = VOICE_RATIO;
   }
 }
 
