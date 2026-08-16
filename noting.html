@@ -402,6 +402,30 @@ function getAudioCtx() {
 // arrives. It is about -80 dB — far below anything audible, but not digital
 // zero, which some devices optimise away as silence.
 
+// Everything audible goes through one bus. Until now each sound connected
+// straight to the destination, which was fine while the levels were low —
+// but the wood is being lifted well above where it was balanced, and four
+// chord voices at once on top of a tap can now sum past 1 and clip. A gentle
+// limiter on the way out costs nothing and means the lift can be as large as
+// it needs to be without the loud moments turning to grit.
+//
+// The keep-alive deliberately does not go through here: it is inaudible, and
+// feeding it to a compressor would only give the thing something to chew on.
+let masterNode = null;
+
+function getMaster(ctx) {
+  if (masterNode) return masterNode;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -10;   // only the peaks
+  comp.knee.value = 22;         // wide, so it is a lean rather than a grab
+  comp.ratio.value = 6;
+  comp.attack.value = 0.004;
+  comp.release.value = 0.22;
+  comp.connect(ctx.destination);
+  masterNode = comp;
+  return masterNode;
+}
+
 let keepAliveSrc = null;
 let keepAliveOn = false;
 
@@ -518,7 +542,7 @@ function strike(freq, gain, when, voiceKey) {
   const dry = ctx.createGain();
   dry.gain.value = 1 - v.wet;
   lp.connect(dry);
-  dry.connect(ctx.destination);
+  dry.connect(getMaster(ctx));
 
   const conv = ctx.createConvolver();
   conv.buffer = getReverbIR(ctx);
@@ -526,7 +550,7 @@ function strike(freq, gain, when, voiceKey) {
   wet.gain.value = v.wet;
   lp.connect(conv);
   conv.connect(wet);
-  wet.connect(ctx.destination);
+  wet.connect(getMaster(ctx));
 
   let longest = 0;
   v.partials.forEach(([ratio, amp, decayScale]) => {
@@ -615,7 +639,7 @@ function playTap(mode, indexInGroup, groupSize) {
   tapLp.type = 'lowpass';
   tapLp.frequency.value = TONE_VOICES.tap.lp;
   g.connect(tapLp);
-  tapLp.connect(ctx.destination);
+  tapLp.connect(getMaster(ctx));
 
   // The same partial ratios and weights the struck voices use, normalised so
   // the gain above is a true peak and the two can be compared honestly. Sharing
@@ -726,7 +750,7 @@ function pip(freq, gain, when) {
   lp.type = 'lowpass';
   lp.frequency.value = Math.max(1400, freq * 2.2);
   g.connect(lp);
-  lp.connect(ctx.destination);
+  lp.connect(getMaster(ctx));
 
   const o = ctx.createOscillator();
   o.type = 'sine';
@@ -864,8 +888,39 @@ function checkSpeechAvailability() {
   }
 }
 
-// MUST be called synchronously from within the tap handler — see note 2 above.
-// Nothing here may be deferred, awaited, or wrapped in a timer.
+// ─── Which gesture counts ─────────────────────────────────────────────────────
+//
+// The count would not speak until the Test voice button had been pressed once,
+// and the difference between them is the whole answer: the test button is a
+// `click`, the pad is a `pointerdown`. WebKit grants speech on the events it
+// treats as activation — click, touchend, keydown — and pointerdown is not one
+// of them. So every count spoken from the pad was refused, until a real click
+// elsewhere on the page had unlocked the engine for good.
+//
+// The note itself stays on pointerdown: it must land the instant the finger
+// touches, and the sound with it. Only the speaking is held back to the click
+// that follows the same tap, a finger-lift later. Nothing else moves.
+let pendingSpokenCount = 0;
+
+function flushPendingSpeech() {
+  if (!pendingSpokenCount) return;
+  const n = pendingSpokenCount;
+  pendingSpokenCount = 0;
+  speakCount(n);
+}
+
+// If no activation event arrives — a keyboard space bar, a browser that does
+// not raise click after pointerdown — say it anyway rather than lose it.
+// Off iOS this path is perfectly good; on iOS it will be refused and the
+// struck fallback inside speakCount picks it up.
+function queueSpokenCount(n) {
+  pendingSpokenCount = n;
+  setTimeout(flushPendingSpeech, 350);
+}
+
+// MUST be called synchronously from within a click, touchend or keydown
+// handler — see above. Nothing here may be deferred, awaited, or wrapped in a
+// timer, or WebKit will drop the utterance without a word.
 function speakCount(n) {
   if (speechDead || !speechSupported()) { playCountTones(n); return; }
 
@@ -949,7 +1004,17 @@ const SPEECH_TRIALS = [
   { id: 'noaudio', label: 'audio fully suspended',    soften: false, quiet: true,  suspend: true  },
 ];
 
-const LS_STRATEGY = 'noting-speech-strategy-v1';
+// v2 deliberately abandons whatever v1 stored. Every trial ran from a button
+// press — a click — so every trial was unlocked by the click regardless of the
+// method it was supposedly testing. Whichever one happened to be showing when
+// the voice came through got the credit, and the trials proved nothing.
+//
+// That matters beyond tidiness: if 'noloop' or 'noaudio' was the one stored,
+// then every spoken count since has been stopping the keep-alive or suspending
+// the whole audio context — which is very likely the chime being swallowed and
+// the sound dropping out for a moment. The stored verdict is discarded and the
+// default is plain, which touches nothing.
+const LS_STRATEGY = 'noting-speech-strategy-v2';
 let trialIndex = 0;
 let speechStrategy = SPEECH_TRIALS[0];
 
@@ -974,8 +1039,12 @@ function speechWantsSilence() {
 // the voice cannot come down 25%, the wood goes up 33%, which is the same
 // ratio — and then the phone's own volume control sets the absolute level for
 // both at once, which is the control that actually works here.
+// 0.45 rather than the first attempt's 0.75: a third off was nowhere near
+// enough against a voice arriving at full system level, and the limiter on the
+// master bus means the wood can now be lifted this far without the chord
+// clipping when four voices land together.
 const CAN_SET_SPEECH_VOLUME = !IS_IOS;
-const VOICE_RATIO = 0.75;                 // where the voice should sit against the wood
+const VOICE_RATIO = 0.45;                 // where the voice should sit against the wood
 const WOOD_LIFT = 1 / VOICE_RATIO;        // ...achieved from the other side
 
 // Only when the voice is in play and cannot be turned down itself. With the
@@ -1257,7 +1326,7 @@ function note() {
 
   if (atCall) {
     if (!speechWantsSilence()) playMilestone();
-    if (countMode === 'spoken')     speakCount(noteCount);
+    if (countMode === 'spoken')     queueSpokenCount(noteCount);
     else if (countMode === 'tones') playCountTones(noteCount);
   } else if (atChime) {
     const step = (Math.floor(noteCount / chimeEvery) % chimesPerCall) - 1;
@@ -1417,11 +1486,17 @@ padEl.addEventListener('pointerdown', e => {
 });
 padEl.addEventListener('contextmenu', e => e.preventDefault());
 
+// The activation half of the same tap. These only release a count that is
+// already waiting — they never add a note, so if both fire, nothing doubles.
+padEl.addEventListener('touchend', flushPendingSpeech);
+padEl.addEventListener('click', flushPendingSpeech);
+
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
   if (e.code === 'Space') {
     e.preventDefault();
     if (running) note(); else beginSession();
+    flushPendingSpeech();      // keydown is an activation event in its own right
   } else if (e.code === 'Backspace') {
     e.preventDefault();
     undo();
