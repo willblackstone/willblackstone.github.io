@@ -904,7 +904,10 @@ function speakCount(n) {
   setTimeout(() => {
     if (started) return;
     afterSpeech(speechStrategy);
-    markSpeechDead('Speech stayed silent on this device — try the Test voice button.');
+    // The reduced volume is the newest thing here and the likeliest culprit,
+    // so give that up before giving up on speech altogether.
+    if (gainAllowed && !speechStrategy.soften) dropSpeechGain();
+    else markSpeechDead('Speech stayed silent on this device — try the Test voice button.');
     playCountTones(n);
   }, 1200);
 }
@@ -965,6 +968,24 @@ function speechWantsSilence() {
   return countMode === 'spoken' && !speechDead && speechStrategy.suspend;
 }
 
+// A quarter down from full. Applied on top of whichever method won, including
+// 'plain' — but 'plain' won precisely because it touches nothing, and a volume
+// below 1 is one of the things suspected of silencing iOS speech in the first
+// place. So this is provisional: if a count goes silent while it is on, the
+// reduction is dropped and never tried again. A voice that works is worth more
+// than a voice at the right level.
+const SPEECH_GAIN = 0.75;
+const LS_GAIN = 'noting-speech-gain-v1';
+let gainAllowed = true;
+try { if (localStorage.getItem(LS_GAIN) === 'off') gainAllowed = false; } catch(e) {}
+
+function dropSpeechGain() {
+  if (!gainAllowed) return;
+  gainAllowed = false;
+  try { localStorage.setItem(LS_GAIN, 'off'); } catch(e) {}
+  setSpeechStatus('The count went silent at reduced volume, so it is back to full — this device will not take a quieter voice.');
+}
+
 function applyStrategy(u, s) {
   if (s.soften) {
     u.volume = SPEECH_VOLUME;
@@ -972,8 +993,11 @@ function applyStrategy(u, s) {
     u.pitch  = SPEECH_PITCH;
     const v = pickVoice();
     if (v) u.voice = v;
+  } else if (gainAllowed) {
+    // Otherwise leave rate, pitch and voice at their defaults — that is the
+    // point of 'plain' — and take only the level down.
+    u.volume = SPEECH_GAIN;
   }
-  // Otherwise everything is left at its default, which is the point of 'plain'.
 }
 
 function beforeSpeech(s) {
