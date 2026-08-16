@@ -236,7 +236,14 @@
     </div>
     <div class="caption" id="scheme-caption"></div>
     <div class="caption" id="speech-status" style="display: none;"></div>
-    <button class="btn btn-small" id="speech-test" style="display: none; margin-top: 6px;">Test voice</button>
+    <div id="speech-test-wrap" style="display: none; margin-top: 8px;">
+      <button class="btn btn-small" id="speech-test">Test voice</button>
+      <span id="speech-heard" style="display: none; margin-left: 8px;">
+        <button class="btn btn-small" id="heard-yes">I heard it</button>
+        <button class="btn btn-small" id="heard-no">Nothing</button>
+      </span>
+      <div class="caption" id="speech-diag" style="display: none; margin-top: 6px; font-family: ui-monospace, Menlo, monospace; white-space: pre-wrap; line-height: 1.5;"></div>
+    </div>
     <div class="caption" id="wake-status" style="display: none;"></div>
   </div>
 
@@ -868,13 +875,12 @@ function speakCount(n) {
     u = new SpeechSynthesisUtterance(String(n));
   } catch(e) { markSpeechDead('Speech could not be started.'); playCountTones(n); return; }
 
-  u.volume = SPEECH_VOLUME;
-  u.rate   = SPEECH_RATE;
-  u.pitch  = SPEECH_PITCH;
-  const v = pickVoice();
-  if (v) u.voice = v;
+  applyStrategy(u, speechStrategy);
+  beforeSpeech(speechStrategy);
   u.onstart = () => { started = true; };
+  u.onend   = () => afterSpeech(speechStrategy);
   u.onerror = e => {
+    afterSpeech(speechStrategy);
     if (started) return;
     // 'interrupted' and 'canceled' are our own doing, not a broken engine.
     if (e && (e.error === 'interrupted' || e.error === 'canceled')) return;
@@ -896,8 +902,10 @@ function speakCount(n) {
   // Silence with no error is exactly how WebKit refuses. Give it a moment,
   // then tell the number the other way.
   setTimeout(() => {
-    if (!started && !speechDead) { markSpeechDead('Speech stayed silent on this device.'); }
-    if (!started) playCountTones(n);
+    if (started) return;
+    afterSpeech(speechStrategy);
+    markSpeechDead('Speech stayed silent on this device — try the Test voice button.');
+    playCountTones(n);
   }, 1200);
 }
 
@@ -907,6 +915,177 @@ function speakCount(n) {
 function spokenCountDuration(n) {
   if (speechDead || !speechSupported()) return countToneDuration(n);
   return 2400;
+}
+
+// ─── Why speech might still be silent, asked rather than guessed ──────────────
+//
+// Safari on iOS has the API and still says nothing, so something on the device
+// is refusing it. The candidates are all plausible and mutually exclusive, so
+// rather than shipping a guess the app tries them one at a time and keeps
+// whichever works:
+//
+//   plain    nothing touched at all. Some iOS versions go silent if volume is
+//            set below 1 — our softening would be the very thing breaking it.
+//   soft     our volume/rate/pitch. If plain works and this doesn't, that's
+//            the answer and the count simply can't be softened here.
+//   noloop   the silent keep-alive buffer stopped. It holds the audio session
+//            open for the whole session, and WebKit's speech needs that
+//            session too.
+//   noaudio  the whole AudioContext suspended. Same theory, harder.
+//
+// Each trial runs from its own tap. That matters: WebKit only honours speech
+// inside a user gesture, so chaining trials on timers would make every one
+// after the first fail for a reason that has nothing to do with what's being
+// tested.
+//
+// `onstart` firing only means the engine accepted it — the ring/silent switch
+// can still mute it downstream, and that is invisible to script. So the user
+// is asked what they actually heard, and the two answers mean different things.
+
+const SPEECH_TRIALS = [
+  { id: 'plain',   label: 'plain, nothing touched',   soften: false, quiet: false, suspend: false },
+  { id: 'soft',    label: 'softened volume/rate/pitch', soften: true,  quiet: false, suspend: false },
+  { id: 'noloop',  label: 'keep-alive stopped',       soften: false, quiet: true,  suspend: false },
+  { id: 'noaudio', label: 'audio fully suspended',    soften: false, quiet: true,  suspend: true  },
+];
+
+const LS_STRATEGY = 'noting-speech-strategy-v1';
+let trialIndex = 0;
+let speechStrategy = SPEECH_TRIALS[0];
+
+try {
+  const saved = localStorage.getItem(LS_STRATEGY);
+  const hit = SPEECH_TRIALS.find(t => t.id === saved);
+  if (hit) speechStrategy = hit;
+} catch(e) {}
+
+// If the working method needs the audio silenced, the chord can't be struck on
+// the same tap — it would be the very thing drowning the voice out.
+function speechWantsSilence() {
+  return countMode === 'spoken' && !speechDead && speechStrategy.suspend;
+}
+
+function applyStrategy(u, s) {
+  if (s.soften) {
+    u.volume = SPEECH_VOLUME;
+    u.rate   = SPEECH_RATE;
+    u.pitch  = SPEECH_PITCH;
+    const v = pickVoice();
+    if (v) u.voice = v;
+  }
+  // Otherwise everything is left at its default, which is the point of 'plain'.
+}
+
+function beforeSpeech(s) {
+  if (s.quiet) stopKeepAlive();
+  if (s.suspend && audioCtx && audioCtx.state === 'running') {
+    try { audioCtx.suspend(); } catch(e) {}
+  }
+}
+
+function afterSpeech(s) {
+  if (!running) return;                 // session over; endSession handles the rest
+  if (s.suspend && audioCtx) { try { audioCtx.resume(); } catch(e) {} }
+  if (s.quiet) startKeepAlive();
+}
+
+function diagLine(extra) {
+  const voices = speechSupported() ? (window.speechSynthesis.getVoices() || []).length : 0;
+  const synth = !speechSupported() ? 'absent'
+    : [window.speechSynthesis.speaking && 'speaking',
+       window.speechSynthesis.pending  && 'pending',
+       window.speechSynthesis.paused   && 'paused'].filter(Boolean).join(' ') || 'idle';
+  return [
+    'device : ' + (IS_IOS ? (IS_IOS_NON_SAFARI ? 'iOS, not Safari' : 'iOS Safari') : 'desktop or other'),
+    'voices : ' + voices,
+    'synth  : ' + synth,
+    'audio  : ' + (audioCtx ? audioCtx.state : 'not started') + (keepAliveOn ? ' + keep-alive' : ''),
+    extra
+  ].filter(Boolean).join('\n');
+}
+
+function showDiag(text) {
+  const el = document.getElementById('speech-diag');
+  el.textContent = text;
+  el.style.display = '';
+}
+
+function runSpeechTrial() {
+  const s = SPEECH_TRIALS[trialIndex];
+  const btn = document.getElementById('speech-test');
+  const heard = document.getElementById('speech-heard');
+
+  if (!speechSupported()) { showDiag(diagLine('result : no speech API at all')); return; }
+
+  beforeSpeech(s);
+
+  let started = false;
+  let errored = '';
+  const u = new SpeechSynthesisUtterance('twenty seven');
+  applyStrategy(u, s);
+  u.onstart = () => { started = true; };
+  u.onerror = e => { errored = (e && e.error) || 'error'; };
+  u.onend   = () => afterSpeech(s);
+
+  try {
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch(e) {
+    showDiag(diagLine('result : speak() threw — ' + e));
+    afterSpeech(s);
+    return;
+  }
+
+  showDiag(diagLine('trial  : ' + (trialIndex + 1) + '/' + SPEECH_TRIALS.length + ' — ' + s.label + '\nresult : waiting…'));
+
+  setTimeout(() => {
+    afterSpeech(s);
+    const outcome = errored ? 'engine reported "' + errored + '"'
+                  : started ? 'engine started speaking'
+                  : 'engine never started — silently refused';
+    showDiag(diagLine(
+      'trial  : ' + (trialIndex + 1) + '/' + SPEECH_TRIALS.length + ' — ' + s.label +
+      '\nresult : ' + outcome +
+      (started ? '\n\nDid you actually hear it?' : '')
+    ));
+    if (started) {
+      heard.style.display = '';
+      btn.textContent = 'Test again';
+    } else {
+      heard.style.display = 'none';
+      trialIndex = (trialIndex + 1) % SPEECH_TRIALS.length;
+      btn.textContent = trialIndex === 0 ? 'Start over' : 'Try the next method';
+    }
+  }, 1600);
+}
+
+function speechHeard(yes) {
+  const s = SPEECH_TRIALS[trialIndex];
+  document.getElementById('speech-heard').style.display = 'none';
+  if (yes) {
+    speechStrategy = s;
+    speechDead = false;
+    speechReason = '';
+    try { localStorage.setItem(LS_STRATEGY, s.id); } catch(e) {}
+    setSpeechStatus('');
+    showDiag('Using "' + s.label + '" for the spoken count.' +
+      (s.soften ? '' : '\nThis method needs the voice at its default level, so it will not be softened.') +
+      (s.suspend ? '\nThe chord is skipped on counts, so the voice is not competing with it.' : ''));
+    document.getElementById('speech-test').textContent = 'Test voice';
+    trialIndex = 0;
+  } else {
+    // The engine started but nothing came out: that is downstream of the API,
+    // and it is nearly always the hardware switch.
+    trialIndex = (trialIndex + 1) % SPEECH_TRIALS.length;
+    document.getElementById('speech-test').textContent = 'Try the next method';
+    showDiag(diagLine(
+      'result : the engine started but you heard nothing.\n' +
+      '\nThat is downstream of the browser, so no code change reaches it.\n' +
+      'Check the silent/ring switch on the side of the phone, and the\n' +
+      'volume while this page is in front — iOS keeps a separate level\n' +
+      'for speech, and the chimes being audible does not mean it is up.'
+    ));
+  }
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
@@ -966,7 +1145,7 @@ function syncCaption() {
   else if (countMode === 'tones') s += ' Count: low = hundreds, middle = tens, high = units.';
   cap.textContent = s;
   checkSpeechAvailability();
-  document.getElementById('speech-test').style.display =
+  document.getElementById('speech-test-wrap').style.display =
     countMode === 'spoken' && !IS_IOS_NON_SAFARI && speechSupported() ? '' : 'none';
   buildCycleDots();
 }
@@ -1055,7 +1234,7 @@ function note() {
   if (!atCall) playTap(tapMode, (noteCount - 1) % callEvery(), callEvery());
 
   if (atCall) {
-    playMilestone();
+    if (!speechWantsSilence()) playMilestone();
     if (countMode === 'spoken')     speakCount(noteCount);
     else if (countMode === 'tones') playCountTones(noteCount);
   } else if (atChime) {
@@ -1229,32 +1408,9 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// A real speak() inside a real tap — the only way to find out whether this
-// device will speak, rather than discovering it mid-session.
-document.getElementById('speech-test').addEventListener('click', () => {
-  if (!speechSupported()) { markSpeechDead('This browser has no speech support.'); return; }
-  let started = false;
-  const u = new SpeechSynthesisUtterance('twenty seven');
-  u.volume = SPEECH_VOLUME;
-  u.rate   = SPEECH_RATE;
-  u.pitch  = SPEECH_PITCH;
-  const v = pickVoice();
-  if (v) u.voice = v;
-  u.onstart = () => {
-    started = true;
-    speechDead = false;          // a working test overrides an earlier verdict
-    speechReason = '';
-    setSpeechStatus('Voice works on this device.');
-  };
-  u.onerror = () => { if (!started) markSpeechDead('Speech failed on this device.'); };
-  try {
-    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  } catch(e) { markSpeechDead('Speech could not be started.'); return; }
-  setTimeout(() => {
-    if (!started) markSpeechDead('Speech stayed silent on this device.');
-  }, 1200);
-});
+document.getElementById('speech-test').addEventListener('click', runSpeechTrial);
+document.getElementById('heard-yes').addEventListener('click', () => speechHeard(true));
+document.getElementById('heard-no').addEventListener('click', () => speechHeard(false));
 
 startBtn.addEventListener('click', beginSession);
 stopBtn.addEventListener('click', () => endSession(false));
