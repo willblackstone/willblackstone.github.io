@@ -1054,7 +1054,7 @@ function speechWantsSilence() {
 // wood cannot be the thing that moves — the phone's volume is already the only
 // control left, since iOS refuses to lower the voice itself.
 const CAN_SET_SPEECH_VOLUME = !IS_IOS;
-const VOICE_RATIO = 0.22;                 // where the voice should sit against the wood
+const VOICE_RATIO = 0.183;                // where the voice should sit against the wood
 const WOOD_LIFT = 1 / VOICE_RATIO;        // ...achieved from the other side
 
 // Chords are the problem at this level, not single hits. Four voices struck
@@ -1063,7 +1063,11 @@ const WOOD_LIFT = 1 / VOICE_RATIO;        // ...achieved from the other side
 // heard as the sound ducking and coming back, not as loudness. Trimming the
 // chords instead keeps the taps and chimes, the sounds that actually carry the
 // practice, at their full lifted level.
-const CHORD_TRIM = 0.5;
+// Trimmed a little further with this last lift. The chords have to give up
+// slightly more than their share each time the wood goes up, because they are
+// the only thing near the ceiling — holding them at half would put them where
+// the limiter works on every count, which is the ducking we just removed.
+const CHORD_TRIM = 0.42;
 
 // Only when the voice is in play and cannot be turned down itself. With the
 // struck count, or on a device that honours volume, the wood stays where it
