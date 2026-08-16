@@ -228,21 +228,14 @@
       <div style="flex: 1;">
         <div class="control-label">Count</div>
         <select id="voice-select" class="field-select">
-          <option value="tones" selected>Struck</option>
+          <option value="spoken" selected>Spoken</option>
+          <option value="tones">Struck</option>
           <option value="chord">Chord only</option>
-        </select>
-      </div>
-      <div style="flex: 1;">
-        <div class="control-label">Bell</div>
-        <select id="tone-select" class="field-select">
-          <option value="bell" selected>Bell</option>
-          <option value="wood">Wood</option>
-          <option value="glass">Glass</option>
-          <option value="bowl">Bowl</option>
         </select>
       </div>
     </div>
     <div class="caption" id="scheme-caption"></div>
+    <div class="caption" id="speech-status" style="display: none;"></div>
     <div class="caption" id="wake-status" style="display: none;"></div>
   </div>
 
@@ -466,16 +459,29 @@ function getReverbIR(ctx) {
 // a transient with real energy in it — that edge, not the level alone, was
 // what made the chime feel like it cut across the practice. The lowpasses came
 // down for the same reason: the glare lives in the top partials.
+//
+// Everything is wood now, and there is no picker. One material for the whole
+// session means the chime is recognisably the same object as the tap, only
+// struck harder — which is what makes a group of three read as one gesture
+// rather than as three taps plus an unrelated bell.
+//
+// The two voices share their partial ratios exactly; that ratio set is the
+// timbre, the thing the ear identifies as "wood". They differ only in how long
+// they ring and how much room is around them. `tap` is a dry block. `chime` is
+// the same block hollow and further away: the upper partials are held longer
+// so it sings instead of clicking, and the reverb puts it at a distance.
+const WOOD_RATIOS = [[1, 1.0], [2.76, 0.30], [5.40, 0.14]];
+const WOOD_SUM = WOOD_RATIOS.reduce((s, p) => s + p[1], 0);
+
 const TONE_VOICES = {
-  bell:  { partials: [[1, 1.0, 1.0], [2.01, 0.42, 0.72], [3.02, 0.22, 0.5], [4.21, 0.12, 0.34]],
-           decay: 1.9, attack: 0.014, wet: 0.30, lp: 3400 },
-  wood:  { partials: [[1, 1.0, 1.0], [2.76, 0.30, 0.30], [5.40, 0.14, 0.16]],
+  tap:   { partials: WOOD_RATIOS.map(([r, a], i) => [r, a, [1.0, 0.30, 0.16][i]]),
            decay: 0.55, attack: 0.006, wet: 0.16, lp: 3200 },
-  glass: { partials: [[1, 1.0, 1.0], [2.40, 0.55, 0.80], [4.60, 0.30, 0.55], [6.80, 0.15, 0.35]],
-           decay: 2.6, attack: 0.010, wet: 0.38, lp: 4800 },
-  bowl:  { partials: [[1, 1.0, 1.0], [1.99, 0.35, 0.9], [2.98, 0.18, 0.75], [5.44, 0.08, 0.45]],
-           decay: 3.4, attack: 0.018, wet: 0.42, lp: 2800 },
+  chime: { partials: WOOD_RATIOS.map(([r, a], i) => [r, a, [1.0, 0.48, 0.28][i]]),
+           decay: 1.55, attack: 0.012, wet: 0.34, lp: 2600 },
 };
+
+// Everything struck is a chime-voice wood except where noted.
+const VOICE = 'chime';
 
 // Partial weights are normalised so they sum to 1. Without this the `gain`
 // argument meant something different for every voice — a bell asking for 0.13
@@ -490,7 +496,7 @@ Object.values(TONE_VOICES).forEach(v => {
 
 function strike(freq, gain, when, voiceKey) {
   const ctx = getAudioCtx();
-  const v = TONE_VOICES[voiceKey] || TONE_VOICES.bell;
+  const v = TONE_VOICES[voiceKey] || TONE_VOICES.chime;
   const t0 = (when === undefined ? ctx.currentTime : when) + 0.001;
 
   const bus = ctx.createGain();
@@ -549,14 +555,14 @@ const SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51
 // toward the count, so the approach to the next spoken number is audible
 // before it arrives — that is the whole feedback loop, and it costs no
 // attention to read.
-function playChime(stepIndex, stepsTotal, voiceKey) {
+function playChime(stepIndex, stepsTotal) {
   const i = Math.min(stepIndex, SCALE.length - 1);
   // Now normalised against the tap, and deliberately below it: a bell rings
   // for two seconds where the tap is gone in a tenth of one, so equal peaks
   // are nowhere near equal loudness to the ear. The tail is what makes it the
   // larger event; it does not need the level as well.
   const t = stepsTotal > 1 ? stepIndex / (stepsTotal - 1) : 1;
-  strike(SCALE[i], 0.070 + 0.028 * t, undefined, voiceKey);
+  strike(SCALE[i], 0.070 + 0.028 * t, undefined, VOICE);
 }
 
 // ─── The tap itself ───────────────────────────────────────────────────────────
@@ -594,11 +600,19 @@ function playTap(mode, indexInGroup, groupSize) {
   // them nearly level turns the chime into an accent within one sound world.
   g.gain.exponentialRampToValueAtTime(mode === 'climb' ? 0.105 : 0.115, t0 + 0.005);
   g.gain.setTargetAtTime(0.0001, t0 + 0.005, 0.048);
-  g.connect(ctx.destination);
 
-  // Normalised the same way the bells are, so the gain above is a true peak
-  // and the two can be compared honestly.
-  [[1, 1 / 1.18], [2.76, 0.18 / 1.18]].forEach(([ratio, amp]) => {
+  // Same ceiling the struck wood has, so the third partial adds body rather
+  // than glare — it lands above 8 kHz on the top climb notes without this.
+  const tapLp = ctx.createBiquadFilter();
+  tapLp.type = 'lowpass';
+  tapLp.frequency.value = TONE_VOICES.tap.lp;
+  g.connect(tapLp);
+  tapLp.connect(ctx.destination);
+
+  // The same partial ratios and weights the struck voices use, normalised so
+  // the gain above is a true peak and the two can be compared honestly. Sharing
+  // the ratios is what makes the tap and the chime hear as one instrument.
+  WOOD_RATIOS.map(([r, a]) => [r, a / WOOD_SUM]).forEach(([ratio, amp]) => {
     const vg = ctx.createGain();
     vg.gain.value = amp;
     vg.connect(g);
@@ -610,7 +624,7 @@ function playTap(mode, indexInGroup, groupSize) {
     o.stop(t0 + 0.45);
     o.onended = () => { try { o.disconnect(); vg.disconnect(); } catch(e) {} };
   });
-  setTimeout(() => { try { g.disconnect(); } catch(e) {} }, 700);
+  setTimeout(() => { try { g.disconnect(); tapLp.disconnect(); } catch(e) {} }, 700);
 }
 
 // The count landing: one gentle chord, root–fourth–fifth, struck together.
@@ -620,14 +634,14 @@ function playTap(mode, indexInGroup, groupSize) {
 // than one, and the moment should settle, not announce.
 const CHORD_145 = [130.81, 174.61, 196.00, 261.63];   // C3 · F3 · G3 · C4
 
-function playMilestone(voiceKey) {
+function playMilestone() {
   const ctx = getAudioCtx();
   const t0 = ctx.currentTime;
   CHORD_145.forEach((f, i) => {
     // A few milliseconds of spread — below the ~30 ms where the ear starts
     // hearing an arpeggio, but enough to keep the attacks from stacking into
     // one hard transient.
-    strike(f, 0.085, t0 + i * 0.008, voiceKey);
+    strike(f, 0.085, t0 + i * 0.008, VOICE);
   });
 }
 
@@ -638,26 +652,30 @@ function playMilestone(voiceKey) {
 const CHORD_SUS  = [65.41, 130.81, 174.61, 196.00, 261.63];  // C2 · C3 · F3 · G3 · C4
 const CHORD_TRIAD= [65.41, 130.81, 164.81, 196.00, 261.63];  // C2 · C3 · E3 · G3 · C4
 
-function playEndChime(voiceKey) {
+function playEndChime() {
   const ctx = getAudioCtx();
   const t0 = ctx.currentTime;
   CHORD_SUS.forEach((f, i) => {
-    strike(f, i === 0 ? 0.06 : 0.075, t0 + i * 0.010, voiceKey);
+    strike(f, i === 0 ? 0.06 : 0.075, t0 + i * 0.010, VOICE);
   });
   // Quieter on the resolution: the first chord is still ringing under it, and
   // the ear only needs to hear the fourth give way.
+  // Wood dies away faster than the old bell did, so the resolution comes
+  // sooner — much later and the suspension it is resolving would already be
+  // gone, and the second chord would sound like a separate event.
   CHORD_TRIAD.forEach((f, i) => {
-    strike(f, i === 0 ? 0.04 : 0.05, t0 + 1.9 + i * 0.010, voiceKey);
+    strike(f, i === 0 ? 0.04 : 0.05, t0 + 1.45 + i * 0.010, VOICE);
   });
 }
 
 // ─── The count, told in tones ─────────────────────────────────────────────────
 //
-// Speech was the obvious way to say a number and the wrong one: iOS discards
-// utterances that don't originate in a gesture, and every browser on the
-// phone is WebKit, so there was no version of it that could be relied on.
+// Speech is back as an option, but it cannot be relied on — iOS discards
+// utterances that don't originate in a gesture, and every browser on the phone
+// is WebKit. So the struck version below is kept as the thing speech falls
+// back to, not as a discarded first attempt.
 //
-// Instead the number is struck like a clock. Each decimal place has its own
+// The number is struck like a clock. Each decimal place has its own
 // pitch, and the digit is how many times that pitch sounds:
 //
 //     thousands  C2   very low
@@ -743,6 +761,119 @@ function playCountTones(n) {
   });
 }
 
+// ─── The count, spoken ────────────────────────────────────────────────────────
+//
+// One thing to be plain about: the speech engine writes straight to the system
+// output and there is no way to route it through Web Audio, so it cannot have
+// the reverb the wood has. Everything below is what softening is actually
+// available — volume well down, rate and pitch lowered so it doesn't sit on
+// top of the practice, and a preference for a full-voiced speaker over a thin
+// one. It will read as closer and drier than the chimes no matter what; if it
+// still cuts across things, the struck count is the genuinely quiet option.
+//
+// Speech also fails silently on iOS more often than it works, so a failure to
+// start is detected and the count falls back to tones — the number gets told
+// either way, which matters more than how.
+
+const SPEECH_VOLUME = 0.30;
+const SPEECH_RATE   = 0.82;
+const SPEECH_PITCH  = 0.80;
+
+let speechDead = false;
+let chosenVoice = null;
+let speechPrimed = false;
+
+function speechSupported() {
+  return typeof window !== 'undefined' && 'speechSynthesis' in window
+      && typeof SpeechSynthesisUtterance !== 'undefined';
+}
+
+// Fuller voices carry better at low volume; the compact ones get thin and
+// sibilant when you turn them down, which is the opposite of what we want.
+function pickVoice() {
+  if (chosenVoice || !speechSupported()) return chosenVoice;
+  const voices = window.speechSynthesis.getVoices() || [];
+  if (!voices.length) return null;                    // not loaded yet; try again next call
+  const en = voices.filter(v => /^en/i.test(v.lang));
+  const pool = en.length ? en : voices;
+  const preferred = ['Daniel', 'Serena', 'Samantha', 'Karen', 'Moira', 'Google UK'];
+  for (const name of preferred) {
+    const hit = pool.find(v => v.name.indexOf(name) !== -1);
+    if (hit) { chosenVoice = hit; return chosenVoice; }
+  }
+  chosenVoice = pool.find(v => v.localService) || pool[0];
+  return chosenVoice;
+}
+
+if (speechSupported() && typeof window.speechSynthesis.addEventListener === 'function') {
+  window.speechSynthesis.addEventListener('voiceschanged', () => { chosenVoice = null; pickVoice(); });
+}
+
+// iOS only lets speech through if the first speak() of the page happened
+// inside a user gesture, and an empty utterance does not count as that first
+// call — it has to be real text. Volume 0 makes it inaudible.
+function primeSpeech() {
+  if (speechPrimed || !speechSupported()) return;
+  try {
+    const u = new SpeechSynthesisUtterance('ready');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+    speechPrimed = true;
+  } catch(e) { speechDead = true; }
+}
+
+function markSpeechDead() {
+  if (speechDead) return;
+  speechDead = true;
+  const el = document.getElementById('speech-status');
+  if (el) {
+    el.textContent = 'This browser did not speak the count — using struck tones instead.';
+    el.style.display = '';
+  }
+}
+
+function speakCount(n) {
+  if (speechDead || !speechSupported()) { playCountTones(n); return; }
+
+  // Same delay the struck count uses, so the chord's attack has passed before
+  // anything else arrives.
+  setTimeout(() => {
+    let started = false;
+    let u;
+    try {
+      u = new SpeechSynthesisUtterance(String(n));
+    } catch(e) { markSpeechDead(); playCountTones(n); return; }
+
+    u.volume = SPEECH_VOLUME;
+    u.rate   = SPEECH_RATE;
+    u.pitch  = SPEECH_PITCH;
+    const v = pickVoice();
+    if (v) u.voice = v;
+    u.onstart = () => { started = true; };
+    u.onerror = () => { if (!started) { markSpeechDead(); playCountTones(n); } };
+
+    try {
+      // Deliberately not cancel()ing first: an unconditional cancel is one of
+      // the ways WebKit's engine gets wedged, and at this spacing there is
+      // never a previous count still running.
+      window.speechSynthesis.speak(u);
+    } catch(e) { markSpeechDead(); playCountTones(n); return; }
+
+    // If it never starts, it failed quietly — which is exactly how iOS fails.
+    setTimeout(() => {
+      if (!started) { markSpeechDead(); playCountTones(n); }
+    }, 1400);
+  }, COUNT_DELAY * 1000);
+}
+
+// How long to hold the session open for the final count. Once speech has been
+// ruled out the struck timing is exact; while it is still live, allow the
+// delay plus enough for a four-digit number at this rate.
+function spokenCountDuration(n) {
+  if (speechDead || !speechSupported()) return countToneDuration(n);
+  return COUNT_DELAY * 1000 + 2200;
+}
+
 // ─── Session ──────────────────────────────────────────────────────────────────
 
 let running = false;
@@ -752,8 +883,7 @@ let tickTimer = null;
 let target = { kind: 'open', value: 0 };
 let chimeEvery = 3;
 let chimesPerCall = 3;
-let voiceKey = 'bell';
-let countInTones = true;
+let countMode = 'spoken';   // 'spoken' | 'tones' | 'chord'
 let tapMode = 'soft';
 const stamps = [];   // performance.now() of each note, in order
 
@@ -770,8 +900,7 @@ const summaryEl = document.getElementById('summary');
 function readSettings() {
   chimeEvery   = clampInt(document.getElementById('chime-every').value, 1, 12, 3);
   chimesPerCall= clampInt(document.getElementById('chimes-per-call').value, 1, 12, 3);
-  voiceKey     = document.getElementById('tone-select').value;
-  countInTones = document.getElementById('voice-select').value === 'tones';
+  countMode    = document.getElementById('voice-select').value;
   tapMode      = document.getElementById('tap-select').value;
   const t = document.getElementById('target-select').value;
   if (t === 'open') target = { kind: 'open', value: 0 };
@@ -798,7 +927,8 @@ function syncCaption() {
     s += ` ${calls} call${calls === 1 ? '' : 's'} to ${target.value}.`;
     if (target.value % callEvery() !== 0) s += ` (${target.value} is not a multiple of ${callEvery()}.)`;
   }
-  if (countInTones) s += ' Count: low = hundreds, middle = tens, high = units.';
+  if (countMode === 'spoken') s += ' The count is spoken.';
+  else if (countMode === 'tones') s += ' Count: low = hundreds, middle = tens, high = units.';
   cap.textContent = s;
   buildCycleDots();
 }
@@ -822,7 +952,7 @@ function paintCycleDots() {
 }
 
 function setControlsDisabled(d) {
-  ['target-select','chime-every','chimes-per-call','voice-select','tone-select','tap-select']
+  ['target-select','chime-every','chimes-per-call','voice-select','tap-select']
     .forEach(id => { document.getElementById(id).disabled = d; });
 }
 
@@ -834,6 +964,8 @@ function beginSession() {
   if (ctx.state === 'suspended') ctx.resume();
   startKeepAlive();
   readSettings();
+  // Must happen inside this same gesture — see primeSpeech.
+  if (countMode === 'spoken') primeSpeech();
 
   running = true;
   noteCount = 0;
@@ -886,11 +1018,12 @@ function note() {
   if (!atCall) playTap(tapMode, (noteCount - 1) % callEvery(), callEvery());
 
   if (atCall) {
-    playMilestone(voiceKey);
-    if (countInTones) playCountTones(noteCount);
+    playMilestone();
+    if (countMode === 'spoken')     speakCount(noteCount);
+    else if (countMode === 'tones') playCountTones(noteCount);
   } else if (atChime) {
     const step = (Math.floor(noteCount / chimeEvery) % chimesPerCall) - 1;
-    playChime(Math.max(0, step), chimesPerCall, voiceKey);
+    playChime(Math.max(0, step), chimesPerCall);
   }
 
   if (target.kind === 'notes') {
@@ -899,7 +1032,9 @@ function note() {
       // Let the chord and the struck count finish before the closing bell —
       // arriving is the point of the session. The count itself takes longer
       // for a big number, so wait for it rather than a fixed pause.
-      const wait = countInTones ? 1600 + countToneDuration(noteCount) : 2000;
+      const wait = countMode === 'spoken' ? 600 + spokenCountDuration(noteCount)
+                 : countMode === 'tones'  ? 1600 + countToneDuration(noteCount)
+                 : 2000;
       setTimeout(() => { if (running) endSession(true); }, wait);
     }
   }
@@ -942,7 +1077,7 @@ function endSession(reached) {
   undoBtn.disabled = true;
   setControlsDisabled(false);
   fillEl.style.width = '0%';
-  playEndChime(voiceKey);
+  playEndChime();
   recordLifetime(noteCount);
   renderSummary();
 }
