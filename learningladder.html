@@ -1,0 +1,2181 @@
+<!DOCTYPE html>
+<html lang="en" data-scheme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Learning Ladder</title>
+  <meta name="description" content="Trumpet practice one process at a time: climb a ladder of rungs by earning clean reps.">
+  <meta name="theme-color" content="#0c0e10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ladder">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAADLklEQVR42u3dMUrEUBAG4JxABEEQcgFZvIqFjY1C7mBhI1iIjQo2S0pLrT2At1gEt7MRj+FAYFlwXRDRzMgHP8uSNG/GL2+TZ0Kajc0tkZVptEDgEDgEDoFD4BA4BA6BQ+AQOETgEDgEDoFD4BA4BA6BQ+AQOETgEDgEDoFD4BA4BI4fZney1/fT+cvs/e01PuN7bKnV5aIlZMfRdd3Q0+XEltheRUbdEprkB9znti6aW+LgK11Cahwx/a5s65DYmx9H6RJS4/jqmFsceflxlC4hNY41bR2SH0fpEuBQAhxKgEMJcMABBxxwwAEHHHDoLBw6C4fOwlG2s9s77cHh8eXNtL97SJIYTAwpBgbHmDjiD3B2cZ2HxXJiYDE8OEbDEQdoThlDYnhwjIYj1a/Jyt8XOEbDkVnGEDjMHGYO5xzOOVytuFqxzmGdwwqpEuBQAhxwwAEHHHDAAQccOguHzsKhs3DorBLgUAIcSoADDjjggAMOOOCAQ2fh0Fk4dBYO95C6h9Td5+4+99yK51Y88eaJNzg8KwuHmQMO5xxwuFpxtWKdwzqH5UUrpDqrBDiUAIcS4FACHHDAAQcccMABBxw6C4fOwqGzcOisEuBQAhxKgAMOOOCAAw444IDjb+8hbdv9k6Pzp+nt832SxGBiSDEwOEa9+7xtTx+v8rBYTgwshgfHaDjiAM0pY0gMD47RcKT6NVn5+wLHaDgyyxgCh5nDzOGcwzmHqxVXK9Y5rHNYIVUCHEqAAw444IADDjjggENn4dBZOHQWDp1VAhxKgEMJcMABBxxwwAEHHHDoLBw6C4fOwlH1HlLvW4HDm5rg+B4O73iDw9sh4fg+Du+VhcPMAYdzDjhcrcBhncM6h+VFK6Q6C4fOKgEOJcChBDiUAAcccMABBxxwwAHHb2T+MlvT1tibH0fpElLj6Pt1//KOvflxlC4hNY7dyd5XR15sj735cZQuoUne3K7rPjc3tsT2/DKql9CUOPhi+h36G5/xvcSc8Q9KaGp1WeAQOAQOgUPgEDhE4BA4BA6BQ+AQOAQOgUPgEDgEDhE4BA6BQ+AQOAQOgUPgEDgEDpFFPgCeMtSTXKtDuAAAAABJRU5ErkJggg==">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%230e1013'/%3E%3Cg fill='%23e8e6e1'%3E%3Crect x='52' y='28' width='11' height='124' rx='5.5'/%3E%3Crect x='117' y='28' width='11' height='124' rx='5.5'/%3E%3C/g%3E%3Cg fill='%23969ea7'%3E%3Crect x='63' y='44' width='54' height='9' rx='4.5'/%3E%3Crect x='63' y='72' width='54' height='9' rx='4.5'/%3E%3Crect x='63' y='128' width='54' height='9' rx='4.5'/%3E%3C/g%3E%3Crect x='63' y='100' width='54' height='9' rx='4.5' fill='%238fd6a6'/%3E%3C/svg%3E">
+  <script>
+    // Theme before first paint, so a phone set to the light theme doesn't
+    // flash dark on every launch.
+    (function () {
+      var pref = 'dark';
+      try { pref = localStorage.getItem('learningLadder:theme') || 'dark'; } catch (e) {}
+      var light = pref === 'light' ||
+        (pref === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches);
+      document.documentElement.setAttribute('data-scheme', light ? 'light' : 'dark');
+    })();
+  </script>
+<style>
+  /* Dark by default and high contrast throughout: it lives on a music stand,
+     in whatever light the room has. */
+  :root {
+    color-scheme: dark;
+    --bg: #0c0e10;
+    --surface: #15181b;
+    --surface-2: #1f2327;
+    --line: #2c3136;
+    --text: #f2f1ed;
+    --text-2: #b4bac1;
+    --text-3: #7f8790;
+    --accent: #8fd6a6;
+    --warn: #f2c47e;
+    --danger: #f29a9a;
+    --yes-bg: #173d2a;
+    --yes-line: #2f7a52;
+    --yes-text: #e3f8ea;
+    --no-bg: #3e2023;
+    --no-line: #7d3f47;
+    --no-text: #fce5e7;
+    --press: rgba(255, 255, 255, 0.14);
+    --font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --gutter-l: max(16px, env(safe-area-inset-left));
+    --gutter-r: max(16px, env(safe-area-inset-right));
+  }
+  :root[data-scheme="light"] {
+    color-scheme: light;
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface-2: #eae8e3;
+    --line: #d3d0c9;
+    --text: #111315;
+    --text-2: #3d434a;
+    --text-3: #686e76;
+    --accent: #1d7a46;
+    --warn: #8a5a00;
+    --danger: #b42318;
+    --yes-bg: #d2eedc;
+    --yes-line: #6dbb8d;
+    --yes-text: #0b3a21;
+    --no-bg: #f7dada;
+    --no-line: #d79595;
+    --no-text: #4f1414;
+    --press: rgba(0, 0, 0, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background: var(--bg);
+    touch-action: manipulation;
+  }
+  html.in-session, html.in-session body { overflow: hidden; overscroll-behavior: none; }
+  body {
+    font-family: var(--font);
+    font-size: 17px;
+    line-height: 1.4;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* black-translucent is fixed when the app is added to the home screen, so
+     the status bar text stays white. In the light theme, keep a dark band
+     behind it. It only has height when running full-screen from the home
+     screen. */
+  :root[data-scheme="light"] body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; right: 0;
+    height: env(safe-area-inset-top);
+    background: #0c0e10;
+    z-index: 50;
+  }
+  button {
+    font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+    touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+  }
+  button:disabled { cursor: default; opacity: 0.35; }
+  /* 16px or more, or iOS zooms the page on focus. */
+  input, textarea, select { font: inherit; font-size: 17px; color: var(--text); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .screen {
+    max-width: 560px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top) + 6px) var(--gutter-r) calc(env(safe-area-inset-bottom) + 28px) var(--gutter-l);
+  }
+
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 56px; }
+  .bar h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+  .bar.centred { display: grid; grid-template-columns: 1fr auto 1fr; }
+  .bar-title { font-size: 18px; font-weight: 650; }
+  .quiet {
+    min-height: 48px; min-width: 48px; padding: 0 12px;
+    border-radius: var(--radius);
+    color: var(--text-2); font-size: 17px;
+  }
+  .quiet:active { background: var(--surface-2); }
+  .quiet.back { margin-left: -12px; justify-self: start; }
+  .quiet.edge-r { margin-right: -12px; }
+
+  .label {
+    font-size: 13px; font-weight: 650;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .opt { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .muted { color: var(--text-3); }
+  .empty { color: var(--text-2); padding: 24px 4px; text-align: center; }
+
+  .btn {
+    min-height: 48px; padding: 0 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    font-size: 17px; font-weight: 500;
+  }
+  .btn:active { background: var(--surface-2); }
+  .btn.wide { width: 100%; }
+  .btn.small { padding: 0 14px; font-size: 16px; }
+  .btn.danger { color: var(--danger); }
+  .btn.primary {
+    min-height: 56px;
+    background: var(--text); border-color: var(--text); color: var(--bg);
+    font-size: 18px; font-weight: 650;
+  }
+  .btn.primary:active { opacity: 0.85; }
+
+  .seg {
+    display: flex; gap: 4px; padding: 4px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  .seg button {
+    flex: 1; min-height: 48px; padding: 0 8px;
+    border-radius: 10px;
+    color: var(--text-2); font-size: 16px;
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--surface-2); color: var(--text); font-weight: 650;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 700; font-style: normal;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--warn);
+    border: 1px solid currentColor; border-radius: 6px;
+    padding: 0 5px; line-height: 17px;
+    vertical-align: 2px;
+  }
+
+  .notice {
+    margin: 6px 0 10px; padding: 12px 14px;
+    border-radius: var(--radius);
+    background: var(--surface); border: 1px solid var(--line);
+    color: var(--warn); font-size: 15px;
+  }
+
+  /* ─── Ladders ─── */
+  .cards { list-style: none; display: grid; gap: 10px; margin: 6px 0 14px; }
+  .card {
+    width: 100%; text-align: left;
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 16px 18px;
+    border-radius: var(--radius-lg);
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .card:active { background: var(--surface-2); }
+  .card-title { font-size: 20px; font-weight: 650; }
+  .card-focus { color: var(--text-2); font-size: 16px; }
+  .card-meta { color: var(--text-3); font-size: 15px; }
+  .home-foot {
+    display: grid; gap: 14px;
+    margin-top: 36px; padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+  .foot-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .foot-row .seg { flex: 0 1 240px; }
+  .foot-btns { display: flex; gap: 8px; }
+  .foot-note { color: var(--text-3); font-size: 14px; margin-top: -6px; }
+
+  /* ─── One ladder: view, editor, start ─── */
+  .ladder-screen { display: flex; flex-direction: column; padding-bottom: 0; }
+  #ladder-body { flex: 1; padding-bottom: 24px; }
+  .ladder-screen.editing #ladder-body { padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
+  .ladder-head { margin: 2px 0 16px; }
+  .ladder-title { font-size: 28px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+  .ladder-focus { color: var(--text-2); margin-top: 6px; }
+  .ladder-rule { color: var(--text-3); font-size: 15px; margin-top: 8px; }
+  .hint {
+    margin: 0 0 12px; padding: 12px 14px;
+    border-radius: var(--radius);
+    border: 1px dashed var(--line);
+    color: var(--text-2); font-size: 15px;
+  }
+  .rung-list { list-style: none; margin-bottom: 8px; }
+  .rung-row {
+    display: grid; grid-template-columns: 40px 1fr; gap: 8px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .rung-row:last-child { border-bottom: 0; }
+  .rung-num {
+    font-size: 22px; font-weight: 300; line-height: 1.1;
+    color: var(--text-3); text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .rung-row.base .rung-num::after {
+    content: 'start'; display: block;
+    font-size: 10px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .rung-name { font-size: 18px; font-weight: 600; line-height: 1.25; }
+  .rung-intent { color: var(--text-2); font-size: 16px; margin-top: 3px; }
+  .rung-intent.is-placeholder { color: var(--text-3); font-style: italic; }
+
+  .dock {
+    position: sticky; bottom: 0; z-index: 5;
+    display: grid; gap: 10px;
+    margin: 0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));
+    padding: 12px var(--gutter-r) calc(env(safe-area-inset-bottom) + 12px) var(--gutter-l);
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+  }
+  .custom-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text-2); }
+  .custom-row input {
+    width: 104px; min-height: 48px; text-align: center;
+    border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface);
+  }
+
+  .field { display: grid; gap: 6px; margin-bottom: 16px; }
+  .field.inline { grid-template-columns: 1fr 96px; align-items: center; gap: 12px; }
+  .field input, .rung-card input, .rung-card textarea {
+    width: 100%; min-height: 48px; padding: 11px 13px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .field.inline input { text-align: center; }
+  .rung-card input, .rung-card textarea { background: var(--bg); }
+  textarea { display: block; resize: none; overflow: hidden; line-height: 1.35; }
+  textarea.is-placeholder { color: var(--text-3); font-style: italic; }
+  .rungs-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 26px 0 10px; }
+  .rung-edit-list { list-style: none; display: grid; gap: 12px; }
+  .rung-card {
+    display: grid; gap: 8px; padding: 10px 12px 14px;
+    border-radius: var(--radius-lg);
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .rung-card-head { display: flex; align-items: center; justify-content: space-between; }
+  .rung-tools { display: flex; margin-right: -8px; }
+  .icon-btn {
+    min-width: 48px; min-height: 48px;
+    border-radius: var(--radius);
+    color: var(--text-2); font-size: 20px;
+  }
+  .icon-btn:active { background: var(--surface-2); }
+  .icon-btn.danger { color: var(--danger); font-size: 17px; }
+  .intent-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-3); margin-top: 2px; }
+  .editor-foot { display: grid; gap: 10px; margin-top: 28px; }
+
+  /* ─── Session ───
+     Deliberately sparse: where you are, what you're doing, the streak, the
+     clock, and two answers big enough to hit with a trumpet in the other
+     hand. The few other controls sit small and dim at the top, well away
+     from where the answers are aimed. */
+  .session {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 100vh;
+    height: 100dvh;
+    display: flex; flex-direction: column;
+    padding: env(safe-area-inset-top) var(--gutter-r) calc(env(safe-area-inset-bottom) + 14px) var(--gutter-l);
+    background: var(--bg);
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .session > * { width: 100%; max-width: 560px; margin-left: auto; margin-right: auto; }
+  .s-controls { display: flex; align-items: center; min-height: 52px; flex-shrink: 0; }
+  .s-controls .spacer { flex: 1; }
+  .s-ctl {
+    min-height: 48px; min-width: 48px; padding: 0 11px;
+    border-radius: var(--radius);
+    color: var(--text-3); font-size: 16px;
+  }
+  .s-ctl:active { background: var(--surface-2); color: var(--text-2); }
+  .s-ctl:first-child { margin-left: -11px; }
+  .s-ctl:last-child { margin-right: -11px; }
+  .s-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .s-info { flex-shrink: 0; }
+  .s-meta {
+    display: flex; justify-content: space-between; align-items: baseline;
+    color: var(--text-2); font-size: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  .s-time { font-size: 20px; color: var(--text); }
+  .session.time-up .s-time { color: var(--warn); font-weight: 600; }
+  .s-rung { padding-top: 10px; }
+  .s-name {
+    font-size: clamp(26px, 8vw, 38px); font-weight: 700;
+    line-height: 1.12; letter-spacing: -0.015em;
+    overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+  }
+  .s-intent {
+    font-size: clamp(17px, 5.2vw, 22px); line-height: 1.32;
+    color: var(--text-2); margin-top: 8px;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
+  }
+  .s-rung.moved-up { animation: from-above 0.35s ease-out; }
+  .s-rung.moved-down { animation: from-below 0.35s ease-out; }
+  @keyframes from-above { from { opacity: 0; transform: translateY(-12px); } }
+  @keyframes from-below { from { opacity: 0; transform: translateY(12px); } }
+  .s-streak {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 10px 0 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .s-streak-num { font-size: 46px; font-weight: 300; line-height: 1; }
+  .s-streak-of { font-size: 20px; color: var(--text-2); }
+  .s-answer { flex: 1; min-height: 220px; position: relative; display: flex; flex-direction: column; gap: 12px; }
+  .answer {
+    flex: 1; min-height: 0; width: 100%;
+    border-radius: 24px; border: 2px solid;
+    font-size: clamp(44px, 14vw, 68px); font-weight: 700; letter-spacing: 0.01em;
+  }
+  .answer.yes { background: var(--yes-bg); border-color: var(--yes-line); color: var(--yes-text); }
+  .answer.no { background: var(--no-bg); border-color: var(--no-line); color: var(--no-text); }
+  .answer:active, .answer.flash { box-shadow: inset 0 0 0 999px var(--press); }
+  .cover {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 24px; text-align: center;
+    border-radius: 24px;
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .cover-title { font-size: 26px; font-weight: 700; }
+  .cover-note { color: var(--text-2); max-width: 30ch; }
+  .cover .btn { width: 100%; max-width: 340px; }
+  .cover .btn.primary { min-height: 76px; font-size: 22px; }
+  @media (orientation: landscape) and (max-height: 540px) {
+    .s-main { flex-direction: row; gap: 20px; }
+    .s-info { flex: 1 1 0; overflow: hidden; }
+    .s-answer { flex: 1 1 0; min-height: 0; }
+    .s-name { font-size: 26px; }
+    .s-intent { font-size: 17px; }
+    .s-streak-num { font-size: 36px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .s-rung.moved-up, .s-rung.moved-down { animation: none; }
+  }
+
+  /* ─── Summary ─── */
+  .sum-head { margin: 18px 0 18px; }
+  .sum-title { font-size: 28px; font-weight: 700; line-height: 1.15; margin-top: 6px; }
+  .sum-sub { color: var(--text-2); margin-top: 4px; }
+  .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line); border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .stat { background: var(--surface); padding: 14px 16px; min-width: 0; }
+  .stat.full { grid-column: 1 / -1; }
+  .stat-value { font-size: 28px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .stat.full .stat-value { font-size: 19px; }
+  .stat-detail { color: var(--text-2); font-size: 15px; margin-top: 3px; }
+  .sum-note { color: var(--text-3); margin-top: 12px; font-size: 15px; }
+  .sum-actions { display: grid; gap: 10px; margin-top: 22px; }
+
+  /* ─── History ─── */
+  .h-select {
+    width: 100%; min-height: 48px; padding: 0 12px;
+    border-radius: var(--radius); border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .h-overview {
+    display: grid; gap: 12px;
+    margin: 14px 0 18px; padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .h-overview dd { margin-top: 3px; }
+  .nums { font-variant-numeric: tabular-nums; word-spacing: 0.1em; }
+  .h-list { list-style: none; display: grid; gap: 8px; }
+  .h-item details {
+    border-radius: var(--radius-lg);
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .h-item summary { list-style: none; cursor: pointer; padding: 14px 16px; }
+  .h-item summary::-webkit-details-marker { display: none; }
+  .h-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .h-date { font-weight: 600; }
+  .h-reach { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .pips { display: inline-flex; gap: 3px; }
+  .pips i { width: 6px; height: 14px; border-radius: 2px; background: var(--line); }
+  .pips i.on { background: var(--text-2); }
+  .pips i.top { background: var(--accent); }
+  .h-sub { color: var(--text-2); font-size: 15px; margin-top: 3px; }
+  .h-detail { padding: 2px 16px 14px; border-top: 1px solid var(--line); }
+  .h-rungs { list-style: none; margin: 6px 0 12px; }
+  .h-rungs li {
+    display: grid; grid-template-columns: 26px 1fr auto; gap: 8px;
+    padding: 9px 0; border-bottom: 1px solid var(--line);
+    font-size: 15px;
+  }
+  .h-rungs .n { color: var(--text-3); text-align: center; font-variant-numeric: tabular-nums; }
+  .h-rungs .c { color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
+  .h-rungs .stall .n, .h-rungs .stall .c { color: var(--warn); }
+</style>
+</head>
+<body>
+
+<noscript><p class="screen">Learning Ladder needs JavaScript.</p></noscript>
+
+<!-- ─── Ladders ──────────────────────────────────────────────────────────── -->
+<section class="screen" id="screen-home" data-screen="home" hidden>
+  <header class="bar">
+    <h1>Learning Ladder</h1>
+    <button class="quiet edge-r" data-action="history">History</button>
+  </header>
+  <div class="notice" id="home-notice" role="status" hidden></div>
+  <ul class="cards" id="ladder-list"></ul>
+  <button class="btn wide" data-action="new-ladder">+ New ladder</button>
+  <footer class="home-foot">
+    <div class="foot-row">
+      <span class="label">Backup</span>
+      <div class="foot-btns">
+        <button class="btn small" data-action="export">Export</button>
+        <button class="btn small" data-action="import">Import</button>
+      </div>
+    </div>
+    <p class="foot-note">Everything is kept on this device only. Export now and then to keep a copy.</p>
+    <div class="foot-row">
+      <span class="label">Theme</span>
+      <div class="seg" role="group" aria-label="Theme">
+        <button data-action="theme" data-value="dark">Dark</button>
+        <button data-action="theme" data-value="light">Light</button>
+        <button data-action="theme" data-value="auto">Auto</button>
+      </div>
+    </div>
+    <input type="file" id="import-file" accept="application/json,.json" hidden>
+  </footer>
+</section>
+
+<!-- ─── One ladder: view, editor, start ──────────────────────────────────── -->
+<section class="screen ladder-screen" id="screen-ladder" data-screen="ladder" hidden>
+  <header class="bar">
+    <button class="quiet back" data-action="ladder-back">‹ Ladders</button>
+    <button class="quiet edge-r" id="edit-toggle" data-action="toggle-edit">Edit</button>
+  </header>
+  <div id="ladder-body"></div>
+  <div class="dock" id="start-dock">
+    <div class="seg" role="group" aria-label="Session length">
+      <button data-action="timer" data-value="5">5 min</button>
+      <button data-action="timer" data-value="10">10 min</button>
+      <button data-action="timer" data-value="custom">Custom</button>
+    </div>
+    <label class="custom-row" id="custom-row" hidden>
+      <span>Minutes</span>
+      <input type="number" id="custom-min" min="1" max="180" inputmode="numeric">
+    </label>
+    <button class="btn primary wide" data-action="start">Start at rung 1</button>
+  </div>
+</section>
+
+<!-- ─── Session ──────────────────────────────────────────────────────────── -->
+<section class="session" id="screen-session" data-screen="session" hidden>
+  <div class="s-controls">
+    <button class="s-ctl" data-action="end">End</button>
+    <span class="spacer"></span>
+    <button class="s-ctl" id="s-step-down" data-action="step-down">Step down</button>
+    <button class="s-ctl" id="s-undo" data-action="undo">Undo</button>
+    <button class="s-ctl" id="s-pause" data-action="pause">Pause</button>
+  </div>
+  <div class="s-main">
+    <div class="s-info">
+      <div class="s-meta"><span id="s-pos"></span><span class="s-time" id="s-time"></span></div>
+      <div class="s-rung" id="s-rung">
+        <h1 class="s-name" id="s-name"></h1>
+        <p class="s-intent" id="s-intent"></p>
+      </div>
+      <div class="s-streak" aria-live="polite">
+        <span class="s-streak-num" id="s-streak-num"></span><span class="s-streak-of" id="s-streak-of"></span>
+      </div>
+    </div>
+    <div class="s-answer">
+      <button class="answer yes" id="btn-yes" data-action="yes">Yes</button>
+      <button class="answer no" id="btn-no" data-action="no">No</button>
+      <div class="cover" id="s-pause-cover" hidden>
+        <p class="cover-title">Paused</p>
+        <p class="cover-note" id="s-pause-note"></p>
+        <button class="btn primary" data-action="resume">Resume</button>
+      </div>
+      <div class="cover" id="s-end-cover" hidden>
+        <p class="cover-title">End this session?</p>
+        <p class="cover-note" id="s-end-note"></p>
+        <button class="btn primary" data-action="end-cancel">Keep going</button>
+        <button class="btn" data-action="end-confirm">End session</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Summary ──────────────────────────────────────────────────────────── -->
+<section class="screen" id="screen-summary" data-screen="summary" hidden>
+  <div class="sum-head">
+    <p class="label" id="sum-kicker"></p>
+    <h1 class="sum-title" id="sum-title"></h1>
+    <p class="sum-sub" id="sum-sub"></p>
+  </div>
+  <div class="stat-grid" id="sum-stats"></div>
+  <p class="sum-note" id="sum-note" hidden></p>
+  <div class="sum-actions">
+    <button class="btn primary wide" data-action="run-again">Run again</button>
+    <button class="btn wide" data-action="home">Home</button>
+  </div>
+</section>
+
+<!-- ─── History ──────────────────────────────────────────────────────────── -->
+<section class="screen" id="screen-history" data-screen="history" hidden>
+  <header class="bar centred">
+    <button class="quiet back" data-action="history-back">‹ Back</button>
+    <h1 class="bar-title">History</h1>
+    <span></span>
+  </header>
+  <select class="h-select" id="h-ladder" aria-label="Ladder"></select>
+  <div id="h-body"></div>
+</section>
+
+<script>
+// ─── Ladder logic ─────────────────────────────────────────────────────────────
+//
+// The rules of a session and nothing else: no DOM, no clock, no storage.
+// reduce(state, action) takes a session state and one action and returns the
+// next state, never modifying the one it was given. Undo falls out of that for
+// free — each state an action replaces is kept on a stack — and the rules can
+// be checked on their own: run runLadderTests() in the browser console.
+//
+// Rungs are numbered from 0 in here (0 is rung 1, the bottom). Only what the
+// player sees adds 1.
+//
+// Actions:  { type: 'YES' }        a clean rep
+//           { type: 'NO' }         a miss
+//           { type: 'STEP_DOWN' }  choosing to go down a rung
+//           { type: 'UNDO' }       take back the last YES, NO or STEP_DOWN
+// There is deliberately no action for going up. Anything unrecognised —
+// including an attempt to climb by hand — returns the state unchanged.
+
+const LadderLogic = (() => {
+  'use strict';
+
+  function createSession(rungCount, target) {
+    return {
+      rungCount,
+      target,
+      rung: 0,              // where the player stands now
+      streak: 0,            // clean reps in a row on this rung
+      furthest: 0,          // highest rung stood on this session
+      topCleared: false,    // the top rung's streak has been completed at least once
+      consolidation: 0,     // clean reps on the top rung beyond its target
+      reps: 0,
+      yes: 0,
+      attempts: new Array(rungCount).fill(0),   // per rung: every answered rep
+      misses: new Array(rungCount).fill(0),     // per rung: the No answers
+      past: [],             // the states earlier actions replaced, newest last
+    };
+  }
+
+  function reduce(state, action) {
+    const type = action && action.type;
+    if (type === 'UNDO') {
+      if (!state.past.length) return state;
+      const previous = state.past[state.past.length - 1];
+      return { ...previous, past: state.past.slice(0, -1) };
+    }
+    const next = apply(state, type);
+    if (next === state) return state;
+    // Keep what this action replaced, minus its own history, so UNDO can put
+    // it back exactly: rung, streak, counts and all.
+    const { past, ...replaced } = state;
+    return { ...next, past: past.concat([replaced]) };
+  }
+
+  // The rules for one action. Returns the same object when nothing changes.
+  function apply(s, type) {
+    switch (type) {
+      case 'YES': {
+        const next = {
+          ...s,
+          reps: s.reps + 1,
+          yes: s.yes + 1,
+          attempts: bump(s.attempts, s.rung),
+          streak: s.streak + 1,
+        };
+        if (next.streak < s.target) return next;
+        if (s.rung < s.rungCount - 1) {
+          // Earned: up one rung, where the streak starts again from nothing.
+          next.rung = s.rung + 1;
+          next.streak = 0;
+          next.furthest = Math.max(s.furthest, next.rung);
+        } else {
+          // The top rung has nowhere further to go: stay, and keep counting.
+          // Every clean rep past the target is consolidation.
+          if (next.streak > s.target) next.consolidation = s.consolidation + 1;
+          next.topCleared = true;
+        }
+        return next;
+      }
+      case 'NO':
+        // A miss costs the streak, and a rung if there is one to lose.
+        return {
+          ...s,
+          reps: s.reps + 1,
+          attempts: bump(s.attempts, s.rung),
+          misses: bump(s.misses, s.rung),
+          rung: Math.max(0, s.rung - 1),
+          streak: 0,
+        };
+      case 'STEP_DOWN':
+        if (s.rung === 0) return s;
+        return { ...s, rung: s.rung - 1, streak: 0 };
+      default:
+        return s;
+    }
+  }
+
+  function bump(counts, i) {
+    const copy = counts.slice();
+    copy[i] += 1;
+    return copy;
+  }
+
+  // On the top rung with its target met: the streak shown is consolidation
+  // now, not progress towards a climb.
+  function isConsolidating(s) {
+    return s.rung === s.rungCount - 1 && s.streak >= s.target;
+  }
+
+  return { createSession, reduce, isConsolidating };
+})();
+
+// ─── Ladder logic tests ───────────────────────────────────────────────────────
+//
+// The core rules, checked against LadderLogic alone. In the browser console:
+//   runLadderTests()
+// prints one line per rule and returns true if every check passed.
+
+function runLadderTests() {
+  const { createSession, reduce, isConsolidating } = LadderLogic;
+  const play = (s, ...types) => types.reduce((state, type) => reduce(state, { type }), s);
+  const results = [];
+
+  function check(rule, fn) {
+    try { fn(); results.push({ rule, ok: true }); }
+    catch (e) { results.push({ rule, ok: false, why: e.message }); }
+  }
+  function expect(actual, expected, what) {
+    const a = JSON.stringify(actual), b = JSON.stringify(expected);
+    if (a !== b) throw new Error(`${what}: expected ${b}, got ${a}`);
+  }
+  function same(actual, expected, what) {
+    if (actual !== expected) throw new Error(`${what}: the state changed`);
+  }
+  // A state without its undo history, keys in a fixed order, for comparing.
+  function bare(state) {
+    const { past, ...rest } = state;
+    return Object.keys(rest).sort().reduce((o, k) => { o[k] = rest[k]; return o; }, {});
+  }
+
+  // Rung numbers here are 0-based, as inside LadderLogic: rung 0 is rung 1.
+
+  check('climbing: a full streak moves up one rung and the streak restarts', () => {
+    let s = play(createSession(3, 3), 'YES', 'YES');
+    expect([s.rung, s.streak], [0, 2], 'after 2 of 3');
+    s = play(s, 'YES');
+    expect([s.rung, s.streak, s.furthest], [1, 0, 1], 'after 3 of 3');
+  });
+
+  check('dropping: a miss goes down one rung and the streak restarts', () => {
+    let s = play(createSession(3, 2), 'YES', 'YES', 'YES');    // rung 1, streak 1
+    s = play(s, 'NO');
+    expect([s.rung, s.streak], [0, 0], 'after the miss');
+    expect([s.attempts[1], s.misses[1]], [2, 1], 'counted on the rung it happened on');
+  });
+
+  check('rung-1 miss: stays on rung 1 and the streak restarts', () => {
+    const s = play(createSession(3, 5), 'YES', 'YES', 'NO');
+    expect([s.rung, s.streak, s.misses[0]], [0, 0, 1], 'after the miss');
+  });
+
+  check('no manual up: only a full streak climbs; stepping down works', () => {
+    const s = play(createSession(3, 2), 'YES');
+    ['UP', 'STEP_UP', 'CLIMB', 'NEXT', undefined].forEach(type => same(reduce(s, { type }), s, String(type)));
+    const down = play(createSession(3, 2), 'YES', 'YES', 'YES', 'STEP_DOWN');   // from rung 1, streak 1
+    expect([down.rung, down.streak], [0, 0], 'after stepping down');
+    same(reduce(down, { type: 'STEP_DOWN' }), down, 'stepping down from rung 1');
+  });
+
+  check('undo across a rung change puts rung, streak and counts back', () => {
+    const before = play(createSession(3, 2), 'YES');      // rung 0, streak 1
+    const climbed = play(before, 'YES');                  // rung 1, streak 0
+    expect(bare(reduce(climbed, { type: 'UNDO' })), bare(before), 'undoing the climb');
+    const dropped = play(climbed, 'YES', 'NO');           // rung 1 streak 1, then down to rung 0
+    const undone = reduce(dropped, { type: 'UNDO' });
+    expect([undone.rung, undone.streak, undone.reps, undone.misses[1]], [1, 1, 3, 0], 'undoing the drop');
+    let s = dropped;
+    while (s.past.length) s = reduce(s, { type: 'UNDO' });
+    expect(bare(s), bare(createSession(3, 2)), 'undone all the way back to the start');
+    same(reduce(s, { type: 'UNDO' }), s, 'undo with nothing left to undo');
+  });
+
+  check('top rung: clearing it stays put and keeps counting as consolidation', () => {
+    let s = play(createSession(2, 2), 'YES', 'YES', 'YES', 'YES');   // climb, then clear the top
+    expect([s.rung, s.streak, s.topCleared, s.consolidation], [1, 2, true, 0], 'on clearing');
+    s = play(s, 'YES', 'YES');
+    expect([s.rung, s.streak, s.consolidation, isConsolidating(s)], [1, 4, 2, true], 'two reps later');
+    s = play(s, 'NO');
+    expect([s.rung, s.streak, s.topCleared], [0, 0, true], 'a miss still drops a rung');
+  });
+
+  check('reduce never modifies the state it is given', () => {
+    const s = play(createSession(3, 2), 'YES', 'YES', 'NO');
+    const before = JSON.stringify(s);
+    ['YES', 'NO', 'STEP_DOWN', 'UNDO'].forEach(type => reduce(s, { type }));
+    expect(JSON.stringify(s), before, 'state after four actions');
+  });
+
+  results.forEach(r => console.log(`${r.ok ? '✓' : '✗'} ${r.rule}${r.ok ? '' : ` — ${r.why}`}`));
+  const failed = results.filter(r => !r.ok).length;
+  console.log(failed ? `${failed} of ${results.length} failed` : `All ${results.length} passed`);
+  return failed === 0;
+}
+
+// ─── Storage ──────────────────────────────────────────────────────────────────
+//
+// Everything lives under one localStorage key as a single versioned object:
+//
+//   { version, ladders, sessions, settings }
+//
+//   ladder   { id, name, focus, target, rungs: [{ id, name, intention, placeholder }] }
+//            rungs[0] is the bottom rung. `placeholder` marks an intention the
+//            app wrote rather than the player; editing it clears the flag.
+//   session { id, ladderId, ladderName, startedAt, endedAt (ISO strings),
+//            plannedSec, actualSec (time not paused), endedEarly, target,
+//            reps, yes, yesRate (0–1), furthestRung (1-based), rungCount,
+//            topCleared, consolidation,
+//            rungs: [{ id, name, attempts, misses }] }   bottom rung first
+//   settings { timer: '5' | '10' | 'custom', customMinutes }
+//
+// The session in progress is kept separately (LIVE_KEY) so a reload — iOS
+// throwing the page away in the background, say — can pick it up again. Every
+// read and write is guarded: Private Browsing or a full store should cost the
+// saving, never the session.
+
+const DATA_KEY = 'learningLadder:data';
+const LIVE_KEY = 'learningLadder:live';
+const THEME_KEY = 'learningLadder:theme';
+const SCHEMA_VERSION = 1;
+
+let data = null;
+let storageOk = true;
+let saveTimer = null;
+
+function uid(prefix) {
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// The first-launch ladder. Its intentions are stand-ins, flagged so the editor
+// says so until they're rewritten.
+function seedData() {
+  const rung = (name, intention) => ({ id: uid('r'), name, intention, placeholder: true });
+  return {
+    version: SCHEMA_VERSION,
+    ladders: [{
+      id: uid('l'),
+      name: 'The Drop',
+      focus: '',
+      target: 10,
+      rungs: [
+        rung('BCH breath', 'Notice the whole breath, start to finish.'),
+        rung('Elbows and rotator cuff', 'Elbows and cuff in awareness through the whole move.'),
+        rung('Elbows + rotator cuff + leadpipe hover', 'Elbows and cuff still in awareness as the leadpipe hovers.'),
+        rung('Elbows + rotator cuff + leadpipe no note', 'Elbows and cuff still in awareness, leadpipe in place, no note.'),
+        rung('Elbows + rotator cuff + leadpipe note', 'Elbows and cuff still in awareness as the note begins.'),
+      ],
+    }],
+    sessions: [],
+    settings: { timer: '10', customMinutes: 15 },
+  };
+}
+
+function loadData() {
+  let raw = null;
+  try { raw = localStorage.getItem(DATA_KEY); }
+  catch (e) { storageOk = false; }
+  if (raw === null) {
+    const fresh = seedData();
+    writeData(fresh);
+    return fresh;
+  }
+  try {
+    return normalise(migrate(JSON.parse(raw)));
+  } catch (e) {
+    // Unreadable. Set the original aside rather than overwrite it, then start
+    // from the seed so the app still works.
+    try { localStorage.setItem(`${DATA_KEY}:unreadable:${Date.now()}`, raw); } catch (e2) {}
+    notice('Saved data could not be read, so the app started fresh. The old data was set aside in storage, not deleted.');
+    const fresh = seedData();
+    writeData(fresh);
+    return fresh;
+  }
+}
+
+function writeData(d) {
+  try {
+    localStorage.setItem(DATA_KEY, JSON.stringify(d));
+    storageOk = true;
+  } catch (e) {
+    storageOk = false;
+  }
+  return storageOk;
+}
+
+function saveData() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  if (!writeData(data)) renderNotice();
+}
+
+// For typing: one write when the typing stops, not one per keystroke.
+function saveSoon() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveData, 400);
+}
+
+function flushSave() {
+  if (saveTimer) saveData();
+}
+
+// Brings older saved shapes up to SCHEMA_VERSION one step at a time. Version 1
+// is the first. When the shape changes: bump SCHEMA_VERSION and add a step,
+//   if (d.version === 1) { ...reshape d...; d.version = 2; }
+function migrate(d) {
+  if (!isObject(d)) throw new Error("it isn't Learning Ladder data");
+  d = { ...d, version: Number.isInteger(d.version) ? d.version : 1 };
+  if (d.version > SCHEMA_VERSION) throw new Error('it was saved by a newer version of Learning Ladder');
+  return d;
+}
+
+// Checks and repairs data from storage or an imported file, so the rest of
+// the app can trust its shape. Throws if there's nothing ladder-like in it.
+function normalise(d) {
+  if (!Array.isArray(d.ladders)) throw new Error('there are no ladders in it');
+  const seen = new Set();
+  const idFor = (id, prefix) => {
+    let v = typeof id === 'string' && id ? id : uid(prefix);
+    if (seen.has(v)) v = uid(prefix);
+    seen.add(v);
+    return v;
+  };
+
+  const ladders = d.ladders.filter(isObject).map(l => {
+    const rungs = (Array.isArray(l.rungs) ? l.rungs : []).filter(isObject).map(r => ({
+      id: idFor(r.id, 'r'),
+      name: text(r.name),
+      intention: text(r.intention),
+      placeholder: r.placeholder === true,
+    }));
+    if (!rungs.length) rungs.push(blankRung());
+    return {
+      id: idFor(l.id, 'l'),
+      name: text(l.name).trim() || 'Untitled ladder',
+      focus: text(l.focus),
+      target: clampInt(l.target, 1, 100, 10),
+      rungs,
+    };
+  });
+
+  const sessions = (Array.isArray(d.sessions) ? d.sessions : [])
+    .filter(s => isObject(s) && Array.isArray(s.rungs) && s.rungs.length && !isNaN(Date.parse(s.startedAt)))
+    .map(s => {
+      const rungs = s.rungs.map(r => isObject(r) ? r : {}).map(r => ({
+        id: text(r.id),
+        name: text(r.name),
+        attempts: clampInt(r.attempts, 0, 1e6, 0),
+        misses: clampInt(r.misses, 0, 1e6, 0),
+      }));
+      const reps = clampInt(s.reps, 0, 1e6, 0);
+      const yes = clampInt(s.yes, 0, reps, 0);
+      const started = new Date(s.startedAt).toISOString();
+      return {
+        id: idFor(s.id, 's'),
+        ladderId: text(s.ladderId),
+        ladderName: text(s.ladderName) || 'Untitled ladder',
+        startedAt: started,
+        endedAt: isNaN(Date.parse(s.endedAt)) ? started : new Date(s.endedAt).toISOString(),
+        plannedSec: clampInt(s.plannedSec, 0, 1e6, 0),
+        actualSec: clampInt(s.actualSec, 0, 1e7, 0),
+        endedEarly: s.endedEarly === true,
+        target: clampInt(s.target, 1, 100, 10),
+        reps,
+        yes,
+        yesRate: reps ? Math.round(yes / reps * 1000) / 1000 : 0,
+        furthestRung: clampInt(s.furthestRung, 1, rungs.length, 1),
+        rungCount: rungs.length,
+        topCleared: s.topCleared === true,
+        consolidation: clampInt(s.consolidation, 0, 1e6, 0),
+        rungs,
+      };
+    })
+    .sort((a, b) => (a.startedAt < b.startedAt ? -1 : a.startedAt > b.startedAt ? 1 : 0));
+
+  const st = isObject(d.settings) ? d.settings : {};
+  return {
+    version: SCHEMA_VERSION,
+    ladders,
+    sessions,
+    settings: {
+      timer: ['5', '10', 'custom'].includes(st.timer) ? st.timer : '10',
+      customMinutes: clampInt(st.customMinutes, 1, 180, 15),
+    },
+  };
+}
+
+function saveLive() {
+  if (!live) return;
+  sessionUi.lastLiveSave = Date.now();
+  try { localStorage.setItem(LIVE_KEY, JSON.stringify({ ...live, savedAt: Date.now() })); } catch (e) {}
+}
+
+function clearLive() {
+  try { localStorage.removeItem(LIVE_KEY); } catch (e) {}
+}
+
+function loadLive() {
+  try {
+    const raw = localStorage.getItem(LIVE_KEY);
+    if (!raw) return null;
+    const l = JSON.parse(raw);
+    const s = l && l.state;
+    const ok = s && Array.isArray(l.rungs) && l.rungs.length === s.rungCount &&
+      Array.isArray(s.past) && Number.isInteger(s.rung) && s.rung >= 0 && s.rung < s.rungCount &&
+      Number.isFinite(l.plannedMs) && Number.isFinite(l.activeMs);
+    if (ok) return l;
+  } catch (e) {}
+  clearLive();
+  return null;
+}
+
+// Asks the browser not to evict this site's storage under pressure. Safari may
+// or may not grant it; either way nothing else depends on the answer.
+function requestPersistence() {
+  try {
+    const sm = navigator.storage;
+    if (!sm || !sm.persist) return;
+    (sm.persisted ? sm.persisted() : Promise.resolve(false))
+      .then(already => already || sm.persist())
+      .catch(() => {});
+  } catch (e) {}
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const $ = id => document.getElementById(id);
+
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function isObject(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
+function text(v) { return typeof v === 'string' ? v : typeof v === 'number' ? String(v) : ''; }
+
+function clampInt(v, lo, hi, fallback) {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN;
+  return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : fallback;
+}
+
+function plural(n, one, many) { return `${n} ${n === 1 ? one : many || one + 's'}`; }
+function pct(rate) { return Math.round(rate * 100) + '%'; }
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function fmtClock(totalSec) {
+  const sec = Math.max(0, Math.round(totalSec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h ? `${h}:${pad2(m)}:${pad2(s)}` : `${m}:${pad2(s)}`;
+}
+function fmtMinutes(sec) { return `${Math.round(sec / 6) / 10} min`; }
+function fmtDay(iso) {
+  return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+}
+function fmtTimeOfDay(iso) {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
+
+function rungLabel(name, i) { return (name || '').trim() || `Rung ${i + 1}`; }
+function blankRung() { return { id: uid('r'), name: '', intention: '', placeholder: false }; }
+
+// The rung(s) with the most misses, top rung first; null if there were none.
+function mostMissed(rungs) {
+  const count = Math.max(0, ...rungs.map(r => r.misses));
+  if (!count) return null;
+  const list = rungs.map((r, i) => ({ n: i + 1, name: r.name, misses: r.misses }))
+    .filter(r => r.misses === count).reverse();
+  return { count, list };
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+//
+// Five screens in one page, one showing at a time. Nothing goes into browser
+// history: a back-swipe in the middle of a session should leave the page (the
+// session is saved and comes back paused), not switch screens underneath it.
+
+const view = {
+  screen: 'home',
+  ladderId: null,          // the ladder open on the ladder screen
+  editing: false,
+  historyLadderId: null,
+  historyBack: 'home',     // where History's back button goes
+  summary: null,           // { record, saved, minutes } for the summary screen
+};
+
+function show(screen) {
+  view.screen = screen;
+  document.querySelectorAll('[data-screen]').forEach(el => { el.hidden = el.dataset.screen !== screen; });
+  document.documentElement.classList.toggle('in-session', screen === 'session');
+  window.scrollTo(0, 0);
+}
+
+function goHome() {
+  view.editing = false;
+  renderHome();
+  show('home');
+}
+
+// ─── Ladders screen ───────────────────────────────────────────────────────────
+
+let noticeText = '';
+let noticeTimer = null;
+
+function renderHome() {
+  $('ladder-list').innerHTML = data.ladders.length
+    ? data.ladders.map(ladderCardHtml).join('')
+    : '<li class="empty">No ladders yet.</li>';
+  renderThemeChoice();
+  renderNotice();
+}
+
+function ladderCardHtml(l) {
+  const last = latestSession(l.id);
+  return `
+    <li><button class="card" data-action="open-ladder" data-id="${esc(l.id)}">
+      <span class="card-title">${esc(l.name)}</span>
+      ${l.focus ? `<span class="card-focus">${esc(l.focus)}</span>` : ''}
+      <span class="card-meta">${plural(l.rungs.length, 'rung')} · ${l.target} clean in a row to climb</span>
+      ${last ? `<span class="card-meta">Last: ${esc(fmtDay(last.startedAt))} · reached ${last.furthestRung} of ${last.rungCount}${last.topCleared ? ', top cleared' : ''}</span>` : ''}
+    </button></li>`;
+}
+
+function latestSession(ladderId) {
+  for (let i = data.sessions.length - 1; i >= 0; i--) {
+    if (data.sessions[i].ladderId === ladderId) return data.sessions[i];
+  }
+  return null;
+}
+
+function newLadder() {
+  const l = { id: uid('l'), name: 'New ladder', focus: '', target: 10, rungs: [blankRung()] };
+  data.ladders.push(l);
+  saveData();
+  openLadder(l.id, true);
+  // Still inside the tap, so iOS will bring the keyboard up.
+  const name = document.querySelector('#ladder-body [data-field="name"]');
+  name.focus();
+  name.setSelectionRange(0, name.value.length);
+}
+
+function notice(msg, ms) {
+  noticeText = msg;
+  clearTimeout(noticeTimer);
+  if (ms) noticeTimer = setTimeout(() => { noticeText = ''; renderNotice(); }, ms);
+  renderNotice();
+}
+
+function renderNotice() {
+  const msg = storageOk ? noticeText
+    : "This browser isn't letting the app save (Private Browsing?). Ladders and history will be lost when the page closes.";
+  $('home-notice').textContent = msg;
+  $('home-notice').hidden = !msg;
+}
+
+// ─── Ladder screen: view, editor, start ───────────────────────────────────────
+//
+// Rungs are drawn as a ladder: top rung at the top, rung 1 at the bottom where
+// every session starts. So ↑ and ↓ in the editor mean up and down the ladder.
+// Edits save as they're typed.
+
+function currentLadder() { return data.ladders.find(l => l.id === view.ladderId) || null; }
+
+function openLadder(id, editing) {
+  view.ladderId = id;
+  view.editing = !!editing;
+  show('ladder');
+  renderLadder();
+}
+
+function renderLadder() {
+  const l = currentLadder();
+  if (!l) { goHome(); return; }
+  $('screen-ladder').classList.toggle('editing', view.editing);
+  $('edit-toggle').textContent = view.editing ? 'Done' : 'Edit';
+  $('start-dock').hidden = view.editing;
+  $('ladder-body').innerHTML = view.editing ? editorHtml(l) : ladderViewHtml(l);
+  if (view.editing) $('ladder-body').querySelectorAll('textarea').forEach(autosize);
+  else renderTimerChoice();
+}
+
+function ladderViewHtml(l) {
+  const rows = l.rungs.map((r, i) => `
+    <li class="rung-row${i === 0 ? ' base' : ''}">
+      <span class="rung-num">${i + 1}</span>
+      <div>
+        <div class="rung-name">${esc(rungLabel(r.name, i))}</div>
+        ${r.intention ? `<div class="rung-intent${r.placeholder ? ' is-placeholder' : ''}">${esc(r.intention)}${r.placeholder ? ' <span class="tag">placeholder</span>' : ''}</div>` : ''}
+      </div>
+    </li>`).reverse().join('');
+  return `
+    <div class="ladder-head">
+      <h1 class="ladder-title">${esc(l.name)}</h1>
+      ${l.focus ? `<p class="ladder-focus">${esc(l.focus)}</p>` : ''}
+      <p class="ladder-rule">${l.target} clean in a row to climb · a miss drops one rung · always starts at rung 1</p>
+    </div>
+    ${l.rungs.some(r => r.placeholder) ? '<p class="hint">Intentions marked <span class="tag">placeholder</span> are stand-ins. Tap Edit to put them in your own words.</p>' : ''}
+    <ul class="rung-list" aria-label="Rungs, top first">${rows}</ul>
+    <button class="quiet back" data-action="ladder-history">History for this ladder</button>`;
+}
+
+function editorHtml(l) {
+  const top = l.rungs.length - 1;
+  const cards = l.rungs.map((r, i) => `
+    <li class="rung-card" data-rung-id="${esc(r.id)}">
+      <div class="rung-card-head">
+        <span class="label">Rung ${i + 1}${i === 0 ? ' · start' : ''}${i === top && top > 0 ? ' · top' : ''}</span>
+        <div class="rung-tools">
+          <button class="icon-btn" data-action="rung-up" aria-label="Move up the ladder"${i === top ? ' disabled' : ''}>↑</button>
+          <button class="icon-btn" data-action="rung-down" aria-label="Move down the ladder"${i === 0 ? ' disabled' : ''}>↓</button>
+          <button class="icon-btn danger" data-action="rung-delete" aria-label="Delete rung"${top === 0 ? ' disabled' : ''}>✕</button>
+        </div>
+      </div>
+      <input type="text" data-rung-field="name" value="${esc(r.name)}" placeholder="Rung name" aria-label="Rung ${i + 1} name" autocomplete="off" enterkeyhint="done">
+      <div class="intent-label">Intention${r.placeholder ? ' <span class="tag">placeholder</span>' : ''}</div>
+      <textarea rows="1" data-rung-field="intention" class="${r.placeholder ? 'is-placeholder' : ''}" placeholder="One line: what makes this rep a Yes" aria-label="Rung ${i + 1} intention" enterkeyhint="done">${esc(r.intention)}</textarea>
+    </li>`).reverse().join('');
+  return `
+    <label class="field"><span class="label">Ladder name</span>
+      <input type="text" data-field="name" value="${esc(l.name)}" autocomplete="off" enterkeyhint="done"></label>
+    <label class="field"><span class="label">Focus <span class="opt">(optional)</span></span>
+      <input type="text" data-field="focus" value="${esc(l.focus)}" placeholder="What this ladder is for" autocomplete="off" enterkeyhint="done"></label>
+    <label class="field inline"><span>Clean reps in a row to climb</span>
+      <input type="number" data-field="target" value="${l.target}" min="1" max="100" inputmode="numeric"></label>
+    <div class="rungs-head">
+      <span class="label">Rungs · top first</span>
+      <button class="btn small" data-action="add-rung">+ Add rung on top</button>
+    </div>
+    <ul class="rung-edit-list">${cards}</ul>
+    <div class="editor-foot">
+      <button class="btn wide" data-action="duplicate-ladder">Duplicate ladder</button>
+      <button class="btn wide danger" data-action="delete-ladder">Delete ladder</button>
+    </div>`;
+}
+
+function autosize(t) {
+  t.style.height = 'auto';
+  t.style.height = t.scrollHeight + 2 + 'px';
+}
+
+function toggleEdit() {
+  if (view.editing) finishEditing();
+  else view.editing = true;
+  renderLadder();
+}
+
+function finishEditing() {
+  const l = currentLadder();
+  view.editing = false;
+  if (!l) return;
+  l.name = l.name.trim() || 'Untitled ladder';
+  l.focus = l.focus.trim();
+  l.rungs.forEach(r => { r.name = r.name.trim(); r.intention = r.intention.trim(); });
+  saveData();
+}
+
+function onEditorInput(e) {
+  const l = currentLadder();
+  const t = e.target;
+  if (!l || !view.editing) return;
+  if (t.dataset.field === 'name') l.name = t.value;
+  else if (t.dataset.field === 'focus') l.focus = t.value;
+  else if (t.dataset.field === 'target') {
+    const n = parseInt(t.value, 10);
+    if (n >= 1 && n <= 100) l.target = n;
+  } else if (t.dataset.rungField) {
+    const r = l.rungs[rungIndex(l, t)];
+    if (!r) return;
+    if (t.dataset.rungField === 'name') {
+      r.name = t.value;
+    } else {
+      // One line only. An intention is read at a glance between reps.
+      if (t.value.includes('\n')) t.value = t.value.replace(/\s*\n+\s*/g, ' ');
+      r.intention = t.value;
+      if (r.placeholder) {
+        r.placeholder = false;
+        t.classList.remove('is-placeholder');
+        const tag = t.parentElement.querySelector('.intent-label .tag');
+        if (tag) tag.remove();
+      }
+      autosize(t);
+    }
+  } else {
+    return;
+  }
+  saveSoon();
+}
+
+function onEditorChange(e) {
+  const l = currentLadder();
+  const t = e.target;
+  if (!l || !view.editing) return;
+  if (t.dataset.field === 'target') {
+    l.target = clampInt(t.value, 1, 100, l.target);
+    t.value = l.target;
+  }
+  saveData();
+}
+
+function onEditorKeydown(e) {
+  // Return closes the keyboard rather than adding a line.
+  if (e.key === 'Enter' && e.target.matches('input, textarea')) {
+    e.preventDefault();
+    e.target.blur();
+  }
+}
+
+function rungIndex(l, el) {
+  const card = el.closest('[data-rung-id]');
+  return card ? l.rungs.findIndex(r => r.id === card.dataset.rungId) : -1;
+}
+
+function rungCard(id) {
+  return [...document.querySelectorAll('[data-rung-id]')].find(el => el.dataset.rungId === id);
+}
+
+function moveRung(btn, by) {
+  const l = currentLadder();
+  const i = rungIndex(l, btn);
+  const j = i + by;
+  if (i < 0 || j < 0 || j >= l.rungs.length) return;
+  [l.rungs[i], l.rungs[j]] = [l.rungs[j], l.rungs[i]];
+  saveData();
+  renderLadder();
+  rungCard(l.rungs[j].id).scrollIntoView({ block: 'nearest' });
+}
+
+function deleteRung(btn) {
+  const l = currentLadder();
+  const i = rungIndex(l, btn);
+  if (i < 0 || l.rungs.length === 1) return;
+  const r = l.rungs[i];
+  const name = r.name.trim();
+  if ((name || r.intention.trim()) && !confirm(`Delete rung ${i + 1}${name ? `, “${name}”` : ''}?`)) return;
+  l.rungs.splice(i, 1);
+  saveData();
+  renderLadder();
+}
+
+function addRung() {
+  const l = currentLadder();
+  const r = blankRung();
+  l.rungs.push(r);
+  saveData();
+  renderLadder();
+  const card = rungCard(r.id);
+  card.scrollIntoView({ block: 'center' });
+  card.querySelector('input').focus();
+}
+
+function duplicateLadder() {
+  const l = currentLadder();
+  const copy = JSON.parse(JSON.stringify(l));
+  copy.id = uid('l');
+  copy.name = `${l.name} (copy)`;
+  copy.rungs.forEach(r => { r.id = uid('r'); });
+  data.ladders.splice(data.ladders.indexOf(l) + 1, 0, copy);
+  saveData();
+  openLadder(copy.id, true);
+}
+
+function deleteLadder() {
+  const l = currentLadder();
+  const n = data.sessions.filter(s => s.ladderId === l.id).length;
+  if (!confirm(`Delete “${l.name}”?${n ? `\n\nIts ${plural(n, 'session')} will stay in History.` : ''}`)) return;
+  data.ladders = data.ladders.filter(x => x !== l);
+  saveData();
+  goHome();
+}
+
+function renderTimerChoice() {
+  const st = data.settings;
+  document.querySelectorAll('[data-action="timer"]').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.value === st.timer));
+  });
+  $('custom-row').hidden = st.timer !== 'custom';
+  $('custom-min').value = st.customMinutes;
+}
+
+function chooseTimer(value) {
+  data.settings.timer = value;
+  saveData();
+  renderTimerChoice();
+}
+
+function chosenMinutes() {
+  const st = data.settings;
+  return st.timer === 'custom' ? st.customMinutes : Number(st.timer);
+}
+
+// ─── Session ──────────────────────────────────────────────────────────────────
+//
+// `live` is the session in progress. It's plain data so it can be written to
+// storage after every answer and picked up again after a reload:
+//   ladderId, ladderName, rungs   the ladder as it was when the session started
+//   plannedMs                     the length chosen
+//   startedAt                     epoch ms
+//   activeMs, runningSince        the clock: time banked so far, plus the stretch
+//                                 running since `runningSince` (epoch ms; null
+//                                 while paused)
+//   timeUp                        time has run out; the next answer ends it
+//   state                         the LadderLogic state
+// `sessionUi` holds what only matters while this page is open.
+
+const ANSWER_LOCK_MS = 450;    // a second Yes/No inside this is the same tap twice
+const CONTROL_LOCK_MS = 250;
+
+let live = null;
+let sessionUi = freshSessionUi();
+let tickTimer = null;
+
+function freshSessionUi() {
+  return {
+    confirmingEnd: false,
+    pauseNote: '',
+    lastAnswerAt: -Infinity,
+    lastControlAt: -Infinity,
+    shownRung: null,
+    lastWakeCheck: 0,
+    lastLiveSave: 0,
+  };
+}
+
+function startSession(ladderId, minutes) {
+  const l = data.ladders.find(x => x.id === ladderId);
+  if (!l) { goHome(); return; }
+  // This runs inside the tap on Start or Run again: the moment iOS allows
+  // audio to be unlocked for an end tone that plays, untouched, minutes later.
+  unlockAudio();
+  live = {
+    ladderId: l.id,
+    ladderName: l.name,
+    rungs: l.rungs.map(r => ({ id: r.id, name: r.name.trim(), intention: r.intention.trim() })),
+    plannedMs: Math.round(minutes * 60000),
+    startedAt: Date.now(),
+    activeMs: 0,
+    runningSince: Date.now(),
+    timeUp: false,
+    state: LadderLogic.createSession(l.rungs.length, l.target),
+  };
+  enterSession('');
+}
+
+function enterSession(pauseNote) {
+  sessionUi = freshSessionUi();
+  sessionUi.pauseNote = pauseNote;
+  show('session');
+  renderSession();
+  saveLive();
+  keepAwake(true);
+  clearInterval(tickTimer);
+  tickTimer = setInterval(tick, 250);
+}
+
+function isPaused() { return !!live && live.runningSince === null; }
+
+function elapsedMs() {
+  return live.activeMs + (live.runningSince === null ? 0 : Date.now() - live.runningSince);
+}
+
+function tick() {
+  if (!live) return;
+  if (!live.timeUp && !isPaused() && elapsedMs() >= live.plannedMs) {
+    // Time's up, but the rep in hand gets finished: the next answer ends it.
+    live.timeUp = true;
+    playEndTone();
+    saveLive();
+    renderSession();
+    return;
+  }
+  paintTime();
+  const now = Date.now();
+  if (now - sessionUi.lastWakeCheck > 30000) {
+    sessionUi.lastWakeCheck = now;
+    acquireWakeLock();
+  }
+  if (!isPaused() && now - sessionUi.lastLiveSave > 15000) saveLive();
+}
+
+function answer(type) {
+  if (!live || isPaused() || sessionUi.confirmingEnd) return;
+  const now = performance.now();
+  if (now - sessionUi.lastAnswerAt < ANSWER_LOCK_MS) return;
+  sessionUi.lastAnswerAt = now;
+  unlockAudio();
+  acquireWakeLock();
+  flash(type === 'YES' ? 'btn-yes' : 'btn-no');
+  if (type === 'YES') playYesSound();    // a No stays silent
+  live.state = LadderLogic.reduce(live.state, { type });
+  if (live.timeUp) { finishSession(false); return; }
+  saveLive();
+  renderSession();
+}
+
+function control(fn) {
+  const now = performance.now();
+  if (now - sessionUi.lastControlAt < CONTROL_LOCK_MS) return;
+  sessionUi.lastControlAt = now;
+  fn();
+}
+
+function sessionAction(type) {
+  if (!live) return;
+  const next = LadderLogic.reduce(live.state, { type });
+  if (next === live.state) return;
+  live.state = next;
+  saveLive();
+  renderSession();
+}
+
+function pause(note) {
+  if (!live || isPaused()) return;
+  live.activeMs += Date.now() - live.runningSince;
+  live.runningSince = null;
+  sessionUi.pauseNote = note || '';
+  saveLive();
+  renderSession();
+}
+
+function resume() {
+  if (!live || !isPaused()) return;
+  unlockAudio();
+  acquireWakeLock();
+  live.runningSince = Date.now();
+  sessionUi.pauseNote = '';
+  saveLive();
+  renderSession();
+}
+
+function finishSession(endedEarly) {
+  clearInterval(tickTimer);
+  tickTimer = null;
+  const s = live.state;
+  const now = Date.now();
+  const activeMs = live.activeMs + (live.runningSince === null ? 0 : now - live.runningSince);
+  const record = {
+    id: uid('s'),
+    ladderId: live.ladderId,
+    ladderName: live.ladderName,
+    startedAt: new Date(live.startedAt).toISOString(),
+    endedAt: new Date(now).toISOString(),
+    plannedSec: Math.round(live.plannedMs / 1000),
+    actualSec: Math.round(activeMs / 1000),
+    endedEarly,
+    target: s.target,
+    reps: s.reps,
+    yes: s.yes,
+    yesRate: s.reps ? Math.round(s.yes / s.reps * 1000) / 1000 : 0,
+    furthestRung: s.furthest + 1,
+    rungCount: s.rungCount,
+    topCleared: s.topCleared,
+    consolidation: s.consolidation,
+    rungs: live.rungs.map((r, i) => ({ id: r.id, name: r.name, attempts: s.attempts[i], misses: s.misses[i] })),
+  };
+  // A session with no answers has nothing in it worth keeping.
+  const saved = record.reps > 0;
+  if (saved) {
+    data.sessions.push(record);
+    saveData();
+  }
+  view.summary = { record, saved, minutes: live.plannedMs / 60000 };
+  live = null;
+  clearLive();
+  keepAwake(false);
+  renderSummary();
+  show('summary');
+}
+
+function renderSession() {
+  if (!live) return;
+  const s = live.state;
+  const rung = live.rungs[s.rung];
+  const paused = isPaused();
+  $('screen-session').classList.toggle('time-up', live.timeUp);
+
+  $('s-pos').textContent = `Rung ${s.rung + 1} of ${s.rungCount}`;
+  $('s-name').textContent = rungLabel(rung.name, s.rung);
+  $('s-intent').textContent = rung.intention;
+  $('s-intent').hidden = !rung.intention;
+  $('s-streak-num').textContent = s.streak;
+  $('s-streak-of').textContent = LadderLogic.isConsolidating(s) ? 'clean · top rung cleared' : `/ ${s.target}`;
+
+  // A new rung slides in, so a changed name and intention get noticed before
+  // the next rep. The direction says which way the ladder went.
+  if (sessionUi.shownRung !== null && sessionUi.shownRung !== s.rung) {
+    const block = $('s-rung');
+    block.classList.remove('moved-up', 'moved-down');
+    void block.offsetWidth;    // restart the animation
+    block.classList.add(s.rung > sessionUi.shownRung ? 'moved-up' : 'moved-down');
+  }
+  sessionUi.shownRung = s.rung;
+
+  $('s-step-down').disabled = s.rung === 0;
+  $('s-undo').disabled = s.past.length === 0;
+  $('s-pause').textContent = paused ? 'Resume' : 'Pause';
+
+  $('s-end-cover').hidden = !sessionUi.confirmingEnd;
+  $('s-end-note').textContent = s.reps
+    ? `${plural(s.reps, 'rep')} so far. They'll be saved to History.`
+    : "Nothing answered yet, so there's nothing to save.";
+  $('s-pause-cover').hidden = !paused || sessionUi.confirmingEnd;
+  $('s-pause-note').textContent = sessionUi.pauseNote;
+  $('s-pause-note').hidden = !sessionUi.pauseNote;
+  paintTime();
+}
+
+function paintTime() {
+  const label = live.timeUp
+    ? 'Last rep'
+    : fmtClock(Math.ceil(Math.max(0, live.plannedMs - elapsedMs()) / 1000));
+  const el = $('s-time');
+  if (el.textContent !== label) el.textContent = label;
+}
+
+function flash(id) {
+  const b = $(id);
+  b.classList.add('flash');
+  setTimeout(() => b.classList.remove('flash'), 160);
+}
+
+// ─── Session: end tone ────────────────────────────────────────────────────────
+//
+// iOS only lets a page make sound from an AudioContext started inside a tap.
+// unlockAudio() runs in every session tap — Start, Run again, Resume and each
+// answer — so the context is still running when time runs out with nobody
+// touching the screen. Like all Web Audio on iOS, the tone is silenced by the
+// ring/silent switch.
+
+let audioCtx = null;
+
+function unlockAudio() {
+  try {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      audioCtx = new AC();
+      // A one-sample silent buffer played inside the tap is what actually
+      // opens the output on older iOS.
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioCtx.createBuffer(1, 1, 22050);
+      src.connect(audioCtx.destination);
+      src.start(0);
+    }
+    if (audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
+  } catch (e) {}
+}
+
+// Two soft bell strikes a fourth apart. The output hardware sleeps after a few
+// seconds of silence and swallows the start of whatever wakes it, so a breath
+// of inaudible noise goes first and the bell follows it in.
+function playEndTone() {
+  const ctx = audioCtx;
+  if (!ctx) return;
+  try {
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
+    const t0 = ctx.currentTime;
+    wakeOutput(ctx, t0);
+    const out = ctx.createGain();
+    out.gain.value = 0.7;
+    out.connect(ctx.destination);
+    strike(ctx, out, 659.25, t0 + 0.3, 0.32);   // E5
+    strike(ctx, out, 880.0, t0 + 0.85, 0.26);   // A5
+  } catch (e) {}
+}
+
+function strike(ctx, out, freq, t, peak) {
+  // [partial ratio, weight]. The upper partials die away sooner, as on a bell.
+  [[1, 1], [2, 0.22], [3.02, 0.07]].forEach(([ratio, weight]) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq * ratio;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(peak * weight, t + 0.025);
+    g.gain.setTargetAtTime(0, t + 0.025, 0.55 / ratio);
+    osc.connect(g);
+    g.connect(out);
+    osc.start(t);
+    osc.stop(t + 3.5);
+  });
+}
+
+// A short, bright pluck for a clean rep: quick attack, quick die-away, with a
+// soft octave on top so it sounds round rather than like a beep.
+function playYesSound() {
+  const ctx = audioCtx;
+  if (!ctx) return;
+  try {
+    const t = ctx.currentTime + 0.005;
+    [[1, 0.3, 0.09], [2, 0.08, 0.05]].forEach(([ratio, peak, decay]) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 1046.5 * ratio;   // C6
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(peak, t + 0.006);
+      g.gain.setTargetAtTime(0, t + 0.006, decay);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.6);
+    });
+  } catch (e) {}
+}
+
+function wakeOutput(ctx, t) {
+  const len = Math.floor(ctx.sampleRate * 0.6);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const g = ctx.createGain();
+  g.gain.value = 0.0001;    // about -80 dB: inaudible, but not the digital zero a device may skip
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(g);
+  g.connect(ctx.destination);
+  src.start(t);
+}
+
+// ─── Session: screen wake lock ────────────────────────────────────────────────
+//
+// Held for the whole session, paused or not. The system takes the lock back
+// whenever the page stops being frontmost, and on its own for calls and
+// notifications, and never hands it back unasked. So hold the intention
+// (`wantAwake`) and keep re-asking: on the lock's release, on
+// visibilitychange, on every answer, and every 30 s from the session tick.
+// Unsupported or refused (Low Power Mode refuses it on iOS): carry on
+// silently; the session works without it.
+
+let wakeLock = null;
+let wakePending = false;
+let wantAwake = false;
+
+async function acquireWakeLock() {
+  if (!wantAwake || wakeLock || wakePending || !('wakeLock' in navigator)) return;
+  if (document.visibilityState !== 'visible') return;    // the request would only be refused
+  wakePending = true;
+  try {
+    const lock = await navigator.wakeLock.request('screen');
+    if (!wantAwake) { lock.release().catch(() => {}); return; }
+    wakeLock = lock;
+    lock.addEventListener('release', () => {
+      if (wakeLock === lock) wakeLock = null;
+      if (wantAwake) setTimeout(acquireWakeLock, 300);
+    });
+  } catch (e) {
+    // Unsupported, refused or interrupted: try again at the next chance.
+  } finally {
+    wakePending = false;
+  }
+}
+
+function keepAwake(on) {
+  wantAwake = on;
+  if (on) { acquireWakeLock(); return; }
+  const lock = wakeLock;
+  wakeLock = null;
+  if (lock) lock.release().catch(() => {});
+}
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+
+function renderSummary() {
+  const { record: r, saved } = view.summary;
+  const reached = r.rungs[r.furthestRung - 1];
+  const missed = mostMissed(r.rungs);
+  $('sum-kicker').textContent = r.endedEarly ? 'Ended early' : 'Session complete';
+  $('sum-title').textContent = r.ladderName;
+  $('sum-sub').textContent = `${fmtMinutes(r.plannedSec)} planned · ${fmtDay(r.startedAt)}, ${fmtTimeOfDay(r.startedAt)}`;
+  $('sum-stats').innerHTML = [
+    statHtml('Time spent', fmtClock(r.actualSec)),
+    statHtml('Total reps', r.reps),
+    statHtml('Yes rate', r.reps ? pct(r.yesRate) : '–', r.reps ? `${r.yes} of ${r.reps}` : ''),
+    statHtml('Furthest rung', `${r.furthestRung} of ${r.rungCount}`, r.topCleared ? 'top rung cleared' : ''),
+    statHtml('Reached', rungLabel(reached.name, r.furthestRung - 1),
+      r.consolidation ? `${plural(r.consolidation, 'consolidation rep')} on the top rung` : '', true),
+    statHtml('Most misses',
+      missed ? missed.list.map(m => `Rung ${m.n} · ${rungLabel(m.name, m.n - 1)}`).join(' / ') : 'No misses',
+      missed ? `${plural(missed.count, 'miss', 'misses')}${missed.list.length > 1 ? ' each' : ''}` : '', true),
+  ].join('');
+  $('sum-note').textContent = saved ? '' : 'No reps were answered, so this session wasn’t saved.';
+  $('sum-note').hidden = saved;
+}
+
+function statHtml(label, value, detail, full) {
+  return `
+    <div class="stat${full ? ' full' : ''}">
+      <div class="label">${esc(label)}</div>
+      <div class="stat-value">${esc(value)}</div>
+      ${detail ? `<div class="stat-detail">${esc(detail)}</div>` : ''}
+    </div>`;
+}
+
+function runAgain() {
+  const { record, minutes } = view.summary;
+  startSession(record.ladderId, minutes);
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+//
+// One ladder at a time: an overview that answers "where do I stall?", then the
+// sessions, newest first, each opening to its per-rung attempts and misses.
+// Rungs are matched across sessions by id, so renaming or reordering a rung
+// doesn't split its history.
+
+function openHistory(ladderId, from) {
+  view.historyBack = from;
+  view.historyLadderId = ladderId;
+  renderHistory();
+  show('history');
+}
+
+// Every current ladder, plus deleted ones that still have sessions.
+function historyGroups() {
+  const groups = new Map();
+  data.ladders.forEach(l => groups.set(l.id, { id: l.id, name: l.name, ladder: l, sessions: [] }));
+  data.sessions.forEach(s => {
+    if (!groups.has(s.ladderId)) groups.set(s.ladderId, { id: s.ladderId, name: s.ladderName, ladder: null, sessions: [] });
+    const g = groups.get(s.ladderId);
+    if (!g.ladder) g.name = s.ladderName;
+    g.sessions.push(s);
+  });
+  return [...groups.values()].filter(g => g.ladder || g.sessions.length);
+}
+
+function renderHistory() {
+  const groups = historyGroups();
+  const select = $('h-ladder');
+  if (!data.sessions.length) {
+    select.hidden = true;
+    $('h-body').innerHTML = '<p class="empty">No sessions yet. Every session you finish or end shows up here.</p>';
+    return;
+  }
+  if (!groups.some(g => g.id === view.historyLadderId)) {
+    view.historyLadderId = data.sessions[data.sessions.length - 1].ladderId;
+  }
+  select.hidden = false;
+  select.innerHTML = groups.map(g => `
+    <option value="${esc(g.id)}"${g.id === view.historyLadderId ? ' selected' : ''}>${esc(g.name)}${g.ladder ? '' : ' (deleted)'} — ${plural(g.sessions.length, 'session')}</option>`).join('');
+  const g = groups.find(x => x.id === view.historyLadderId);
+  $('h-body').innerHTML = g.sessions.length
+    ? overviewHtml(g) + `<ul class="h-list">${g.sessions.slice().reverse().map(sessionItemHtml).join('')}</ul>`
+    : '<p class="empty">No sessions on this ladder yet.</p>';
+}
+
+function overviewHtml(g) {
+  const ss = g.sessions;    // oldest first
+  const recent = ss.slice(-12).reverse().map(s => s.furthestRung + (s.topCleared ? '✓' : '')).join(' · ');
+  const stall = topTally(ss, s => s.topCleared ? [] : [[s.rungs[s.furthestRung - 1], s.furthestRung - 1, 1]]);
+  const missed = topTally(ss, s => s.rungs.map((r, i) => [r, i, r.misses]));
+  return `
+    <dl class="h-overview">
+      <div>
+        <dt class="label">Furthest rung, newest first</dt>
+        <dd class="nums">${recent}${ss.length > 12 ? ' …' : ''} <span class="muted">of ${ss[ss.length - 1].rungCount}</span></dd>
+      </div>
+      ${stall ? `<div>
+        <dt class="label">Stalls most often at</dt>
+        <dd>${esc(rungRef(g, stall))} <span class="muted">— ${stall.count} of ${plural(ss.length, 'session')}</span></dd>
+      </div>` : ''}
+      ${missed ? `<div>
+        <dt class="label">Most misses overall</dt>
+        <dd>${esc(rungRef(g, missed))} <span class="muted">— ${plural(missed.count, 'miss', 'misses')}</span></dd>
+      </div>` : ''}
+    </dl>`;
+}
+
+// Adds up per-rung amounts across sessions (keyed by rung id) and returns the
+// biggest, labelled with the rung's newest name and position; null if none.
+// `pick` gives each session's [rung, index, amount] entries.
+function topTally(sessions, pick) {
+  const tally = new Map();
+  sessions.forEach(s => pick(s).forEach(([r, i, amount]) => {
+    if (!amount) return;
+    const key = r.id || `${i}:${r.name}`;
+    const t = tally.get(key) || { id: r.id, count: 0 };
+    t.count += amount;
+    t.name = r.name;
+    t.index = i;
+    tally.set(key, t);
+  }));
+  let best = null;
+  tally.forEach(t => { if (!best || t.count > best.count) best = t; });
+  return best;
+}
+
+// "Rung 3 · name", using the ladder as it is now when the rung still exists.
+function rungRef(g, t) {
+  const i = g.ladder && t.id ? g.ladder.rungs.findIndex(r => r.id === t.id) : -1;
+  return i >= 0
+    ? `Rung ${i + 1} · ${rungLabel(g.ladder.rungs[i].name, i)}`
+    : `Rung ${t.index + 1} · ${rungLabel(t.name, t.index)}`;
+}
+
+function sessionItemHtml(s) {
+  const stalledAt = s.topCleared ? -1 : s.furthestRung - 1;
+  const pips = s.rungCount > 12 ? '' : `<span class="pips" aria-hidden="true">${
+    s.rungs.map((r, i) => `<i class="${i < s.furthestRung ? (s.topCleared && i === s.rungCount - 1 ? 'on top' : 'on') : ''}"></i>`).join('')
+  }</span>`;
+  const missed = mostMissed(s.rungs);
+  const sub = [
+    `${fmtClock(s.actualSec)} of ${fmtMinutes(s.plannedSec)}`,
+    plural(s.reps, 'rep'),
+    `${pct(s.yesRate)} yes`,
+    s.endedEarly ? 'ended early' : '',
+  ].filter(Boolean).join(' · ');
+  const rows = s.rungs.map((r, i) => `
+    <li${i === stalledAt ? ' class="stall"' : ''}>
+      <span class="n">${i + 1}</span>
+      <span>${esc(rungLabel(r.name, i))}</span>
+      <span class="c">${r.attempts ? `${plural(r.attempts, 'rep')} · ${plural(r.misses, 'miss', 'misses')}` : i < s.furthestRung ? '0 reps' : 'not reached'}</span>
+    </li>`).reverse().join('');
+  return `
+    <li class="h-item"><details>
+      <summary>
+        <div class="h-top">
+          <span class="h-date">${esc(fmtDay(s.startedAt))} · ${esc(fmtTimeOfDay(s.startedAt))}</span>
+          <span class="h-reach">${pips}<span>${s.furthestRung}/${s.rungCount}${s.topCleared ? ' ✓' : ''}</span></span>
+        </div>
+        <div class="h-sub">${sub}</div>
+        ${missed ? `<div class="h-sub">Most misses: rung ${missed.list.map(m => m.n).join(' & ')} (${missed.count})</div>` : ''}
+      </summary>
+      <div class="h-detail">
+        <ul class="h-rungs">${rows}</ul>
+        <button class="btn small danger" data-action="delete-session" data-id="${esc(s.id)}">Delete this session</button>
+      </div>
+    </details></li>`;
+}
+
+function historyBack() {
+  if (view.historyBack === 'ladder' && currentLadder()) openLadder(view.ladderId, false);
+  else goHome();
+}
+
+function deleteSession(btn) {
+  const s = data.sessions.find(x => x.id === btn.dataset.id);
+  if (!s || !confirm(`Delete the session from ${fmtDay(s.startedAt)}, ${fmtTimeOfDay(s.startedAt)}?`)) return;
+  data.sessions = data.sessions.filter(x => x !== s);
+  saveData();
+  renderHistory();
+}
+
+// ─── Backup: export and import ────────────────────────────────────────────────
+
+function exportData() {
+  flushSave();
+  const name = `learning-ladder-${new Date().toISOString().slice(0, 10)}.json`;
+  const json = JSON.stringify({ app: 'Learning Ladder', exportedAt: new Date().toISOString(), ...data }, null, 2);
+  // On a phone the share sheet is the dependable way out (Save to Files,
+  // AirDrop, Mail). Everywhere else, a plain download.
+  try {
+    const file = new File([json], name, { type: 'application/json' });
+    const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    if (touch && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file] }).catch(err => {
+        if (!err || err.name !== 'AbortError') download(json, name);
+      });
+      return;
+    }
+  } catch (e) {}
+  download(json, name);
+}
+
+function download(json, name) {
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onerror = () => alert('That file couldn’t be read.');
+  reader.onload = () => {
+    let incoming;
+    try {
+      let parsed;
+      try { parsed = JSON.parse(reader.result); }
+      catch (e) { throw new Error("it isn't a JSON file"); }
+      incoming = normalise(migrate(parsed));
+      if (!incoming.ladders.length && !incoming.sessions.length) throw new Error('it has no ladders or sessions in it');
+    } catch (e) {
+      alert(`That file can't be imported: ${e.message}.`);
+      return;
+    }
+    const ok = confirm(
+      'Replace everything on this device with this backup?\n\n' +
+      `In the backup: ${plural(incoming.ladders.length, 'ladder')}, ${plural(incoming.sessions.length, 'session')}\n` +
+      `Here now: ${plural(data.ladders.length, 'ladder')}, ${plural(data.sessions.length, 'session')}`);
+    if (!ok) return;
+    data = incoming;
+    saveData();
+    renderHome();
+    notice(`Imported ${plural(data.ladders.length, 'ladder')} and ${plural(data.sessions.length, 'session')}.`, 6000);
+  };
+  reader.readAsText(file);
+}
+
+// ─── Theme ────────────────────────────────────────────────────────────────────
+//
+// Dark unless chosen otherwise. A per-device preference, so it lives outside
+// the backed-up data.
+
+const lightQuery = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') : null;
+
+function themePref() {
+  try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) { return 'dark'; }
+}
+
+function applyTheme() {
+  const pref = themePref();
+  const light = pref === 'light' || (pref === 'auto' && !!lightQuery && lightQuery.matches);
+  document.documentElement.setAttribute('data-scheme', light ? 'light' : 'dark');
+  document.querySelector('meta[name="theme-color"]').content = light ? '#f5f4f0' : '#0c0e10';
+}
+
+function setTheme(pref) {
+  try { localStorage.setItem(THEME_KEY, pref); } catch (e) {}
+  applyTheme();
+  renderThemeChoice();
+}
+
+function renderThemeChoice() {
+  const pref = themePref();
+  document.querySelectorAll('[data-action="theme"]').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.value === pref));
+  });
+}
+
+// ─── Home screen manifest ─────────────────────────────────────────────────────
+//
+// iOS takes its home-screen name, icon and full-screen mode from the tags in
+// <head>. The manifest covers everything else (Android, desktop installs). It's
+// built here to reuse those same icons, and handed over as a data: URI so there
+// is still only one file. A data: manifest can't hold relative URLs, so
+// start_url is absolute, and left out when the page is opened from disk.
+
+function linkManifest() {
+  const href = selector => (document.querySelector(selector) || {}).href;
+  const manifest = {
+    name: 'Learning Ladder',
+    short_name: 'Ladder',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#0c0e10',
+    theme_color: '#0c0e10',
+    icons: [
+      { src: href('link[rel="apple-touch-icon"]'), sizes: '180x180', type: 'image/png' },
+      { src: href('link[rel="icon"]'), sizes: 'any', type: 'image/svg+xml' },
+    ],
+  };
+  if (/^https?:$/.test(location.protocol)) manifest.start_url = location.origin + location.pathname;
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+  document.head.appendChild(link);
+}
+
+// ─── Wiring ───────────────────────────────────────────────────────────────────
+//
+// Buttons carry a data-action; one listener dispatches them all.
+
+const actions = {
+  'history': () => openHistory(null, 'home'),
+  'open-ladder': b => openLadder(b.dataset.id, false),
+  'new-ladder': newLadder,
+  'export': exportData,
+  'import': () => $('import-file').click(),
+  'theme': b => setTheme(b.dataset.value),
+
+  'ladder-back': () => { if (view.editing) finishEditing(); goHome(); },
+  'toggle-edit': toggleEdit,
+  'ladder-history': () => openHistory(view.ladderId, 'ladder'),
+  'add-rung': addRung,
+  'rung-up': b => moveRung(b, +1),
+  'rung-down': b => moveRung(b, -1),
+  'rung-delete': deleteRung,
+  'duplicate-ladder': duplicateLadder,
+  'delete-ladder': deleteLadder,
+  'timer': b => chooseTimer(b.dataset.value),
+  'start': () => startSession(view.ladderId, chosenMinutes()),
+
+  'yes': () => answer('YES'),
+  'no': () => answer('NO'),
+  'undo': () => control(() => sessionAction('UNDO')),
+  'step-down': () => control(() => sessionAction('STEP_DOWN')),
+  'pause': () => control(() => (isPaused() ? resume() : pause(''))),
+  'resume': resume,
+  'end': () => { sessionUi.confirmingEnd = true; renderSession(); },
+  'end-cancel': () => { sessionUi.confirmingEnd = false; renderSession(); },
+  'end-confirm': () => { if (live) finishSession(!live.timeUp); },
+
+  'run-again': runAgain,
+  'home': goHome,
+  'history-back': historyBack,
+  'delete-session': deleteSession,
+};
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-action]');
+  if (!b || b.disabled) return;
+  const fn = actions[b.dataset.action];
+  if (fn) fn(b, e);
+});
+
+$('ladder-body').addEventListener('input', onEditorInput);
+$('ladder-body').addEventListener('change', onEditorChange);
+$('ladder-body').addEventListener('keydown', onEditorKeydown);
+
+$('custom-min').addEventListener('input', e => {
+  const n = parseInt(e.target.value, 10);
+  if (n >= 1 && n <= 180) { data.settings.customMinutes = n; saveSoon(); }
+});
+$('custom-min').addEventListener('change', e => {
+  data.settings.customMinutes = clampInt(e.target.value, 1, 180, data.settings.customMinutes);
+  e.target.value = data.settings.customMinutes;
+  saveData();
+});
+
+$('h-ladder').addEventListener('change', e => {
+  view.historyLadderId = e.target.value;
+  renderHistory();
+});
+
+$('import-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (file) importData(file);
+});
+
+// Keys for testing at a desk: Y / N answer, U undo, D step down, P pause,
+// Esc asks to end.
+document.addEventListener('keydown', e => {
+  if (view.screen !== 'session' || !live || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+  const key = e.key.toLowerCase();
+  if (key === 'y') answer('YES');
+  else if (key === 'n') answer('NO');
+  else if (key === 'u') actions['undo']();
+  else if (key === 'd') actions['step-down']();
+  else if (key === 'p') actions['pause']();
+  else if (key === 'escape') actions[sessionUi.confirmingEnd ? 'end-cancel' : 'end']();
+  else return;
+  e.preventDefault();
+});
+
+// Leaving the app mid-session pauses it: time away isn't time in the process,
+// and iOS may throw the page away before it comes back.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    flushSave();
+    if (live) pause('Paused while the app was in the background.');
+  } else if (live) {
+    acquireWakeLock();
+  }
+});
+window.addEventListener('pagehide', () => {
+  flushSave();
+  if (live) {
+    pause('Paused while the app was in the background.');
+    saveLive();
+  }
+});
+
+// iOS: :active styles only show with a touch listener present; pinch-zoom
+// ignores the viewport tag, so block it during a session instead.
+document.addEventListener('touchstart', () => {}, { passive: true });
+document.addEventListener('gesturestart', e => { if (view.screen === 'session') e.preventDefault(); });
+$('screen-session').addEventListener('contextmenu', e => e.preventDefault());
+
+if (lightQuery) {
+  if (lightQuery.addEventListener) lightQuery.addEventListener('change', applyTheme);
+  else if (lightQuery.addListener) lightQuery.addListener(applyTheme);
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+
+data = loadData();
+applyTheme();
+linkManifest();
+requestPersistence();
+
+const unfinished = loadLive();
+if (unfinished) {
+  // The page went away mid-session without pausing (it was killed, or
+  // crashed). Bank the time up to the last save and come back paused, so the
+  // time away isn't counted as practice.
+  live = unfinished;
+  if (live.runningSince !== null) {
+    live.activeMs += Math.max(0, (live.savedAt || live.runningSince) - live.runningSince);
+    live.runningSince = null;
+  }
+  delete live.savedAt;
+  enterSession('Picked up where you left off. The clock is paused.');
+} else {
+  goHome();
+}
+</script>
+</body>
+</html>
