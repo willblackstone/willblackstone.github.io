@@ -1606,8 +1606,9 @@ function answer(type) {
   flash(type === 'YES' ? 'btn-yes' : 'btn-no');
   const before = live.state.rung;
   live.state = LadderLogic.reduce(live.state, { type });
-  // A No stays silent. A Yes that earns the next rung gets the whistle instead.
-  if (type === 'YES') (live.state.rung > before ? playClimbSound : playYesSound)();
+  // A Yes that earns the next rung gets the whistle instead of a silly sound.
+  if (type === 'NO') playMissSound();
+  else (live.state.rung > before ? playClimbSound : playYesSound)();
   if (live.timeUp) { finishSession(false); return; }
   saveLive();
   renderSession();
@@ -1949,26 +1950,119 @@ const YES_SOUNDS = {
     voice(ctx, t + 0.07, { type: 'square', peak: 0.1, decay: 0.12, dur: 0.4, pitch: [[0, 1319]] });
   },
   hiccup: (ctx, t) => voice(ctx, t, { type: 'triangle', peak: 0.45, attack: 0.003, decay: 0.03, dur: 0.15, pitch: [[0, 500], [0.04, 1400]] }),
+};
+
+// A fart: a low buzz whose pitch and loudness flutter at random every few
+// milliseconds, through a resonant low-pass so it's more trouser than trumpet.
+//   from, to  the buzz's pitch at the start and end, Hz
+//   tone      the low-pass cutoff: higher is squeakier
+//   flutter   how far the pitch wanders, as a fraction of it
+function fart(ctx, t, { dur, from, to, peak = 0.5, tone = 500, flutter = 0.25 }) {
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  const f = ctx.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.value = tone;
+  f.Q.value = 6;
+  const g = ctx.createGain();
+  const steps = Math.max(2, Math.round(dur / 0.018));
+  g.gain.setValueAtTime(0, t);
+  for (let i = 0; i <= steps; i++) {
+    const at = t + dur * i / steps;
+    const pitch = from * Math.pow(to / from, i / steps);
+    osc.frequency.setValueAtTime(pitch * (1 + (Math.random() * 2 - 1) * flutter), at);
+    const shape = Math.min(1, i / 2) * (1 - Math.pow(i / steps, 3));    // quick in, trailing off
+    g.gain.linearRampToValueAtTime(peak * shape * (0.6 + Math.random() * 0.4), at);
+  }
+  g.gain.linearRampToValueAtTime(0, t + dur + 0.02);
+  osc.connect(f);
+  f.connect(g);
+  g.connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+}
+
+// A burst of noise through a filter whose cutoff glides from `freq` to `freqTo`.
+function noise(ctx, t, { dur, peak, freq, freqTo = freq, Q = 1, decay }) {
+  const len = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const f = ctx.createBiquadFilter();
+  f.type = 'lowpass';
+  f.Q.value = Q;
+  f.frequency.setValueAtTime(freq, t);
+  f.frequency.exponentialRampToValueAtTime(freqTo, t + dur);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(peak, t);
+  g.gain.setTargetAtTime(0, t, decay);
+  src.connect(f);
+  f.connect(g);
+  g.connect(ctx.destination);
+  src.start(t);
+}
+
+// The sounds a miss plays: daft rather than mocking, so a No is easy to own
+// up to. Mostly farts.
+const MISS_SOUNDS = {
+  bwomp: (ctx, t) => {
+    const horn = { type: 'sawtooth', peak: 0.28, attack: 0.03, band: [500, 1.2], vib: [5, 3] };
+    voice(ctx, t, { ...horn, dur: 0.2, pitch: [[0, 233], [0.2, 220]] });
+    voice(ctx, t + 0.24, { ...horn, dur: 0.42, pitch: [[0, 208], [0.42, 175]] });
+  },
+  pfft: (ctx, t) => fart(ctx, t, { dur: 0.22, from: 120, to: 90, tone: 650 }),
+  trump: (ctx, t) => fart(ctx, t, { dur: 0.9, from: 95, to: 55, tone: 450, flutter: 0.35, peak: 0.6 }),
+  squeaker: (ctx, t) => fart(ctx, t, { dur: 0.45, from: 290, to: 200, tone: 1500, flutter: 0.15, peak: 0.35 }),
+  stutter: (ctx, t) => [130, 115, 100].forEach((f, i) =>
+    fart(ctx, t + i * 0.13, { dur: 0.09, from: f, to: f * 0.9, tone: 600 })),
+  question: (ctx, t) => fart(ctx, t, { dur: 0.55, from: 80, to: 170, tone: 700, flutter: 0.2 }),   // ends on the way up, like a question
   raspberry: (ctx, t) => voice(ctx, t, {
     type: 'sawtooth', peak: 0.55, attack: 0.02, dur: 0.35, vib: [35, 50], band: [700, 1.5],
     pitch: [[0, 110], [0.35, 90]],
   }),
+  trombone: (ctx, t) => {
+    // Wah, wah, wah, waaah.
+    const slide = { type: 'sawtooth', peak: 0.35, attack: 0.03, band: [700, 1.5] };
+    [293.7, 277.2, 261.6].forEach((f, i) => voice(ctx, t + i * 0.22, { ...slide, dur: 0.18, pitch: [[0, f], [0.18, f * 0.97]] }));
+    voice(ctx, t + 0.66, { ...slide, dur: 0.6, vib: [6, 8], pitch: [[0, 246.9], [0.6, 233]] });
+  },
+  deflate: (ctx, t) => voice(ctx, t, {
+    type: 'sawtooth', peak: 0.3, attack: 0.02, dur: 0.7, vib: [18, 60], band: [1200, 3],
+    pitch: [[0, 900], [0.7, 250]],
+  }),
+  'uh-oh': (ctx, t) => {
+    const v = { type: 'sawtooth', peak: 0.4, attack: 0.03, band: [800, 2] };
+    voice(ctx, t, { ...v, dur: 0.14, pitch: [[0, 392]] });
+    voice(ctx, t + 0.2, { ...v, dur: 0.28, pitch: [[0, 311], [0.28, 300]] });
+  },
+  splat: (ctx, t) => {
+    noise(ctx, t, { dur: 0.3, peak: 0.6, freq: 1800, freqTo: 250, decay: 0.06 });
+    voice(ctx, t, { peak: 0.4, attack: 0.003, decay: 0.05, dur: 0.2, pitch: [[0, 140], [0.15, 50]] });
+  },
+  'slide down': (ctx, t) => voice(ctx, t, { peak: 0.3, attack: 0.02, dur: 0.5, vib: [6, 15], pitch: [[0, 1500], [0.5, 250]] }),
 };
-const YES_NAMES = Object.keys(YES_SOUNDS);
-let recentYes = [];
 
-// Random, but never one of the last three: a run of the same sound stops
-// being funny.
-function playYesSound() {
-  const ctx = audioCtx;
-  if (!ctx) return;
-  try {
-    const choices = YES_NAMES.filter(n => !recentYes.includes(n));
-    const name = choices[Math.floor(Math.random() * choices.length)];
-    recentYes = recentYes.concat(name).slice(-3);
-    YES_SOUNDS[name](ctx, ctx.currentTime + 0.005);
-  } catch (e) {}
+// Picks at random from a set of sounds, but never one of the last three: a
+// run of the same sound stops being funny.
+function soundPicker(sounds) {
+  const names = Object.keys(sounds);
+  let recent = [];
+  return () => {
+    const ctx = audioCtx;
+    if (!ctx) return;
+    try {
+      const choices = names.filter(n => !recent.includes(n));
+      const name = choices[Math.floor(Math.random() * choices.length)];
+      recent = recent.concat(name).slice(-3);
+      sounds[name](ctx, ctx.currentTime + 0.005);
+    } catch (e) {}
+  };
 }
+
+const playYesSound = soundPicker(YES_SOUNDS);
+const playMissSound = soundPicker(MISS_SOUNDS);
 
 // A slide whistle up for earning a rung: a pure tone gliding up two octaves,
 // with a little warble, ending in a quick toot at the top.
