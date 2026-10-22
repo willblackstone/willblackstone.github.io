@@ -276,6 +276,16 @@
     background: var(--surface);
   }
   .field.inline input { text-align: center; }
+  .field.inline.wide-ctl { grid-template-columns: 1fr auto; }
+  .field select {
+    min-height: 48px; padding: 0 12px;
+    border-radius: var(--radius); border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .field input[type="checkbox"] {
+    width: 28px; height: 28px; min-height: 28px; margin: 10px;
+    accent-color: var(--accent);
+  }
   .rung-card input, .rung-card textarea { background: var(--bg); }
   textarea { display: block; resize: none; overflow: hidden; line-height: 1.35; }
   textarea.is-placeholder { color: var(--text-3); font-style: italic; }
@@ -327,7 +337,7 @@
   .s-ctl:active { background: var(--surface-2); color: var(--text-2); }
   .s-ctl:first-child { margin-left: -11px; }
   .s-ctl:last-child { margin-right: -11px; }
-  .s-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .s-main { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
   .s-info { flex-shrink: 0; }
   .s-meta {
     display: flex; justify-content: space-between; align-items: baseline;
@@ -379,6 +389,26 @@
   .cover-note { color: var(--text-2); max-width: 30ch; }
   .cover .btn { width: 100%; max-width: 340px; }
   .cover .btn.primary { min-height: 76px; font-size: 22px; }
+  /* The note sits over the top of the screen, where the keyboard won't cover
+     it. Typing needs selection back, which the session otherwise turns off. */
+  .note-sheet {
+    position: absolute; inset: 0; z-index: 3;
+    display: flex; flex-direction: column; gap: 10px;
+    padding-top: 6px;
+    background: var(--bg);
+  }
+  .note-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .note-head .muted { font-size: 15px; }
+  .note-sheet textarea, .sum-notes textarea {
+    width: 100%; padding: 11px 13px;
+    border-radius: var(--radius); border: 1px solid var(--line);
+    background: var(--surface);
+    -webkit-user-select: text; user-select: text;
+    touch-action: auto;
+  }
+  .note-sheet textarea { flex: 0 1 40%; min-height: 120px; resize: none; overflow: auto; }
+  .sum-notes { display: grid; gap: 6px; margin-top: 22px; }
+  .sum-notes textarea { min-height: 120px; }
   @media (orientation: landscape) and (max-height: 540px) {
     .s-main { flex-direction: row; gap: 20px; }
     .s-info { flex: 1 1 0; overflow: hidden; }
@@ -448,6 +478,7 @@
   .h-rungs .n { color: var(--text-3); text-align: center; font-variant-numeric: tabular-nums; }
   .h-rungs .c { color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
   .h-rungs .stall .n, .h-rungs .stall .c { color: var(--warn); }
+  .h-notes { color: var(--text-2); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0 14px; }
 </style>
 </head>
 <body>
@@ -509,6 +540,7 @@
 <section class="session" id="screen-session" data-screen="session" hidden>
   <div class="s-controls">
     <button class="s-ctl" data-action="end">End</button>
+    <button class="s-ctl" id="s-note" data-action="note">Note</button>
     <span class="spacer"></span>
     <button class="s-ctl" id="s-step-down" data-action="step-down">Step down</button>
     <button class="s-ctl" id="s-undo" data-action="undo">Undo</button>
@@ -540,6 +572,13 @@
         <button class="btn" data-action="end-confirm">End session</button>
       </div>
     </div>
+    <div class="note-sheet" id="s-note-sheet" hidden>
+      <div class="note-head">
+        <span class="muted">Notes for this session · the clock waits</span>
+        <button class="btn small" data-action="note-done">Done</button>
+      </div>
+      <textarea id="s-note-text" aria-label="Session notes" placeholder="Anything worth keeping. It'll be there at the end too."></textarea>
+    </div>
   </div>
 </section>
 
@@ -552,6 +591,8 @@
   </div>
   <div class="stat-grid" id="sum-stats"></div>
   <p class="sum-note" id="sum-note" hidden></p>
+  <label class="sum-notes" id="sum-notes"><span class="label">Notes <span class="opt">(optional)</span></span>
+    <textarea id="sum-notes-text" rows="4" placeholder="Brain dump: what you noticed, what to try next time"></textarea></label>
   <div class="sum-actions">
     <button class="btn primary wide" data-action="run-again">Run again</button>
     <button class="btn wide" data-action="home">Home</button>
@@ -584,20 +625,33 @@
 // Actions:  { type: 'YES' }        a clean rep
 //           { type: 'NO' }         a miss
 //           { type: 'STEP_DOWN' }  choosing to go down a rung
-//           { type: 'UNDO' }       take back the last YES, NO or STEP_DOWN
-// There is deliberately no action for going up. Anything unrecognised —
-// including an attempt to climb by hand — returns the state unchanged.
+//           { type: 'STEP_UP' }    going back up to a rung already earned this
+//                                  session, when the ladder allows it
+//           { type: 'UNDO' }       take back the last action
+// There is deliberately no way up to a rung that hasn't been earned: only a
+// full streak does that. Anything unrecognised returns the state unchanged.
+//
+// A ladder's rules, all adjustable:
+//   target      clean reps in a row to climb
+//   climbBack   clean reps to climb back onto a rung already earned this session
+//   missDrop    rungs a miss costs (0 or 1)
+//   freeReturn  STEP_UP may go back up to earned rungs
 
 const LadderLogic = (() => {
   'use strict';
 
-  function createSession(rungCount, target) {
+  // Without rules, a ladder plays by the strictest: the full target every
+  // time, a miss drops a rung, no way back up but earning it.
+  function createSession(rungCount, target, rules = {}) {
     return {
       rungCount,
       target,
+      climbBack: Math.min(target, rules.climbBack || target),
+      missDrop: rules.missDrop === 0 ? 0 : 1,
+      freeReturn: rules.freeReturn === true,
       rung: 0,              // where the player stands now
       streak: 0,            // clean reps in a row on this rung
-      furthest: 0,          // highest rung stood on this session
+      furthest: 0,          // highest rung stood on this session: everything up to it is earned
       topCleared: false,    // the top rung's streak has been completed at least once
       consolidation: 0,     // clean reps on the top rung beyond its target
       reps: 0,
@@ -634,7 +688,7 @@ const LadderLogic = (() => {
           attempts: bump(s.attempts, s.rung),
           streak: s.streak + 1,
         };
-        if (next.streak < s.target) return next;
+        if (next.streak < repsToClimb(s)) return next;
         if (s.rung < s.rungCount - 1) {
           // Earned: up one rung, where the streak starts again from nothing.
           next.rung = s.rung + 1;
@@ -655,12 +709,15 @@ const LadderLogic = (() => {
           reps: s.reps + 1,
           attempts: bump(s.attempts, s.rung),
           misses: bump(s.misses, s.rung),
-          rung: Math.max(0, s.rung - 1),
+          rung: Math.max(0, s.rung - missDropOf(s)),
           streak: 0,
         };
       case 'STEP_DOWN':
         if (s.rung === 0) return s;
         return { ...s, rung: s.rung - 1, streak: 0 };
+      case 'STEP_UP':
+        if (!canStepUp(s)) return s;
+        return { ...s, rung: s.rung + 1, streak: 0 };
       default:
         return s;
     }
@@ -672,13 +729,21 @@ const LadderLogic = (() => {
     return copy;
   }
 
+  // Below the furthest rung, this one has been cleared already this session.
+  // States saved before these rules existed lack the fields, hence the fallbacks.
+  function repsToClimb(s) {
+    return s.rung < s.furthest ? (s.climbBack || s.target) : s.target;
+  }
+  function missDropOf(s) { return s.missDrop === 0 ? 0 : 1; }
+  function canStepUp(s) { return s.freeReturn === true && s.rung < s.furthest; }
+
   // On the top rung with its target met: the streak shown is consolidation
   // now, not progress towards a climb.
   function isConsolidating(s) {
     return s.rung === s.rungCount - 1 && s.streak >= s.target;
   }
 
-  return { createSession, reduce, isConsolidating };
+  return { createSession, reduce, isConsolidating, repsToClimb, canStepUp };
 })();
 
 // ─── Ladder logic tests ───────────────────────────────────────────────────────
@@ -730,6 +795,32 @@ function runLadderTests() {
     expect([s.rung, s.streak, s.misses[0]], [0, 0, 1], 'after the miss');
   });
 
+  check('climb back: a rung already earned takes climbBack reps, a new one the full target', () => {
+    let s = play(createSession(3, 3, { climbBack: 2 }), 'YES', 'YES', 'YES', 'NO');   // earned rung 1, dropped
+    expect([s.rung, s.furthest], [0, 1], 'after the drop');
+    s = play(s, 'YES', 'YES');
+    expect([s.rung, s.streak], [1, 0], 'back up after 2');
+    s = play(s, 'YES', 'YES');
+    expect([s.rung, s.streak], [1, 2], 'rung 2 is new, so 2 is not enough');
+    s = play(s, 'YES');
+    expect(s.rung, 2, 'up after the full 3');
+  });
+
+  check('a miss can be set to keep the rung', () => {
+    const s = play(createSession(3, 2, { missDrop: 0 }), 'YES', 'YES', 'YES', 'NO');
+    expect([s.rung, s.streak], [1, 0], 'after the miss');
+  });
+
+  check('stepping back up: only to earned rungs, and only when allowed', () => {
+    const rules = { freeReturn: true };
+    let s = play(createSession(3, 2, rules), 'YES', 'YES', 'STEP_DOWN');      // earned rung 1, stepped off it
+    s = play(s, 'STEP_UP');
+    expect([s.rung, s.streak], [1, 0], 'back on the earned rung');
+    same(reduce(s, { type: 'STEP_UP' }), s, 'rung 2 not earned yet');
+    const strict = play(createSession(3, 2), 'YES', 'YES', 'STEP_DOWN');
+    same(reduce(strict, { type: 'STEP_UP' }), strict, 'not allowed on a strict ladder');
+  });
+
   check('no manual up: only a full streak climbs; stepping down works', () => {
     const s = play(createSession(3, 2), 'YES');
     ['UP', 'STEP_UP', 'CLIMB', 'NEXT', undefined].forEach(type => same(reduce(s, { type }), s, String(type)));
@@ -779,13 +870,14 @@ function runLadderTests() {
 //
 //   { version, ladders, sessions, settings }
 //
-//   ladder   { id, name, focus, target, rungs: [{ id, name, intention, placeholder }] }
+//   ladder   { id, name, focus, target, climbBack, missDrop (0 | 1), freeReturn,
+//            rungs: [{ id, name, intention, placeholder }] }
 //            rungs[0] is the bottom rung. `placeholder` marks an intention the
 //            app wrote rather than the player; editing it clears the flag.
 //   session { id, ladderId, ladderName, startedAt, endedAt (ISO strings),
 //            plannedSec, actualSec (time not paused), endedEarly, target,
 //            reps, yes, yesRate (0–1), furthestRung (1-based), rungCount,
-//            topCleared, consolidation,
+//            topCleared, consolidation, notes,
 //            rungs: [{ id, name, attempts, misses }] }   bottom rung first
 //   settings { timer: '5' | '10' | 'custom', customMinutes }
 //
@@ -807,6 +899,9 @@ function uid(prefix) {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+// What a new ladder starts with. The editor changes any of it per ladder.
+const DEFAULT_RULES = { target: 10, climbBack: 5, missDrop: 1, freeReturn: true };
+
 // The first-launch ladder. Its intentions are stand-ins, flagged so the editor
 // says so until they're rewritten.
 function seedData() {
@@ -817,7 +912,7 @@ function seedData() {
       id: uid('l'),
       name: 'The Drop',
       focus: '',
-      target: 10,
+      ...DEFAULT_RULES,
       rungs: [
         rung('BCH breath', 'Notice the whole breath, start to finish.'),
         rung('Elbows and rotator cuff', 'Elbows and cuff in awareness through the whole move.'),
@@ -913,7 +1008,10 @@ function normalise(d) {
       id: idFor(l.id, 'l'),
       name: text(l.name).trim() || 'Untitled ladder',
       focus: text(l.focus),
-      target: clampInt(l.target, 1, 100, 10),
+      target: clampInt(l.target, 1, 100, DEFAULT_RULES.target),
+      climbBack: clampInt(l.climbBack, 1, 100, DEFAULT_RULES.climbBack),
+      missDrop: l.missDrop === 0 ? 0 : 1,
+      freeReturn: typeof l.freeReturn === 'boolean' ? l.freeReturn : DEFAULT_RULES.freeReturn,
       rungs,
     };
   });
@@ -947,6 +1045,7 @@ function normalise(d) {
         rungCount: rungs.length,
         topCleared: s.topCleared === true,
         consolidation: clampInt(s.consolidation, 0, 1e6, 0),
+        notes: text(s.notes),
         rungs,
       };
     })
@@ -1107,7 +1206,7 @@ function latestSession(ladderId) {
 }
 
 function newLadder() {
-  const l = { id: uid('l'), name: 'New ladder', focus: '', target: 10, rungs: [blankRung()] };
+  const l = { id: uid('l'), name: 'New ladder', focus: '', ...DEFAULT_RULES, rungs: [blankRung()] };
   data.ladders.push(l);
   saveData();
   openLadder(l.id, true);
@@ -1170,11 +1269,21 @@ function ladderViewHtml(l) {
     <div class="ladder-head">
       <h1 class="ladder-title">${esc(l.name)}</h1>
       ${l.focus ? `<p class="ladder-focus">${esc(l.focus)}</p>` : ''}
-      <p class="ladder-rule">${l.target} clean in a row to climb · a miss drops one rung · always starts at rung 1</p>
+      <p class="ladder-rule">${esc(rulesText(l))}</p>
     </div>
     ${l.rungs.some(r => r.placeholder) ? '<p class="hint">Intentions marked <span class="tag">placeholder</span> are stand-ins. Tap Edit to put them in your own words.</p>' : ''}
     <ul class="rung-list" aria-label="Rungs, top first">${rows}</ul>
     <button class="quiet back" data-action="ladder-history">History for this ladder</button>`;
+}
+
+function rulesText(l) {
+  return [
+    `${l.target} clean in a row to climb`,
+    l.climbBack < l.target ? `${l.climbBack} to climb back to a rung already earned` : '',
+    l.missDrop ? 'a miss drops one rung' : 'a miss restarts the streak',
+    l.freeReturn ? 'swipe up and down between earned rungs' : 'swipe down to step down',
+    'always starts at rung 1',
+  ].filter(Boolean).join(' · ');
 }
 
 function editorHtml(l) {
@@ -1200,6 +1309,15 @@ function editorHtml(l) {
       <input type="text" data-field="focus" value="${esc(l.focus)}" placeholder="What this ladder is for" autocomplete="off" enterkeyhint="done"></label>
     <label class="field inline"><span>Clean reps in a row to climb</span>
       <input type="number" data-field="target" value="${l.target}" min="1" max="100" inputmode="numeric"></label>
+    <label class="field inline"><span>Clean reps to climb back to a rung already earned this session</span>
+      <input type="number" data-field="climbBack" value="${l.climbBack}" min="1" max="100" inputmode="numeric"></label>
+    <label class="field inline wide-ctl"><span>A miss</span>
+      <select data-field="missDrop">
+        <option value="1"${l.missDrop ? ' selected' : ''}>Drops one rung</option>
+        <option value="0"${l.missDrop ? '' : ' selected'}>Keeps the rung</option>
+      </select></label>
+    <label class="field inline wide-ctl"><span>Swipe back up to rungs earned this session</span>
+      <input type="checkbox" data-field="freeReturn"${l.freeReturn ? ' checked' : ''}></label>
     <div class="rungs-head">
       <span class="label">Rungs · top first</span>
       <button class="btn small" data-action="add-rung">+ Add rung on top</button>
@@ -1241,6 +1359,13 @@ function onEditorInput(e) {
   else if (t.dataset.field === 'target') {
     const n = parseInt(t.value, 10);
     if (n >= 1 && n <= 100) l.target = n;
+  } else if (t.dataset.field === 'climbBack') {
+    const n = parseInt(t.value, 10);
+    if (n >= 1 && n <= 100) l.climbBack = n;
+  } else if (t.dataset.field === 'missDrop') {
+    l.missDrop = t.value === '0' ? 0 : 1;
+  } else if (t.dataset.field === 'freeReturn') {
+    l.freeReturn = t.checked;
   } else if (t.dataset.rungField) {
     const r = l.rungs[rungIndex(l, t)];
     if (!r) return;
@@ -1271,6 +1396,13 @@ function onEditorChange(e) {
   if (t.dataset.field === 'target') {
     l.target = clampInt(t.value, 1, 100, l.target);
     t.value = l.target;
+  } else if (t.dataset.field === 'climbBack') {
+    l.climbBack = clampInt(t.value, 1, 100, l.climbBack);
+    t.value = l.climbBack;
+  } else if (t.dataset.field === 'missDrop') {
+    l.missDrop = t.value === '0' ? 0 : 1;
+  } else if (t.dataset.field === 'freeReturn') {
+    l.freeReturn = t.checked;
   }
   saveData();
 }
@@ -1377,6 +1509,7 @@ function chosenMinutes() {
 //                                 running since `runningSince` (epoch ms; null
 //                                 while paused)
 //   timeUp                        time has run out; the next answer ends it
+//   notes                         what's been jotted in the note so far
 //   state                         the LadderLogic state
 // `sessionUi` holds what only matters while this page is open.
 
@@ -1390,6 +1523,11 @@ let tickTimer = null;
 function freshSessionUi() {
   return {
     confirmingEnd: false,
+    noteOpen: false,
+    swipedAt: -Infinity,
+    hint: '',
+    hintTimer: null,
+    notePaused: false,       // opening the note paused the clock, so closing it resumes
     pauseNote: '',
     lastAnswerAt: -Infinity,
     lastControlAt: -Infinity,
@@ -1414,7 +1552,9 @@ function startSession(ladderId, minutes) {
     activeMs: 0,
     runningSince: Date.now(),
     timeUp: false,
-    state: LadderLogic.createSession(l.rungs.length, l.target),
+    notes: '',
+    state: LadderLogic.createSession(l.rungs.length, l.target,
+      { climbBack: l.climbBack, missDrop: l.missDrop, freeReturn: l.freeReturn }),
   };
   enterSession('');
 }
@@ -1456,15 +1596,18 @@ function tick() {
 }
 
 function answer(type) {
-  if (!live || isPaused() || sessionUi.confirmingEnd) return;
+  if (!live || isPaused() || sessionUi.confirmingEnd || sessionUi.noteOpen) return;
   const now = performance.now();
   if (now - sessionUi.lastAnswerAt < ANSWER_LOCK_MS) return;
+  if (now - sessionUi.swipedAt < ANSWER_LOCK_MS) return;    // the tap that ended a swipe
   sessionUi.lastAnswerAt = now;
   unlockAudio();
   acquireWakeLock();
   flash(type === 'YES' ? 'btn-yes' : 'btn-no');
-  if (type === 'YES') playYesSound();    // a No stays silent
+  const before = live.state.rung;
   live.state = LadderLogic.reduce(live.state, { type });
+  // A No stays silent. A Yes that earns the next rung gets the whistle instead.
+  if (type === 'YES') (live.state.rung > before ? playClimbSound : playYesSound)();
   if (live.timeUp) { finishSession(false); return; }
   saveLive();
   renderSession();
@@ -1505,6 +1648,31 @@ function resume() {
   renderSession();
 }
 
+// Writing a note isn't time in the process, so the clock waits while it's open.
+function openNote() {
+  if (!live || sessionUi.noteOpen) return;
+  sessionUi.noteOpen = true;
+  sessionUi.notePaused = !isPaused();
+  if (sessionUi.notePaused) pause('');
+  renderSession();
+  const t = $('s-note-text');
+  t.value = live.notes || '';
+  // Still inside the tap, so iOS will bring the keyboard up.
+  t.focus();
+  t.setSelectionRange(t.value.length, t.value.length);
+}
+
+function closeNote() {
+  if (!sessionUi.noteOpen) return;
+  live.notes = $('s-note-text').value;
+  $('s-note-text').blur();
+  sessionUi.noteOpen = false;
+  saveLive();
+  if (sessionUi.notePaused) resume();
+  else renderSession();
+  sessionUi.notePaused = false;
+}
+
 function finishSession(endedEarly) {
   clearInterval(tickTimer);
   tickTimer = null;
@@ -1528,10 +1696,11 @@ function finishSession(endedEarly) {
     rungCount: s.rungCount,
     topCleared: s.topCleared,
     consolidation: s.consolidation,
+    notes: (live.notes || '').trim(),
     rungs: live.rungs.map((r, i) => ({ id: r.id, name: r.name, attempts: s.attempts[i], misses: s.misses[i] })),
   };
-  // A session with no answers has nothing in it worth keeping.
-  const saved = record.reps > 0;
+  // A session with no answers and no notes has nothing in it worth keeping.
+  const saved = record.reps > 0 || !!record.notes;
   if (saved) {
     data.sessions.push(record);
     saveData();
@@ -1551,12 +1720,14 @@ function renderSession() {
   const paused = isPaused();
   $('screen-session').classList.toggle('time-up', live.timeUp);
 
-  $('s-pos').textContent = `Rung ${s.rung + 1} of ${s.rungCount}`;
+  $('s-pos').textContent = sessionUi.hint || `Rung ${s.rung + 1} of ${s.rungCount}`;
   $('s-name').textContent = rungLabel(rung.name, s.rung);
   $('s-intent').textContent = rung.intention;
   $('s-intent').hidden = !rung.intention;
   $('s-streak-num').textContent = s.streak;
-  $('s-streak-of').textContent = LadderLogic.isConsolidating(s) ? 'clean · top rung cleared' : `/ ${s.target}`;
+  const need = LadderLogic.repsToClimb(s);
+  $('s-streak-of').textContent = LadderLogic.isConsolidating(s) ? 'clean · top rung cleared'
+    : need < s.target ? `/ ${need} · climbing back` : `/ ${need}`;
 
   // A new rung slides in, so a changed name and intention get noticed before
   // the next rep. The direction says which way the ladder went.
@@ -1576,7 +1747,9 @@ function renderSession() {
   $('s-end-note').textContent = s.reps
     ? `${plural(s.reps, 'rep')} so far. They'll be saved to History.`
     : "Nothing answered yet, so there's nothing to save.";
-  $('s-pause-cover').hidden = !paused || sessionUi.confirmingEnd;
+  $('s-pause-cover').hidden = !paused || sessionUi.confirmingEnd || sessionUi.noteOpen;
+  $('s-note-sheet').hidden = !sessionUi.noteOpen;
+  $('s-note').disabled = sessionUi.confirmingEnd;
   $('s-pause-note').textContent = sessionUi.pauseNote;
   $('s-pause-note').hidden = !sessionUi.pauseNote;
   paintTime();
@@ -1594,6 +1767,53 @@ function flash(id) {
   const b = $(id);
   b.classList.add('flash');
   setTimeout(() => b.classList.remove('flash'), 160);
+}
+
+// ─── Session: swiping between rungs ───────────────────────────────────────────
+//
+// A quick vertical swipe anywhere on the session screen: down steps down a
+// rung, up steps back up to one already earned. The tap the swipe ends on is
+// swallowed so it doesn't also answer. A swipe up that isn't allowed says why
+// for a moment, in place of the rung count.
+
+const SWIPE_MIN_PX = 70;
+const SWIPE_MAX_MS = 700;
+let swipe = null;
+
+function onSwipeStart(e) {
+  if (e.touches.length !== 1 || sessionUi.noteOpen || sessionUi.confirmingEnd) { swipe = null; return; }
+  const t = e.touches[0];
+  swipe = { x: t.clientX, y: t.clientY, at: Date.now() };
+}
+
+function onSwipeEnd(e) {
+  if (!swipe || !live) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+  const quick = Date.now() - swipe.at < SWIPE_MAX_MS;
+  swipe = null;
+  if (!quick || Math.abs(dy) < SWIPE_MIN_PX || Math.abs(dy) < Math.abs(dx) * 1.5) return;
+  e.preventDefault();
+  sessionUi.swipedAt = performance.now();
+  swipeStep(dy > 0 ? 'STEP_DOWN' : 'STEP_UP');
+}
+
+function swipeStep(type) {
+  const s = live.state;
+  if (type === 'STEP_UP' && !LadderLogic.canStepUp(s)) {
+    sessionHint(!s.freeReturn ? 'Only a full streak climbs on this ladder'
+      : s.rung === s.rungCount - 1 ? 'Already on the top rung'
+      : `Rung ${s.rung + 2} isn't earned yet`);
+    return;
+  }
+  sessionAction(type);
+}
+
+function sessionHint(msg) {
+  clearTimeout(sessionUi.hintTimer);
+  sessionUi.hint = msg;
+  renderSession();
+  sessionUi.hintTimer = setTimeout(() => { sessionUi.hint = ''; if (live) renderSession(); }, 1600);
 }
 
 // ─── Session: end tone ────────────────────────────────────────────────────────
@@ -1623,61 +1843,164 @@ function unlockAudio() {
   } catch (e) {}
 }
 
-// Two soft bell strikes a fourth apart. The output hardware sleeps after a few
-// seconds of silence and swallows the start of whatever wakes it, so a breath
-// of inaudible noise goes first and the bell follows it in.
+// A kazoo fanfare, da-da-da-daaa, then a party horn. The output hardware
+// sleeps after a few seconds of silence and swallows the start of whatever
+// wakes it, so a breath of inaudible noise goes first and the tune follows it in.
 function playEndTone() {
   const ctx = audioCtx;
   if (!ctx) return;
   try {
     if (ctx.state !== 'running') ctx.resume().catch(() => {});
-    const t0 = ctx.currentTime;
-    wakeOutput(ctx, t0);
+    const t0 = ctx.currentTime + 0.3;
+    wakeOutput(ctx, t0 - 0.3);
     const out = ctx.createGain();
-    out.gain.value = 0.7;
+    out.gain.value = 0.8;
     out.connect(ctx.destination);
-    strike(ctx, out, 659.25, t0 + 0.3, 0.32);   // E5
-    strike(ctx, out, 880.0, t0 + 0.85, 0.26);   // A5
+    const kazoo = { type: 'sawtooth', peak: 0.5, attack: 0.02, vib: [6, 6], band: [1100, 3], out };
+    [[0, 392, 0.14], [0.17, 392, 0.14], [0.34, 392, 0.14], [0.51, 523.25, 0.6]].forEach(([at, f, dur]) => {   // G G G C
+      voice(ctx, t0 + at, { ...kazoo, pitch: [[0, f * 0.97], [0.04, f]], dur });
+    });
+    voice(ctx, t0 + 1.3, {
+      type: 'sawtooth', peak: 0.45, attack: 0.03, band: [1500, 2], vib: [28, 25], out,
+      pitch: [[0, 350], [0.25, 700], [0.7, 690]], dur: 0.75,
+    });
   } catch (e) {}
 }
 
-function strike(ctx, out, freq, t, peak) {
-  // [partial ratio, weight]. The upper partials die away sooner, as on a bell.
-  [[1, 1], [2, 0.22], [3.02, 0.07]].forEach(([ratio, weight]) => {
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq * ratio;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(peak * weight, t + 0.025);
-    g.gain.setTargetAtTime(0, t + 0.025, 0.55 / ratio);
-    osc.connect(g);
-    g.connect(out);
-    osc.start(t);
-    osc.stop(t + 3.5);
-  });
+// One synthesised voice, the building block of the silly sounds.
+//   pitch  [[seconds from t, Hz], …]: starts at the first, glides through the rest
+//   dur    how long it lasts; with `decay` it fades from the attack instead of
+//          holding and cutting off
+//   vib    [rate Hz, depth Hz, depth at the end]: a wobble on the pitch
+//   band   [Hz, Q]: a band-pass filter, for buzzy and nasal sounds
+function voice(ctx, t, { type = 'sine', pitch, dur, peak = 0.3, attack = 0.005, decay, vib, band, out = ctx.destination }) {
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.setValueAtTime(pitch[0][1], t);
+  pitch.slice(1).forEach(([at, f]) => osc.frequency.exponentialRampToValueAtTime(f, t + at));
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + attack);
+  if (decay) {
+    g.gain.setTargetAtTime(0, t + attack, decay);
+  } else {
+    g.gain.setValueAtTime(peak, t + Math.max(attack, dur - 0.03));
+    g.gain.linearRampToValueAtTime(0, t + dur);
+  }
+  let node = osc;
+  if (band) {
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass';
+    f.frequency.value = band[0];
+    f.Q.value = band[1];
+    osc.connect(f);
+    node = f;
+  }
+  node.connect(g);
+  g.connect(out);
+  const stop = t + dur + 0.05;
+  if (vib) {
+    const lfo = ctx.createOscillator();
+    const depth = ctx.createGain();
+    lfo.frequency.value = vib[0];
+    depth.gain.setValueAtTime(vib[1], t);
+    if (vib[2]) depth.gain.exponentialRampToValueAtTime(vib[2], t + dur);
+    lfo.connect(depth);
+    depth.connect(osc.frequency);
+    lfo.start(t);
+    lfo.stop(stop);
+  }
+  osc.start(t);
+  osc.stop(stop);
 }
 
-// A short, bright pluck for a clean rep: quick attack, quick die-away, with a
-// soft octave on top so it sounds round rather than like a beep.
+// The silly sounds a clean rep plays, one picked at random each time.
+const YES_SOUNDS = {
+  boing: (ctx, t) => voice(ctx, t, {
+    type: 'triangle', peak: 0.4, decay: 0.12, dur: 0.6, vib: [20, 70, 4],
+    pitch: [[0, 140], [0.12, 420], [0.45, 300]],
+  }),
+  bloop: (ctx, t) => voice(ctx, t, { peak: 0.4, decay: 0.05, dur: 0.25, pitch: [[0, 260], [0.1, 900]] }),
+  quack: (ctx, t) => voice(ctx, t, {
+    type: 'sawtooth', peak: 0.7, attack: 0.01, dur: 0.16, band: [1300, 5],
+    pitch: [[0, 620], [0.16, 420]],
+  }),
+  squeak: (ctx, t) => {
+    // A rubber duck: squeezed, then let go.
+    const toy = { type: 'square', peak: 0.12, attack: 0.01, band: [2400, 4] };
+    voice(ctx, t, { ...toy, dur: 0.12, pitch: [[0, 1700], [0.08, 2500], [0.12, 2200]] });
+    voice(ctx, t + 0.16, { ...toy, dur: 0.1, pitch: [[0, 2300], [0.1, 1600]] });
+  },
+  pew: (ctx, t) => voice(ctx, t, { type: 'square', peak: 0.12, decay: 0.08, dur: 0.3, pitch: [[0, 1600], [0.25, 140]] }),
+  honk: (ctx, t) => voice(ctx, t, {
+    type: 'sawtooth', peak: 0.6, attack: 0.02, dur: 0.32, vib: [7, 8], band: [900, 2],
+    pitch: [[0, 240], [0.06, 270]],
+  }),
+  cuckoo: (ctx, t) => {
+    voice(ctx, t, { peak: 0.35, attack: 0.01, dur: 0.16, pitch: [[0, 784]] });
+    voice(ctx, t + 0.2, { peak: 0.35, attack: 0.01, dur: 0.24, pitch: [[0, 622]] });
+  },
+  doink: (ctx, t) => voice(ctx, t, {
+    type: 'triangle', peak: 0.4, decay: 0.1, dur: 0.4, vib: [30, 40, 2],
+    pitch: [[0, 900], [0.2, 220]],
+  }),
+  coin: (ctx, t) => {
+    voice(ctx, t, { type: 'square', peak: 0.1, dur: 0.07, pitch: [[0, 988]] });
+    voice(ctx, t + 0.07, { type: 'square', peak: 0.1, decay: 0.12, dur: 0.4, pitch: [[0, 1319]] });
+  },
+  hiccup: (ctx, t) => voice(ctx, t, { type: 'triangle', peak: 0.45, attack: 0.003, decay: 0.03, dur: 0.15, pitch: [[0, 500], [0.04, 1400]] }),
+  raspberry: (ctx, t) => voice(ctx, t, {
+    type: 'sawtooth', peak: 0.55, attack: 0.02, dur: 0.35, vib: [35, 50], band: [700, 1.5],
+    pitch: [[0, 110], [0.35, 90]],
+  }),
+};
+const YES_NAMES = Object.keys(YES_SOUNDS);
+let recentYes = [];
+
+// Random, but never one of the last three: a run of the same sound stops
+// being funny.
 function playYesSound() {
   const ctx = audioCtx;
   if (!ctx) return;
   try {
+    const choices = YES_NAMES.filter(n => !recentYes.includes(n));
+    const name = choices[Math.floor(Math.random() * choices.length)];
+    recentYes = recentYes.concat(name).slice(-3);
+    YES_SOUNDS[name](ctx, ctx.currentTime + 0.005);
+  } catch (e) {}
+}
+
+// A slide whistle up for earning a rung: a pure tone gliding up two octaves,
+// with a little warble, ending in a quick toot at the top.
+function playClimbSound() {
+  const ctx = audioCtx;
+  if (!ctx) return;
+  try {
     const t = ctx.currentTime + 0.005;
-    [[1, 0.3, 0.09], [2, 0.08, 0.05]].forEach(([ratio, peak, decay]) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 1046.5 * ratio;   // C6
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(peak, t + 0.006);
-      g.gain.setTargetAtTime(0, t + 0.006, decay);
-      osc.connect(g);
-      g.connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + 0.6);
-    });
+    const top = t + 0.5;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, t);
+    osc.frequency.exponentialRampToValueAtTime(1760, top);
+    const lfo = ctx.createOscillator();
+    const depth = ctx.createGain();
+    lfo.frequency.value = 7;
+    depth.gain.value = 18;
+    lfo.connect(depth);
+    depth.connect(osc.frequency);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.28, t + 0.04);
+    g.gain.setValueAtTime(0.28, top);
+    g.gain.linearRampToValueAtTime(0.06, top + 0.04);   // a breath between glide and toot
+    g.gain.linearRampToValueAtTime(0.3, top + 0.08);
+    g.gain.setTargetAtTime(0, top + 0.16, 0.05);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t);
+    lfo.start(t);
+    osc.stop(top + 0.5);
+    lfo.stop(top + 0.5);
   } catch (e) {}
 }
 
@@ -1758,6 +2081,18 @@ function renderSummary() {
   ].join('');
   $('sum-note').textContent = saved ? '' : 'No reps were answered, so this session wasn’t saved.';
   $('sum-note').hidden = saved;
+  $('sum-notes').hidden = !saved;
+  $('sum-notes-text').value = r.notes;
+  autosize($('sum-notes-text'));
+}
+
+// Notes typed on the summary go straight into the saved session.
+function onSummaryNotes(e) {
+  const r = view.summary && view.summary.record;
+  if (!r || !view.summary.saved) return;
+  r.notes = e.target.value;
+  autosize(e.target);
+  saveSoon();
 }
 
 function statHtml(label, value, detail, full) {
@@ -1769,7 +2104,14 @@ function statHtml(label, value, detail, full) {
     </div>`;
 }
 
+function leaveSummary() {
+  const r = view.summary && view.summary.record;
+  if (r) r.notes = r.notes.trim();
+  flushSave();
+}
+
 function runAgain() {
+  leaveSummary();
   const { record, minutes } = view.summary;
   startSession(record.ladderId, minutes);
 }
@@ -1897,9 +2239,11 @@ function sessionItemHtml(s) {
         </div>
         <div class="h-sub">${sub}</div>
         ${missed ? `<div class="h-sub">Most misses: rung ${missed.list.map(m => m.n).join(' & ')} (${missed.count})</div>` : ''}
+        ${s.notes ? '<div class="h-sub">Has notes</div>' : ''}
       </summary>
       <div class="h-detail">
         <ul class="h-rungs">${rows}</ul>
+        ${s.notes ? `<p class="h-notes">${esc(s.notes)}</p>` : ''}
         <button class="btn small danger" data-action="delete-session" data-id="${esc(s.id)}">Delete this session</button>
       </div>
     </details></li>`;
@@ -2068,12 +2412,14 @@ const actions = {
   'step-down': () => control(() => sessionAction('STEP_DOWN')),
   'pause': () => control(() => (isPaused() ? resume() : pause(''))),
   'resume': resume,
-  'end': () => { sessionUi.confirmingEnd = true; renderSession(); },
+  'note': () => control(openNote),
+  'note-done': closeNote,
+  'end': () => { closeNote(); sessionUi.confirmingEnd = true; renderSession(); },
   'end-cancel': () => { sessionUi.confirmingEnd = false; renderSession(); },
   'end-confirm': () => { if (live) finishSession(!live.timeUp); },
 
   'run-again': runAgain,
-  'home': goHome,
+  'home': () => { leaveSummary(); goHome(); },
   'history-back': historyBack,
   'delete-session': deleteSession,
 };
@@ -2099,6 +2445,16 @@ $('custom-min').addEventListener('change', e => {
   saveData();
 });
 
+$('screen-session').addEventListener('touchstart', onSwipeStart, { passive: true });
+$('screen-session').addEventListener('touchend', onSwipeEnd, { passive: false });
+
+$('s-note-text').addEventListener('input', e => {
+  if (!live) return;
+  live.notes = e.target.value;
+  saveLive();
+});
+$('sum-notes-text').addEventListener('input', onSummaryNotes);
+
 $('h-ladder').addEventListener('change', e => {
   view.historyLadderId = e.target.value;
   renderHistory();
@@ -2111,15 +2467,22 @@ $('import-file').addEventListener('change', e => {
 });
 
 // Keys for testing at a desk: Y / N answer, U undo, D step down, P pause,
-// Esc asks to end.
+// W writes a note, ↑ / ↓ as the swipes, Esc asks to end (or closes the note).
 document.addEventListener('keydown', e => {
   if (view.screen !== 'session' || !live || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (sessionUi.noteOpen) {
+    if (e.key === 'Escape') { closeNote(); e.preventDefault(); }
+    return;
+  }
   const key = e.key.toLowerCase();
   if (key === 'y') answer('YES');
   else if (key === 'n') answer('NO');
   else if (key === 'u') actions['undo']();
   else if (key === 'd') actions['step-down']();
   else if (key === 'p') actions['pause']();
+  else if (key === 'w') actions['note']();
+  else if (key === 'arrowdown') swipeStep('STEP_DOWN');
+  else if (key === 'arrowup') swipeStep('STEP_UP');
   else if (key === 'escape') actions[sessionUi.confirmingEnd ? 'end-cancel' : 'end']();
   else return;
   e.preventDefault();
