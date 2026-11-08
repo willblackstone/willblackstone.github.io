@@ -327,16 +327,25 @@
     -webkit-touch-callout: none;
   }
   .session > * { width: 100%; max-width: 560px; margin-left: auto; margin-right: auto; }
-  .s-controls { display: flex; align-items: center; min-height: 52px; flex-shrink: 0; }
-  .s-controls .spacer { flex: 1; }
+  .s-controls { display: flex; align-items: center; gap: 6px; min-height: 58px; flex-shrink: 0; }
+  .s-controls .spacer { flex: 1; min-width: 0; }
   .s-ctl {
-    min-height: 48px; min-width: 48px; padding: 0 11px;
-    border-radius: var(--radius);
-    color: var(--text-3); font-size: 16px;
+    min-height: 44px; min-width: 44px; padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text-2); font-size: 15px; font-weight: 500;
+    white-space: nowrap; flex-shrink: 0;
   }
-  .s-ctl:active { background: var(--surface-2); color: var(--text-2); }
-  .s-ctl:first-child { margin-left: -11px; }
-  .s-ctl:last-child { margin-right: -11px; }
+  .s-ctl:active { background: var(--surface-2); color: var(--text); }
+  .s-ctl .short { display: none; }
+  /* Most phones: tighter, so all five still fit on one row even with Resume. */
+  @media (max-width: 399px) {
+    .s-controls { gap: 4px; }
+    .s-ctl { padding: 0 7px; font-size: 14px; }
+    .s-ctl .long { display: none; }
+    .s-ctl .short { display: inline; }
+  }
   .s-main { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
   .s-info { flex-shrink: 0; }
   .s-meta {
@@ -542,7 +551,7 @@
     <button class="s-ctl" data-action="end">End</button>
     <button class="s-ctl" id="s-note" data-action="note">Note</button>
     <span class="spacer"></span>
-    <button class="s-ctl" id="s-step-down" data-action="step-down">Step down</button>
+    <button class="s-ctl" id="s-step-down" data-action="step-down"><span class="long">Step down</span><span class="short">Down</span></button>
     <button class="s-ctl" id="s-undo" data-action="undo">Undo</button>
     <button class="s-ctl" id="s-pause" data-action="pause">Pause</button>
   </div>
@@ -642,6 +651,10 @@ const LadderLogic = (() => {
 
   // Without rules, a ladder plays by the strictest: the full target every
   // time, a miss drops a rung, no way back up but earning it.
+  // Undo reaches back this far. Every state is saved after each answer, so an
+  // unbounded history would make each save heavier as a session goes on.
+  const UNDO_LIMIT = 100;
+
   function createSession(rungCount, target, rules = {}) {
     return {
       rungCount,
@@ -674,7 +687,7 @@ const LadderLogic = (() => {
     // Keep what this action replaced, minus its own history, so UNDO can put
     // it back exactly: rung, streak, counts and all.
     const { past, ...replaced } = state;
-    return { ...next, past: past.concat([replaced]) };
+    return { ...next, past: past.concat([replaced]).slice(-UNDO_LIMIT) };
   }
 
   // The rules for one action. Returns the same object when nothing changes.
@@ -849,6 +862,13 @@ function runLadderTests() {
     expect([s.rung, s.streak, s.consolidation, isConsolidating(s)], [1, 4, 2, true], 'two reps later');
     s = play(s, 'NO');
     expect([s.rung, s.streak, s.topCleared], [0, 0, true], 'a miss still drops a rung');
+  });
+
+  check('undo history is capped, so a long session stays light to save', () => {
+    let s = createSession(3, 1000);
+    for (let i = 0; i < 250; i++) s = reduce(s, { type: 'YES' });
+    expect(s.past.length, 100, 'states kept');
+    expect(s.past[s.past.length - 1].reps, 249, 'the newest is the one just replaced');
   });
 
   check('reduce never modifies the state it is given', () => {
@@ -1508,7 +1528,8 @@ function chosenMinutes() {
 //   activeMs, runningSince        the clock: time banked so far, plus the stretch
 //                                 running since `runningSince` (epoch ms; null
 //                                 while paused)
-//   timeUp                        time has run out; the next answer ends it
+//   timeUp                        time has run out; carrying on is overtime,
+//                                 counted on the clock until End
 //   notes                         what's been jotted in the note so far
 //   state                         the LadderLogic state
 // `sessionUi` holds what only matters while this page is open.
@@ -1579,7 +1600,8 @@ function elapsedMs() {
 function tick() {
   if (!live) return;
   if (!live.timeUp && !isPaused() && elapsedMs() >= live.plannedMs) {
-    // Time's up, but the rep in hand gets finished: the next answer ends it.
+    // Time's up: the fanfare says so, then the clock counts the overtime for as
+    // long as the session goes on.
     live.timeUp = true;
     playEndTone();
     saveLive();
@@ -1609,7 +1631,6 @@ function answer(type) {
   // A Yes that earns the next rung gets the whistle instead of a silly sound.
   if (type === 'NO') playMissSound();
   else (live.state.rung > before ? playClimbSound : playYesSound)();
-  if (live.timeUp) { finishSession(false); return; }
   saveLive();
   renderSession();
 }
@@ -1758,7 +1779,7 @@ function renderSession() {
 
 function paintTime() {
   const label = live.timeUp
-    ? 'Last rep'
+    ? `+${fmtClock(Math.floor(Math.max(0, elapsedMs() - live.plannedMs) / 1000))}`
     : fmtClock(Math.ceil(Math.max(0, live.plannedMs - elapsedMs()) / 1000));
   const el = $('s-time');
   if (el.textContent !== label) el.textContent = label;
@@ -1825,10 +1846,36 @@ function sessionHint(msg) {
 // touching the screen. Like all Web Audio on iOS, the tone is silenced by the
 // ring/silent switch.
 
+// iOS can stop the context on its own: a call, Siri, another app's audio, the
+// app going to the background. It's then 'interrupted' or 'suspended', and
+// sometimes never runs again, or claims to run with its clock stopped. Sound
+// is only ever made on a context that's running (audioReady): piling sounds
+// onto a stuck one gets nothing out of the speaker and can bog the page
+// down. One still stuck a second later, or whose clock hasn't moved, is
+// thrown away here and a fresh one made, inside the tap where iOS allows it.
+
 let audioCtx = null;
+let audioStuckSince = 0;      // performance.now() when it was first seen not running; 0 while fine
+let audioClock = { ctx: 0, at: 0 };   // its clock at the last tap, to tell a frozen one
+
+function audioReady() { return !!audioCtx && audioCtx.state === 'running'; }
 
 function unlockAudio() {
   try {
+    if (audioCtx) {
+      const now = performance.now();
+      if (audioCtx.state === 'running') audioStuckSince = 0;
+      else if (!audioStuckSince) audioStuckSince = now;
+      const stuck = audioCtx.state === 'closed' || (audioStuckSince && now - audioStuckSince > 1000);
+      const frozen = audioCtx.state === 'running' && now - audioClock.at > 500 &&
+        audioCtx.currentTime === audioClock.ctx;
+      audioClock = { ctx: audioCtx.currentTime, at: now };
+      if (stuck || frozen) {
+        try { audioCtx.close(); } catch (e) {}
+        audioCtx = null;
+        audioStuckSince = 0;
+      }
+    }
     if (!audioCtx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -1850,8 +1897,13 @@ function unlockAudio() {
 function playEndTone() {
   const ctx = audioCtx;
   if (!ctx) return;
+  // No tap to lean on here: if iOS has stopped the context, ask once and play
+  // only if it comes back.
+  if (!audioReady()) {
+    ctx.resume().then(() => { if (audioReady()) playEndTone(); }).catch(() => {});
+    return;
+  }
   try {
-    if (ctx.state !== 'running') ctx.resume().catch(() => {});
     const t0 = ctx.currentTime + 0.3;
     wakeOutput(ctx, t0 - 0.3);
     const out = ctx.createGain();
@@ -2051,7 +2103,7 @@ function soundPicker(sounds) {
   let recent = [];
   return () => {
     const ctx = audioCtx;
-    if (!ctx) return;
+    if (!audioReady()) return;
     try {
       const choices = names.filter(n => !recent.includes(n));
       const name = choices[Math.floor(Math.random() * choices.length)];
@@ -2068,7 +2120,7 @@ const playMissSound = soundPicker(MISS_SOUNDS);
 // with a little warble, ending in a quick toot at the top.
 function playClimbSound() {
   const ctx = audioCtx;
-  if (!ctx) return;
+  if (!audioReady()) return;
   try {
     const t = ctx.currentTime + 0.005;
     const top = t + 0.5;
@@ -2163,7 +2215,8 @@ function renderSummary() {
   $('sum-title').textContent = r.ladderName;
   $('sum-sub').textContent = `${fmtMinutes(r.plannedSec)} planned · ${fmtDay(r.startedAt)}, ${fmtTimeOfDay(r.startedAt)}`;
   $('sum-stats').innerHTML = [
-    statHtml('Time spent', fmtClock(r.actualSec)),
+    statHtml('Time spent', fmtClock(r.actualSec),
+      r.actualSec > r.plannedSec ? `${fmtClock(r.actualSec - r.plannedSec)} past the timer` : ''),
     statHtml('Total reps', r.reps),
     statHtml('Yes rate', r.reps ? pct(r.yesRate) : '–', r.reps ? `${r.yes} of ${r.reps}` : ''),
     statHtml('Furthest rung', `${r.furthestRung} of ${r.rungCount}`, r.topCleared ? 'top rung cleared' : ''),
