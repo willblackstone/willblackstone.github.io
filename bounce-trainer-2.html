@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bounce Articulation Trainer 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;0,800;1,400&display=swap">
+<style>
+/* VOICE: a calm, practical practice-room tool. Nothing between the player and the ball
+   IDEA: a lab demonstration rig (chute, floor, ball) set up on a white bench
+   PICTURE: the live stage itself, large, white, black ball, red impact flash
+   COLOUR and TYPE: white stage, ink black, one red accent for impacts; Archivo throughout
+   LAYOUT: modest title, stage full width, transport bar with level stepper, a "notice" line, settings grouped below */
+:root{color-scheme:light dark;--bg:light-dark(#f3f3f1,#131313);--ink:light-dark(#111,#eee);--mut:light-dark(#666,#a5a5a5);--card:light-dark(#fff,#1d1d1d);--line:light-dark(#dcdcd8,#333);--acc:#e3120b;--seg:light-dark(#ececea,#2a2a2a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1240px;margin:0 auto;padding:clamp(16px,3vw,36px) max(4vw,14px) 48px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px 20px;flex-wrap:wrap}
+h1{font-size:clamp(28px,4vw,42px);line-height:1.05;margin:0 0 6px;font-weight:800;text-wrap:balance}
+h1 .v{display:inline-block;background:var(--ink);color:var(--bg);border-radius:7px;padding:0 .26em;font-size:.72em;vertical-align:.12em;margin-left:.08em}
+.lede{margin:0 0 18px;color:var(--mut);max-width:64ch}
+#stage{position:relative;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;aspect-ratio:16/9;max-height:74vh;width:100%;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#stage:fullscreen{border:0;border-radius:0;max-height:none;aspect-ratio:auto;width:100vw;height:100vh}
+#stage:-webkit-full-screen{border:0;border-radius:0;max-height:none;aspect-ratio:auto;width:100vw;height:100vh}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0 10px}
+button{font:inherit;color:inherit;border:1px solid var(--line);background:var(--card);border-radius:8px;min-height:44px;padding:0 16px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:800;min-width:120px}
+.hint{color:var(--mut);font-size:14px}
+#stats{margin-left:auto;font-variant-numeric:tabular-nums}
+.lvl{display:inline-flex;align-items:stretch}
+.lvl button{padding:0 13px;font-size:22px;line-height:1}
+.lvl #prev{border-radius:8px 0 0 8px}.lvl #next{border-radius:0 8px 8px 0}
+.lvl select{font:inherit;font-weight:600;min-height:44px;border:1px solid var(--line);border-left:0;border-right:0;border-radius:0;background:var(--card);color:var(--ink);padding:0 10px;max-width:min(58vw,300px)}
+#listenBtn{background-image:linear-gradient(var(--acc),var(--acc));background-size:var(--lv,0%) 3px;background-repeat:no-repeat;background-position:0 100%}
+#listenBtn[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);font-weight:800}
+.notice{margin:0 0 20px;font-size:15px;color:var(--mut);max-width:80ch}
+.notice b{color:var(--ink);font-weight:800}
+.notice i{color:var(--ink)}
+.strip{margin:0 0 22px;max-width:760px}
+.track{position:relative;height:46px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.track .mid{position:absolute;left:50%;top:6px;bottom:16px;width:2px;margin-left:-1px;background:var(--acc)}
+.track .lab{position:absolute;bottom:1px;font-size:11px;color:var(--mut);letter-spacing:.04em}
+.track .l{left:8px}.track .r{right:8px}.track .c{left:50%;transform:translateX(-50%)}
+.dot{position:absolute;top:17px;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--ink)}
+.dot.new{width:16px;height:16px;margin:-8px 0 0 -8px;box-shadow:0 0 0 3px var(--card),0 0 0 4px var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:14px}
+.grp{grid-column:1/-1;margin:16px 0 -4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:800}
+.grp:first-child{margin-top:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px 10px}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+h3{margin:0;font-size:17px;font-weight:800}
+h3 small{font-weight:400;color:var(--mut);font-size:13px;margin-left:4px}
+.seg{display:inline-flex;background:var(--seg);border-radius:9px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;min-height:36px;padding:0 12px;font-size:14px;border-radius:7px}
+.seg button[aria-pressed=true]{background:var(--card);font-weight:800;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.row{display:grid;grid-template-columns:5.6em minmax(0,1fr) 4.8em;align-items:center;gap:10px;min-height:44px;font-size:14px}
+.row output{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.row select{grid-column:2/4;font:inherit;font-size:15px;min-height:38px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);padding:0 8px}
+input[type=range]{width:100%;accent-color:var(--ink);height:28px}
+.tog{display:flex;align-items:center;gap:10px;min-height:40px;font-size:15px;cursor:pointer}
+.tog input{width:20px;height:20px;flex:none;accent-color:var(--ink)}
+.card.rand .fx,.card:not(.rand) .rn{display:none}
+.hide{display:none!important}
+.note{font-size:13px;color:var(--mut);margin:4px 0 6px}
+.presets{margin-bottom:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.chip{text-align:left;padding:8px 14px;line-height:1.25;max-width:100%}
+.chip small{display:block;color:var(--mut);font-size:13px;margin-top:2px}
+.chip[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.mine{display:inline-flex;align-items:stretch}
+.mine .chip{border-radius:8px 0 0 8px}
+.mine .del{border-left:0;border-radius:0 8px 8px 0;padding:0 12px;color:var(--mut)}
+.saverow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.saverow input[type=text]{font:inherit;font-size:16px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);flex:1 1 220px}
+#linkCode{font-family:ui-monospace,monospace;font-size:14px}
+summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:48px;padding:0 16px;margin-bottom:14px;background:var(--card);border:1px solid var(--line);border-radius:10px;cursor:pointer;list-style:none;font-weight:800;font-size:17px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:'';width:9px;height:9px;border-right:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:translateY(-3px) rotate(45deg);transition:transform .15s}
+details[open]>summary::before{transform:translateY(2px) rotate(-135deg)}
+summary:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+summary .note{margin:0;font-weight:400;margin-left:auto}
+h4{margin:6px 0 0;font-size:14px;color:var(--mut);font-weight:600}
+.meter{height:8px;background:var(--seg);border-radius:4px;overflow:hidden;margin:8px 0 4px}
+#meter{display:block;height:100%;width:0;background:var(--ink);transition:width .08s linear}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);width:min(580px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:22px 24px 20px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h2{font-size:clamp(21px,3vw,28px);line-height:1.15;margin:0 0 12px;font-weight:800;text-wrap:balance}
+dialog h3{margin:16px 0 4px}
+dialog p,dialog li{margin:6px 0}
+dialog ol,dialog ul{padding-left:1.3em;margin:8px 0}
+.dbtns{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+kbd{font:600 13px ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;background:var(--bg)}
+@media(max-width:600px){#stage{aspect-ratio:4/3}#stats{width:100%;margin-left:0}.lvl{flex:1 1 100%}.lvl select{flex:1;max-width:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Bounce articulation trainer <span class="v">2</span></h1>
+      <p class="lede">Watch the ball fly, have the note in your ear before it lands, and play it the instant the ball meets the floor. Every launch is different, so read the flight. Don't count it.</p>
+    </div>
+    <button id="helpBtn" aria-haspopup="dialog">How it works</button>
+  </div>
+
+  <div id="stage" title="Click or tap to start or stop"><canvas id="cv"></canvas></div>
+
+  <div class="bar">
+    <button id="go" class="primary">Start</button>
+    <div class="lvl">
+      <button id="prev" aria-label="Easier level" title="Easier level (←)">‹</button>
+      <select id="lvl" aria-label="Level"></select>
+      <button id="next" aria-label="Harder level" title="Harder level (→)">›</button>
+    </div>
+    <button id="listenBtn" aria-pressed="false" title="Use the microphone to see how your notes line up with the landings">Listen</button>
+    <button id="fs">Full screen</button>
+    <span class="hint" id="stats"></span>
+  </div>
+  <p class="notice" id="notice"></p>
+
+  <div id="strip" class="strip hide">
+    <div class="track" aria-hidden="true"><i class="mid"></i><span class="lab l">early</span><span class="lab c">with the ball</span><span class="lab r">late</span><div id="dots"></div></div>
+    <p class="note" id="stripSum" aria-live="polite"></p>
+  </div>
+
+  <details id="settings">
+  <summary><span class="sumt">Settings and presets</span><span class="note" id="sumActive"></span></summary>
+  <section class="card presets" id="presets">
+    <div class="ch"><h3>Levels and presets</h3></div>
+    <h4>Levels, easiest first</h4>
+    <div class="chips" id="builtin"></div>
+    <h4>Yours</h4>
+    <div class="chips" id="mine"></div>
+    <form class="saverow" id="saveForm"><input type="text" id="pname" maxlength="40" placeholder="Name these settings, e.g. Sam, week 3" aria-label="Preset name"><button type="submit">Save current settings</button></form>
+    <div class="saverow"><button type="button" id="linkBtn">Put these settings in the page link</button><button type="button" id="resetBtn">Back to level 1</button></div>
+    <p class="note hide" id="linkNote">Done. The page link now carries these settings. Open the page on its own, not beside a chat, then use Share → Copy link. Whoever opens that link gets exactly this setup. If the link loses it, add this to the end of the address:</p>
+    <div class="saverow hide" id="linkRow"><input type="text" id="linkCode" readonly aria-label="Settings code"></div>
+  </section>
+
+  <div class="grid" id="panel">
+    <h2 class="grp">Flight</h2>
+    <div class="card" data-p="angle">
+      <div class="ch"><h3>Chute angle</h3><div class="seg"><button data-pm="angle" data-v="0">Fixed</button><button data-pm="angle" data-v="1">Random</button></div></div>
+      <label class="row fx"><span>Angle</span><input type="range" data-k="angle.v" min="0" max="70" step="1"><output data-o="angle.v"></output></label>
+      <label class="row rn"><span>From</span><input type="range" data-k="angle.min" min="0" max="70" step="1"><output data-o="angle.min"></output></label>
+      <label class="row rn"><span>To</span><input type="range" data-k="angle.max" min="0" max="70" step="1"><output data-o="angle.max"></output></label>
+      <label class="tog rn"><input type="checkbox" data-k="highBias"> Favour high arcs</label>
+      <p class="note rn">Most launches come from the top of the range, with the odd lower one.</p>
+    </div>
+    <div class="card" data-p="power">
+      <div class="ch"><h3>Launch power</h3><div class="seg"><button data-pm="power" data-v="0">Fixed</button><button data-pm="power" data-v="1">Random</button></div></div>
+      <label class="row fx"><span>Power</span><input type="range" data-k="power.v" min="1" max="10" step="0.5"><output data-o="power.v"></output></label>
+      <label class="row rn"><span>From</span><input type="range" data-k="power.min" min="1" max="10" step="0.5"><output data-o="power.min"></output></label>
+      <label class="row rn"><span>To</span><input type="range" data-k="power.max" min="1" max="10" step="0.5"><output data-o="power.max"></output></label>
+      <p class="note" id="powerNote">While the chute is hidden, angle and power are set for each launch automatically, so the ball comes in from the left, rises high and lands anywhere across the floor.</p>
+    </div>
+    <div class="card" data-p="bounce">
+      <div class="ch"><h3>Bounciness</h3><div class="seg"><button data-pm="bounce" data-v="0">Fixed</button><button data-pm="bounce" data-v="1">Random</button></div></div>
+      <label class="row fx"><span>Bounce</span><input type="range" data-k="bounce.v" min="1" max="10" step="0.5"><output data-o="bounce.v"></output></label>
+      <label class="row rn"><span>From</span><input type="range" data-k="bounce.min" min="1" max="10" step="0.5"><output data-o="bounce.min"></output></label>
+      <label class="row rn"><span>To</span><input type="range" data-k="bounce.max" min="1" max="10" step="0.5"><output data-o="bounce.max"></output></label>
+      <p class="note" id="bounceNote">1 is a dead ball, 10 is a superball. Lower values make the bounces speed up and die away sooner.</p>
+    </div>
+
+    <h2 class="grp">Notes and timing</h2>
+    <div class="card">
+      <div class="ch"><h3>Notes</h3><div class="seg"><button data-set="noteMode" data-v="first">First landing</button><button data-set="noteMode" data-v="every">Every bounce</button><button data-set="noteMode" data-v="hold">Land and hold</button></div></div>
+      <label class="row" id="rowMax"><span>Up to</span><input type="range" data-k="maxNotes" min="2" max="16" step="1"><output data-o="maxNotes"></output></label>
+      <label class="row hm"><span>Hold from</span><input type="range" data-k="holdMin" min="0.4" max="3" step="0.1"><output data-o="holdMin"></output></label>
+      <label class="row hm"><span>To</span><input type="range" data-k="holdMax" min="0.4" max="3" step="0.1"><output data-o="holdMax"></output></label>
+      <p class="note" id="notesNote"></p>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Launches</h3><div class="seg"><button data-set="flow" data-v="single">One at a time</button><button data-set="flow" data-v="stream">Stream</button><button data-set="flow" data-v="pulse">On a pulse</button></div></div>
+      <label class="row" id="rowPause"><span>Pause</span><input type="range" data-k="pause" min="0.5" max="6" step="0.25"><output data-o="pause"></output></label>
+      <label class="row" id="rowEvery"><span>Every</span><input type="range" data-k="every" min="0.8" max="6" step="0.1"><output data-o="every"></output></label>
+      <label class="row pu"><span>Tempo</span><input type="range" data-k="bpm" min="40" max="160" step="1"><output data-o="bpm"></output></label>
+      <label class="row pu"><span>Land every</span><input type="range" data-k="beats" min="1" max="8" step="1"><output data-o="beats"></output></label>
+      <div class="pu" style="margin:4px 0"><div class="seg"><button data-set="land" data-v="beat">On the beat</button><button data-set="land" data-v="and">On the "and"</button><button data-set="land" data-v="either">Either</button></div></div>
+      <label class="tog pu"><input type="checkbox" data-k="metro"> Sound the pulse</label>
+      <p class="note" id="flowNote"></p>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Speed</h3><div class="seg"><button data-set="speed" data-v="1">Real</button><button data-set="speed" data-v="0.75">¾</button><button data-set="speed" data-v="0.5">½</button><button data-set="speed" data-v="0.25">¼</button></div></div>
+      <p class="note" id="speedNote">Slow motion slows the whole flight, gravity included, so the timing stays true, just stretched.</p>
+    </div>
+
+    <h2 class="grp">Seeing</h2>
+    <div class="card">
+      <div class="ch"><h3>Ball visibility</h3><div class="seg"><button data-set="vis" data-v="always">Always</button><button data-set="vis" data-v="vanish">Vanishes</button><button data-set="vis" data-v="shadow">Shadow only</button></div></div>
+      <label class="tog"><input type="checkbox" data-k="showChute"> Show the chute</label>
+      <label class="row" id="rowMinVis"><span>On screen at least</span><input type="range" data-k="minVis" min="0.4" max="1.6" step="0.1"><output data-o="minVis"></output></label>
+      <label class="row" id="rowVanish"><span>Vanishes at</span><input type="range" data-k="vanish" min="20" max="90" step="5"><output data-o="vanish"></output></label>
+      <p class="note" id="visNote"></p>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>On the stage</h3></div>
+      <label class="tog"><input type="checkbox" data-k="marker"> Mark where it will land</label>
+      <label class="tog"><input type="checkbox" data-k="shadow"> Floor shadow</label>
+      <label class="tog"><input type="checkbox" data-k="walls"> Bounce off side walls</label>
+      <label class="tog"><input type="checkbox" data-k="trail"> Flight trail</label>
+      <label class="tog"><input type="checkbox" data-k="values"> Show launch values</label>
+      <p class="note">The landing mark is a starting aid. Once the landings feel unhurried, try without it.</p>
+    </div>
+
+    <h2 class="grp">Hearing</h2>
+    <div class="card">
+      <div class="ch"><h3>Hear it first</h3><div class="seg"><button data-set="pitch" data-v="off">No pitch</button><button data-set="pitch" data-v="one">One note</button><button data-set="pitch" data-v="change">Changing</button></div></div>
+      <label class="row p1"><span>Note</span><select data-k="home" data-n id="homeSel" aria-label="Note"></select></label>
+      <label class="row p2"><span>Notes from</span><select data-k="pool" id="poolSel" aria-label="Notes to choose from"></select></label>
+      <label class="row pp"><span>Names as</span><select data-k="inst" aria-label="Note names"><option value="bb">B♭ instrument (written)</option><option value="c">Concert pitch</option></select></label>
+      <label class="tog pp"><input type="checkbox" data-k="cue"> Sound the note while the chute aims</label>
+      <label class="tog"><input type="checkbox" data-k="words"> Show an image word before each launch</label>
+      <p class="note" id="pitchNote"></p>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Sounds</h3></div>
+      <label class="row"><span>Volume</span><input type="range" data-k="vol" min="0" max="100" step="5"><output data-o="vol"></output></label>
+      <label class="tog"><input type="checkbox" data-k="whoosh"> Whoosh when the ball launches</label>
+      <label class="tog"><input type="checkbox" data-k="click"> Tock on each note (for checking)</label>
+      <p class="note">The screen stays awake while the trainer runs, where the browser allows it.</p>
+    </div>
+    <div class="card" id="listenCard">
+      <div class="ch"><h3>Listen <small>experimental</small></h3><button id="micBtn">Turn on the microphone</button></div>
+      <div class="meter" aria-hidden="true"><span id="meter"></span></div>
+      <label class="row"><span>Sensitivity</span><input type="range" id="sens" min="1" max="10" step="1"><output id="sensO"></output></label>
+      <div class="saverow"><button id="calBtn">Calibrate</button><span class="note" id="calNote"></span></div>
+      <p class="note">The microphone finds the start of each note and shows how it lined up with the landing. Nothing is recorded or sent anywhere. The tock is muted while listening. If the pulse is on, use headphones so the mic doesn't hear the clicks.</p>
+    </div>
+  </div>
+  </details>
+</div>
+
+<dialog id="welcome" aria-labelledby="wT">
+  <h2 id="wT">Play your note the instant the ball lands.</h2>
+  <ol>
+    <li><b>Watch it fly.</b> The chute aims, the ball launches, and gravity brings it down.</li>
+    <li><b>Hear it first.</b> Have the note in your ear before the ball lands.</li>
+    <li><b>Land with it.</b> The floor flashes red at the moment of impact. That's where your note goes.</li>
+  </ol>
+  <p>It's not a reaction test. There's always time to see it coming. You're starting on level 1: half speed, the same arc each time, with the landing spot marked.</p>
+  <div class="dbtns"><button class="primary" id="wGo">Start</button><button id="wSkip">Look around first</button></div>
+</dialog>
+
+<dialog id="help" aria-labelledby="hT">
+  <h2 id="hT">How it works</h2>
+  <p>A ball launches from the chute, flies, and lands. Play your note the instant it hits the floor. The floor flashes red at each moment you should play.</p>
+  <h3>Getting going</h3>
+  <ul>
+    <li>Press <b>Start</b>, or <kbd>Space</kbd>, or tap the stage.</li>
+    <li>Work through the <b>levels</b> with ‹ and ›. Each adds one new thing. Move on when the landings feel unhurried, not when you get them all.</li>
+    <li>Under each level is something to <b>notice</b> while you play.</li>
+  </ul>
+  <h3>Things to try</h3>
+  <ul>
+    <li><b>Land and hold:</b> the ball lands, rolls and drops into a hole. Hold the note until it disappears.</li>
+    <li><b>On a pulse:</b> every landing falls on a beat, so the ball and the metronome arrive together.</li>
+    <li><b>Hear it first:</b> the note sounds while the chute aims, then you carry it through the flight in your head.</li>
+    <li><b>Listen:</b> lets the microphone show how early or late each note started. Calibrate once per device with the speakers on.</li>
+  </ul>
+  <h3>Keys</h3>
+  <p><kbd>Space</kbd> start and stop · <kbd>F</kbd> full screen · <kbd>←</kbd> <kbd>→</kbd> change level · <kbd>?</kbd> this help</p>
+  <p class="note">On an iPad on a music stand, use full screen and tap the stage to start and stop.</p>
+  <div class="dbtns"><button class="primary" id="hClose">Close</button></div>
+</dialog>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+// ---------- physics constants (SI units) ----------
+const G=9.81, R=0.09, K=0.012, FR=0.88, EW=0.7, VSTOP=0.6, DT=0.0005, ROLL=0.6;
+const WW=6;                       // world width, metres
+const PIV={x:0.45,y:0.26}, CL=0.94, S0=0.04, BACK=0.1; // low hinge; mouth is CL along the chute; ball starts S0 along it
+const HOLEW=R*2.6;                // hole in the floor for "land and hold"
+const pvx=()=>S.showChute?PIV.x:-1.4;   // hidden chute sits off the left edge, so the ball flies in
+const lvlSpeed=l=>3+(l-1)*(5.5/9);   // power 1..10 -> 3..8.5 m/s
+const lvlE=l=>0.35+(l-1)*0.06;       // bounce 1..10 -> e 0.35..0.89
+
+// ---------- settings ----------
+const DEF={angle:{r:1,v:50,min:30,max:68},power:{r:1,v:5,min:3,max:8},bounce:{r:0,v:6,min:4,max:8},
+  noteMode:'first',maxNotes:6,holdMin:0.8,holdMax:1.8,
+  flow:'single',pause:1.5,every:2.2,bpm:66,beats:4,land:'beat',metro:true,
+  speed:1,shadow:true,trail:false,click:false,values:false,walls:false,whoosh:true,showChute:true,minVis:0.8,highBias:true,vis:'always',vanish:60,marker:false,
+  pitch:'off',home:60,pool:'five',inst:'bb',cue:true,words:false,vol:80,preset:''};
+const DISPLAY=['click','values','trail','whoosh','vol','inst','home','metro','words'];   // personal prefs a preset leaves alone
+let S=JSON.parse(JSON.stringify(DEF)),firstVisit=false;
+try{let s=JSON.parse(localStorage.getItem('bounceTrainer2')||'null');
+  if(!s){firstVisit=true;s=JSON.parse(localStorage.getItem('bounceTrainer')||'null');if(s)s.preset=''}   // carry over v1 settings
+  if(s)for(const k in DEF){if(s[k]!==undefined&&typeof s[k]===typeof DEF[k])S[k]=typeof DEF[k]==='object'?Object.assign({},DEF[k],s[k]):s[k]}}catch(e){firstVisit=true}
+const save=()=>{try{localStorage.setItem('bounceTrainer2',JSON.stringify(S))}catch(e){}};
+const getK=k=>k.split('.').reduce((o,p)=>o[p],S);
+const setK=(k,v)=>{const p=k.split('.');let o=S;while(p.length>1)o=o[p.shift()];o[p[0]]=v};
+const fmt={angle:v=>v+'°',power:v=>(+v).toFixed(1)+'/10',bounce:v=>(+v).toFixed(1)+'/10',maxNotes:v=>v+' notes',minVis:v=>(+v).toFixed(1)+' s',pause:v=>v+' s',vanish:v=>v+'%',every:v=>(+v).toFixed(1)+' s',
+  holdMin:v=>(+v).toFixed(1)+' s',holdMax:v=>(+v).toFixed(1)+' s',bpm:v=>v+' bpm',beats:v=>v==1?'beat':v+' beats',vol:v=>v+'%'};
+
+// ---------- pitches and words ----------
+const NN=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+const nname=m=>NN[((m%12)+12)%12], noct=m=>Math.floor(m/12)-1;
+const POOLS={five:['C D E F G',[60,62,64,65,67]],major:['C major, C to C',[60,62,64,65,67,69,71,72]],low:['Low: F♯ up to D',[54,55,57,59,60,62]],
+  middle:['Middle: G to G',[67,69,71,72,74,76,77,79]],upper:['Upper: C to high C',[72,74,76,77,79,81,83,84]],partials:['Open notes: C G C E G',[60,67,72,76,79]],
+  chrom:['Chromatic, C to C',[60,61,62,63,64,65,66,67,68,69,70,71,72]]};
+const WORDS=['a bell','a feather','a spark','velvet','a raindrop','a pebble in a pond','glass','a knock at the door','a bloom','a footstep in snow','a lantern lit',
+  'honey','a struck match','silk','a heartbeat','a pin dropping','a wave arriving','sunrise','a cork popping','thunder far away','a whisper','a candle flame','a timpani','a drop of ink'];
+let lastNote=null,lastWord=null;
+function pickNote(){if(S.pitch==='off')return null;if(S.pitch==='one')return S.home;const m=(POOLS[S.pool]||POOLS.five)[1];let n,g=0;
+  do n=m[Math.random()*m.length|0];while(m.length>1&&n===lastNote&&g++<20);return lastNote=n}
+function pickWord(){if(!S.words)return null;let w,g=0;do w=WORDS[Math.random()*WORDS.length|0];while(w===lastWord&&g++<20);return lastWord=w}
+const sounding=m=>m+(S.inst==='bb'?-2:0);
+
+// ---------- simulation ----------
+// hole: x of a hole in the floor the rolling ball drops into; dead: the ball doesn't bounce, it lands and rolls
+function simulate(ang,spd,e,px0=pvx(),free=false,hole=null,dead=false){
+  const dt=free?0.002:DT;   // quick coarse steps when only probing a launch
+  const th=ang*Math.PI/180,c=Math.cos(th),s=Math.sin(th),eb=dead?0:e;
+  const xs=[],ys=[],ev=[];
+  // inside the chute: steady push from the bottom so the ball leaves the mouth at exactly spd
+  const acc=spd*spd/(2*(CL-S0));let d=S0,u=0,t=0;
+  while(d<CL){xs.push(px0+d*c);ys.push(PIV.y+d*s);u+=acc*dt;d+=u*dt;t+=dt}
+  const tc=t;
+  let x=px0+CL*c,y=PIV.y+CL*s,vx=spd*c,vy=spd*s,apex=y,apexX=x,roll=-1,fall=-1,rel=-1,tIn=x>=0?tc:-1;
+  while(t<16){
+    xs.push(x);ys.push(y);
+    if(fall>=0){                      // dropping into the hole
+      vy-=G*dt;y+=vy*dt;x+=vx*dt;const edge=hole+HOLEW/2-R;if(x>edge){x=edge;vx=0}
+      if(rel<0&&y+R<0)rel=t+dt;       // fully below the floor: the note ends here
+      if(t-fall>0.45){t+=dt;break}
+    } else if(roll<0){
+      const v=Math.hypot(vx,vy);
+      vx+=-K*v*vx*dt; vy+=(-G-K*v*vy)*dt;
+      const nx=x+vx*dt, ny=y+vy*dt;
+      if(ny<R){
+        const f=(y-R)/(y-ny), vin=-vy;
+        ev.push({t:t+f*dt,x:x+(nx-x)*f,v:vin});
+        vy=vin*eb; vx*=FR; y=R+(R-ny)*eb;
+        if(vy<VSTOP){roll=t;vy=0;y=R}
+      } else y=ny;
+      x=nx;
+    } else {
+      const sg=Math.sign(vx); vx-=sg*ROLL*dt; if(Math.sign(vx)!==sg)vx=0;
+      x+=vx*dt;
+      if(hole!==null&&x>=hole){fall=t;vy=0}
+      else if(dead?(vx===0&&t-roll>0.3)||t-roll>12:t-roll>0.8)break;
+    }
+    if(tIn<0&&x>=0)tIn=t;            // ball is (half) on screen
+    const inside=tIn>=0;
+    if(free){if(ev.length)break}
+    else if(fall<0){
+      if(S.walls){if(inside&&x<R){x=2*R-x;vx=-vx*EW}else if(x>WW-R){x=2*(WW-R)-x;vx=-vx*EW}}
+      else if(x>WW+2*R||(inside&&x<-2*R)){t+=dt;break}
+    }
+    if(y>apex){apex=y;apexX=x}
+    t+=dt;
+  }
+  return {xs,ys,ev,tEnd:t,apex,apexX,ang,spd,e,tc,tIn:tIn<0?tc:tIn,px0,hole,rel};
+}
+const rnd=(a,b)=>{if(a>b)[a,b]=[b,a];return a+Math.random()*(b-a)};
+const pick=p=>p.r?rnd(p.min,p.max):p.v;
+// angles: optionally weighted towards the top of the range (density rises with angle squared)
+function pickAngle(){const a=S.angle;if(!a.r)return a.v;const lo=Math.min(a.min,a.max),hi=Math.max(a.min,a.max);
+  return S.highBias?lo+(hi-lo)*Math.cbrt(Math.random()):rnd(lo,hi)}
+// land and hold: given a dead-ball flight, put a hole where the roll will have lasted the chosen hold
+function withHole(s,force){
+  const f=s.ev[0];if(!f)return force?s:null;
+  let a=-1,b=-1;
+  for(let i=Math.ceil(f.t/DT)+1;i<s.xs.length-1;i+=8){const x=s.xs[i],v=(s.xs[i+1]-x)/DT;
+    if(x>WW-0.35||v<0.3)break;
+    if(x-f.x>=0.3){const h=i*DT-f.t;if(a<0)a=h;b=h}}
+  if(a<0)return force?s:null;
+  const h0=Math.min(S.holdMin,S.holdMax),h1=Math.max(S.holdMin,S.holdMax);
+  let lo=Math.max(a,h0),hi=Math.min(b,h1);
+  if(lo>hi){if(!force)return null;lo=hi=Math.min(b,Math.max(a,h0))}
+  const H=rnd(lo,hi),hx=s.xs[Math.round((f.t+H)/DT)];
+  const n=simulate(s.ang,s.spd,s.e,s.px0,false,hx,true);n.pl=s.pl;n.bl=s.bl;n.hold=H;return n;
+}
+// hidden chute: slide the off-screen launch point so landings spread across the whole floor
+function hiddenX(ang,spd,e){
+  const probe=simulate(ang,spd,e,0,true),f=probe.ev[0];if(!f)return null;
+  const D=f.x,DA=probe.apexX,mouth=CL*Math.cos(ang*Math.PI/180);
+  const pMax=-(mouth+R+0.05);                       // the whole chute stays off screen
+  let lo=Math.max(1.0,D-DA+0.25),hi=Math.min(WW-0.4,D+pMax); // prefer the top of the arc on screen
+  if(lo>hi)lo=Math.max(1.0,Math.min(hi,D-DA+0.25));
+  if(lo>hi)return null;
+  return rnd(lo,hi)-D;
+}
+// hidden chute: power is solved so the arc rises high on screen and lands somewhere across the floor
+function solveV(f,target){let lo=1,hi=18;for(let i=0;i<24;i++){const m=(lo+hi)/2;if(f(m)<target)lo=m;else hi=m}return (lo+hi)/2}
+function hiddenLaunch(hold=false){
+  // pick where it should land (anywhere across the floor) and how high it should peak, then find the launch that does it
+  for(let i=0;i<25;i++){
+    const bl=pick(S.bounce),e=lvlE(bl);
+    const L=rnd(2.0,hold?3.4:WW-0.35),h=(0.62+0.31*Math.sqrt(Math.random()))*visH-R;   // peaks lean towards the top of the screen
+    const pAt=a=>-(CL*Math.cos(a*Math.PI/180)+R+0.05);                       // chute just off the left edge
+    const fit=a=>{const p=pAt(a),landOf=v=>{const q=simulate(a,v,e,p,true);return q.ev[0]?q.ev[0].x:1e9};
+      const v=solveV(landOf,L);return {a,p,v,apex:simulate(a,v,e,p,true).apex}};
+    let lo=30,hi=76,best=null;
+    for(let k=0;k<14;k++){const m=(lo+hi)/2,r=fit(m);best=r;if(r.apex<h)lo=m;else hi=m}
+    const sim=simulate(best.a,best.v,e,best.p,false,null,hold);const f=sim.ev[0];
+    if(!f||f.x<1.2||f.x>WW-0.2||sim.apex>visH-R-0.05||f.t-sim.tIn<S.minVis)continue;
+    sim.pl=1+(best.v-3)*9/5.5;sim.bl=bl;
+    if(hold){const w=withHole(sim,i===24);if(!w)continue;return w}
+    return sim;
+  }
+  return null;
+}
+function makeLaunch(){
+  const hold=S.noteMode==='hold';
+  if(!S.showChute){const h=hiddenLaunch(hold);if(h)return h}
+  const fixed=!(S.angle.r||S.power.r||S.bounce.r);
+  let best=null;
+  for(let i=0;i<40;i++){
+    const last=i===39||fixed;
+    const ang=pickAngle(),pl=pick(S.power),bl=pick(S.bounce),spd=lvlSpeed(pl),e=lvlE(bl);
+    let px0=pvx();if(!S.showChute){const h=hiddenX(ang,spd,e);if(h===null&&!last)continue;if(h!==null)px0=h}
+    let sim=simulate(ang,spd,e,px0,false,null,hold);sim.pl=pl;sim.bl=bl;
+    if(hold){const w=withHole(sim,last);if(!w)continue;sim=w}
+    best=sim;
+    if(fixed)break;
+    const f=sim.ev[0];
+    const runOK=S.noteMode!=='every'||sim.ev.length>=Math.min(3,S.maxNotes)||i>25;   // a bounce run should stay on screen for a few bounces
+    if(runOK&&sim.apex<visH-R-0.05&&f&&f.x>(S.showChute?PIV.x+0.5:0.4)&&f.x<WW-0.25&&(S.showChute||f.t-sim.tIn>=S.minVis))break;
+  }
+  if(!best){best=simulate(60,5,lvlE(5));best.pl=5;best.bl=5}
+  return best;
+}
+
+// ---------- canvas ----------
+const stage=$('stage'),cv=$('cv'),cx=cv.getContext('2d');
+let cw=0,ch=0,dpr=1,SC=100,floorY=0,visH=3;
+function resize(){dpr=window.devicePixelRatio||1;cw=stage.clientWidth;ch=stage.clientHeight;cv.width=cw*dpr;cv.height=ch*dpr;
+  SC=cw/WW;floorY=ch-Math.max(ch*0.08,24);visH=floorY/SC}
+const ro=new ResizeObserver(resize);ro.observe(stage);resize();
+const PX=x=>x*SC, PY=y=>floorY-y*SC;
+
+// ---------- audio ----------
+let ac=null,out=null,live=[];
+const LA=0.25;   // seconds of audio scheduled ahead
+function ensureAudio(){
+  if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});out=ac.createGain();out.connect(ac.destination)}catch(e){ac=null}}
+  if(ac){out.gain.value=S.vol/100;if(ac.state==='suspended')ac.resume().catch(()=>{})}
+  return ac}
+// the AudioContext time that will be *heard* at performance time P (ms), so sounds line up with what's on screen
+function ctxAt(P){let c;
+  try{if(ac.getOutputTimestamp){const ts=ac.getOutputTimestamp();if(ts.contextTime>0&&ts.performanceTime>0)c=ts.contextTime+(P-ts.performanceTime)/1000}}catch(e){}
+  if(c===undefined)c=ac.currentTime+(P-performance.now())/1000;
+  return Math.max(c,ac.currentTime+0.003)}
+const track=(n,end)=>live.push({n,end});
+function hush(){if(!ac)return;for(const l of live){try{l.n.stop()}catch(e){}}live=[]}
+function noise(len,shape){const b=ac.createBuffer(1,Math.max(1,Math.floor(ac.sampleRate*len)),ac.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(shape?shape(i/d.length):1);return b}
+function whoosh(t,L){
+  // a soft thump as the ball is released, then a rush that builds up the chute and peaks as it leaves the mouth
+  const k=Math.min(1,Math.max(0,(L.spd-3)/5.5)),up=L.tc/S.speed,tail=0.13,d=up+tail;
+  const o=ac.createOscillator(),og=ac.createGain();o.type='sine';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(55,t+0.09);
+  og.gain.setValueAtTime(0.0001,t);og.gain.exponentialRampToValueAtTime(0.38,t+0.004);og.gain.exponentialRampToValueAtTime(0.0001,t+0.1);
+  o.connect(og).connect(out);o.start(t);o.stop(t+0.12);track(o,t+0.12);
+  const n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();n.buffer=noise(d);
+  f.type='bandpass';f.Q.value=0.9;f.frequency.setValueAtTime(260,t);f.frequency.exponentialRampToValueAtTime(1500+1300*k,t+up);f.frequency.exponentialRampToValueAtTime(700,t+d);
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.04,t+0.03);g.gain.exponentialRampToValueAtTime(0.24+0.17*k,t+up);g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+  n.connect(f).connect(g).connect(out);n.start(t);n.stop(t+d);track(n,t+d)}
+function tock(when,lvl=0.8){
+  // woodblock-style "tock": a short pitched body that drops slightly, plus a tiny filtered knock
+  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';
+  o.frequency.setValueAtTime(720,when);o.frequency.exponentialRampToValueAtTime(430,when+0.07);
+  g.gain.setValueAtTime(0.0001,when);g.gain.exponentialRampToValueAtTime(lvl,when+0.002);g.gain.exponentialRampToValueAtTime(0.0001,when+0.11);
+  o.connect(g).connect(out);o.start(when);o.stop(when+0.12);track(o,when+0.12);
+  const n=ac.createBufferSource(),bp=ac.createBiquadFilter(),ng=ac.createGain();n.buffer=noise(0.02,u=>(1-u)**3);
+  bp.type='bandpass';bp.frequency.value=1100;bp.Q.value=2;ng.gain.value=lvl*0.6;
+  n.connect(bp).connect(ng).connect(out);n.start(when);track(n,when+0.02)}
+function relTick(when){   // a lighter, higher tick where a held note should end
+  const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.setValueAtTime(1400,when);o.frequency.exponentialRampToValueAtTime(1000,when+0.04);
+  g.gain.setValueAtTime(0.0001,when);g.gain.exponentialRampToValueAtTime(0.35,when+0.002);g.gain.exponentialRampToValueAtTime(0.0001,when+0.06);
+  o.connect(g).connect(out);o.start(when);o.stop(when+0.07);track(o,when+0.07)}
+function beatClick(when,accent){   // metronome: a short dry click, a touch brighter on the first beat of each cycle
+  const n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();n.buffer=noise(0.03,u=>(1-u)**6);
+  f.type='bandpass';f.frequency.value=accent?3200:2300;f.Q.value=3;g.gain.value=accent?0.9:0.6;
+  n.connect(f).connect(g).connect(out);n.start(when);track(n,when+0.03);
+  const o=ac.createOscillator(),og=ac.createGain();o.type='sine';o.frequency.value=accent?1760:1320;
+  og.gain.setValueAtTime(0.0001,when);og.gain.exponentialRampToValueAtTime(accent?0.16:0.1,when+0.002);og.gain.exponentialRampToValueAtTime(0.0001,when+0.035);
+  o.connect(og).connect(out);o.start(when);o.stop(when+0.04);track(o,when+0.04)}
+function tone(when,midi,dur){   // the pitch cue: a soft, round tone
+  const f0=440*2**((midi-69)/12),d=Math.max(dur,0.35),a=0.06,r=0.18;
+  const o1=ac.createOscillator(),o2=ac.createOscillator(),g2=ac.createGain(),lp=ac.createBiquadFilter(),g=ac.createGain();
+  o1.type='triangle';o2.type='sawtooth';o1.frequency.value=o2.frequency.value=f0;g2.gain.value=0.1;
+  lp.type='lowpass';lp.frequency.value=Math.min(5000,f0*4);lp.Q.value=0.4;
+  o1.connect(lp);o2.connect(g2).connect(lp);lp.connect(g).connect(out);
+  g.gain.setValueAtTime(0.0001,when);g.gain.exponentialRampToValueAtTime(0.26,when+a);g.gain.setValueAtTime(0.26,when+d-r);g.gain.exponentialRampToValueAtTime(0.0001,when+d);
+  for(const o of [o1,o2]){o.start(when);o.stop(when+d+0.02);track(o,when+d+0.02)}}
+
+// ---------- run state ----------
+let running=false,sim=0,last=0,nowMs=0,balls=[],pending=null,nextAt=0,chute={a:35,from:35,to:35,t0:0,t1:0},lastVals=null;
+const stats={notes:0,time:0};
+const pulse={t0:0.3,next:4,sk:0};
+const beatSim=()=>60/S.bpm*S.speed;
+const AIM=()=>S.flow==='stream'?Math.min(0.5,S.every*0.35):0.6, HOLD=0.3;
+const Pof=t=>nowMs+(t-sim)/S.speed*1000;            // sim time -> performance time (ms)
+const due=t=>t<=sim+LA*S.speed;
+function noteLimit(){return S.noteMode==='first'||S.noteMode==='hold'?1:S.maxNotes}
+function prep(){return {L:makeLaunch(),note:pickNote(),word:pickWord()}}
+function setChute(p){chute.from=chute.a;chute.to=p.L.ang;chute.t0=p.aimAt;chute.t1=p.aimAt+AIM()}
+function queueAt(aimAt){const p=prep();p.aimAt=aimAt;p.launchAt=aimAt+AIM()+HOLD;pending=p;setChute(p)}
+// on a pulse: the launch is timed backwards from the beat it should land on
+function queuePulse(earliest){
+  const p=prep(),bs=beatSim(),aim=AIM(),fl=p.L.ev[0]?p.L.ev[0].t:p.L.tc+1;
+  const off=S.land==='and'?0.5:(S.land==='either'&&Math.random()<0.5?0.5:0);
+  let k=pulse.next;
+  while(pulse.t0+(k+off)*bs-fl-HOLD-aim<earliest)k+=S.beats;
+  p.launchAt=pulse.t0+(k+off)*bs-fl;p.aimAt=p.launchAt-HOLD-aim;p.k=k;p.off=off;
+  pulse.next=k+S.beats;pending=p;setChute(p)}
+function launch(p){const L=p.L,lim=noteLimit(),notes=L.ev.slice(0,lim).map(n=>({t:n.t,x:n.x,v:n.v}));
+  let end=L.tEnd,grey=notes.length?notes[notes.length-1].t:null;
+  if(L.rel>0)grey=null;else if(L.ev.length>lim)end=Math.min(end,grey+0.9);
+  balls.push({L,t0:p.launchAt,notes,grey,end,sched:0,cnt:0,note:p.note,word:p.word,hole:L.hole,off:p.off});lastVals=L;
+  if(ac&&!p.wh&&S.whoosh){p.wh=1;whoosh(ctxAt(Pof(p.launchAt)),L)}}
+function start(){
+  ensureAudio();
+  running=true;balls=[];pending=null;expect=[];sim=0;
+  if(S.flow==='pulse'){pulse.t0=0.3;pulse.next=S.beats;pulse.sk=0;queuePulse(0.2)}
+  else{queueAt(0.2);if(S.flow==='stream')nextAt=pending.launchAt+S.every}
+  goBtn.textContent='Stop';wake(true);
+}
+function stop(){running=false;balls=[];pending=null;expect=[];hush();goBtn.textContent='Start';wake(false)}
+function toggle(){running?stop():start()}
+function restart(){if(running){stop();start()}}
+
+function update(dt){
+  sim+=dt*S.speed;stats.time+=dt;
+  // chute tween
+  if(sim<chute.t0)chute.a=chute.from;else if(sim>=chute.t1)chute.a=chute.to;else{const u=(sim-chute.t0)/(chute.t1-chute.t0);chute.a=chute.from+(chute.to-chute.from)*(u*u*(3-2*u))}
+  let guard=0;
+  while(pending&&sim>=pending.launchAt&&guard++<4){const lp=pending;launch(lp);pending=null;
+    // never swing the chute while a ball is still inside it
+    if(S.flow==='stream'){queueAt(Math.max(nextAt-AIM()-HOLD,lp.launchAt+lp.L.tc+0.02));nextAt=pending.launchAt+S.every}
+    else if(S.flow==='pulse')queuePulse(Math.max(sim,lp.launchAt+lp.L.tc+0.02))}
+  if(ac)schedule();
+  for(const b of balls)while(b.cnt<b.notes.length&&sim>=b.t0+b.notes[b.cnt].t){b.cnt++;stats.notes++}
+  balls=balls.filter(b=>sim<b.t0+b.end+0.35);
+  if(S.flow==='single'&&!pending&&running&&balls.length===0)queueAt(sim+S.pause);
+}
+// audio lookahead: everything is scheduled on the audio clock, so it's sample-accurate rather than tied to frames
+function schedule(){
+  const p=pending;
+  if(p){
+    if(!p.cued&&p.note!=null&&due(p.aimAt)){p.cued=1;if(S.cue){const t0=Math.max(p.aimAt,sim);tone(ctxAt(Pof(t0)),sounding(p.note),(p.launchAt-t0)/S.speed)}}
+    if(!p.wh&&due(p.launchAt)){p.wh=1;if(S.whoosh)whoosh(ctxAt(Pof(p.launchAt)),p.L)}
+  }
+  for(const b of balls){
+    while(b.sched<b.notes.length){const n=b.notes[b.sched],te=b.t0+n.t;if(!due(te))break;
+      n.ctx=ctxAt(Pof(te));if(LS.on)expect.push(n);else if(S.click)tock(n.ctx);b.sched++}
+    if(b.L.rel>0&&!b.relDone&&due(b.t0+b.L.rel)){b.relDone=1;if(S.click&&!LS.on)relTick(ctxAt(Pof(b.t0+b.L.rel)))}
+  }
+  if(S.flow==='pulse'){const bs=beatSim();
+    while(pulse.t0+pulse.sk*bs<=sim+LA*S.speed){const k=pulse.sk++,bt=pulse.t0+k*bs;if(bt<sim-0.01||!S.metro)continue;beatClick(ctxAt(Pof(bt)),S.beats>1&&k%S.beats===1)}}
+  const now=ac.currentTime;
+  if(live.length>60)live=live.filter(l=>l.end>now);
+  if(expect.length>40)expect=expect.filter(n=>n.ctx>now-1);
+}
+
+function posAt(L,tau){let i=tau/DT;if(i<0)i=0;const n=L.xs.length-1;if(i>=n)return[L.xs[n],L.ys[n]];const k=i|0,f=i-k;
+  return[L.xs[k]+(L.xs[k+1]-L.xs[k])*f,L.ys[k]+(L.ys[k+1]-L.ys[k])*f]}
+
+const RED='#e3120b',red=a=>`rgba(227,18,11,${a})`;
+function draw(){
+  cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle='#fff';cx.fillRect(0,0,cw,ch);
+  const r=R*SC,ft=Math.max(3,r*0.14),fs=Math.max(13,Math.min(20,cw/55)),hw=HOLEW*SC;
+  cx.fillStyle='#f5f5f2';cx.fillRect(0,floorY,cw,ch-floorY);            // the ground below the floor line
+  // holes for "land and hold": they appear as soon as their ball is loaded, so the release is telegraphed too
+  const holes=[];
+  if(pending&&pending.L.hole!=null&&sim>=pending.aimAt-0.01)holes.push(pending.L.hole);
+  for(const b of balls)if(b.hole!=null)holes.push(b.hole);
+  for(const h of holes){const g=cx.createLinearGradient(0,floorY,0,ch);g.addColorStop(0,'#3a3a37');g.addColorStop(1,'rgba(245,245,242,0)');cx.fillStyle=g;cx.fillRect(PX(h)-hw/2,floorY,hw,ch-floorY)}
+  // stand + chute
+  cx.strokeStyle='#111';cx.lineWidth=Math.max(2,r*0.18);cx.lineCap='round';
+  cx.beginPath();cx.moveTo(PX(pvx())-r*1.5,floorY);cx.lineTo(PX(pvx()),PY(PIV.y));cx.lineTo(PX(pvx())+r*1.5,floorY);cx.stroke();
+  const th=chute.a*Math.PI/180;
+  cx.save();cx.translate(PX(pvx()),PY(PIV.y));cx.rotate(-th);
+  const tw=r*2.7,tl=(CL+0.02)*SC,bk=BACK*SC;
+  cx.fillStyle='#ecece9';cx.fillRect(-bk,-tw/2,tl+bk,tw);
+  cx.strokeStyle='#111';cx.lineWidth=Math.max(2,r*0.16);cx.lineJoin='round';
+  cx.beginPath();cx.moveTo(tl,-tw/2);cx.lineTo(-bk,-tw/2);cx.lineTo(-bk,tw/2);cx.lineTo(tl,tw/2);cx.stroke();
+  cx.lineWidth=Math.max(3,r*0.26);cx.beginPath();cx.moveTo(tl,-tw/2-r*0.15);cx.lineTo(tl,-tw/2+r*0.12);cx.moveTo(tl,tw/2-r*0.12);cx.lineTo(tl,tw/2+r*0.15);cx.stroke();
+  cx.restore();
+  cx.fillStyle='#111';cx.beginPath();cx.arc(PX(pvx()),PY(PIV.y),r*0.32,0,7);cx.fill();
+  const label=(m,X,Y)=>{if(m==null||r<8)return;cx.fillStyle='#fff';cx.font=`800 ${Math.round(r*0.92)}px Archivo,sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(nname(m),X,Y+r*0.06);cx.textBaseline='alphabetic'};
+  // loaded ball
+  if(pending&&sim>=pending.aimAt-0.01){const mx=pvx()+S0*Math.cos(th),my=PIV.y+S0*Math.sin(th);
+    cx.fillStyle='#111';cx.beginPath();cx.arc(PX(mx),PY(my),r,0,7);cx.fill();label(pending.note,PX(mx),PY(my))}
+  // floor, with gaps for holes
+  cx.fillStyle='#111';
+  let fx=0;for(const [a,b] of holes.map(h=>[PX(h)-hw/2,PX(h)+hw/2]).sort((p,q)=>p[0]-q[0])){if(a>fx)cx.fillRect(fx,floorY,a-fx,ft);fx=Math.max(fx,b)}
+  if(fx<cw)cx.fillRect(fx,floorY,cw-fx,ft);
+  // landing marks (a beginner's aid)
+  if(S.marker){cx.fillStyle='#a6a6a0';
+    const mark=x=>{const X=PX(x),y0=floorY+ft+3;cx.beginPath();cx.moveTo(X,y0);cx.lineTo(X-r*0.6,y0+r*0.85);cx.lineTo(X+r*0.6,y0+r*0.85);cx.closePath();cx.fill()};
+    if(pending&&sim>=pending.aimAt-0.01)pending.L.ev.slice(0,noteLimit()).forEach(n=>mark(n.x));
+    for(const b of balls){const tau=sim-b.t0;for(const n of b.notes)if(n.t>tau)mark(n.x)}}
+  // balls
+  for(const b of balls){
+    const tau=sim-b.t0,L=b.L,[x,y]=posAt(L,tau);
+    // visibility: which hop are we in, and is the ball hidden right now?
+    let hidden=false;
+    if(S.vis!=='always'&&!(b.grey!==null&&tau>b.grey)){
+      let k=0;while(k<b.notes.length&&b.notes[k].t<=tau)k++;
+      if(k<b.notes.length&&tau>L.tc){const s0=k?b.notes[k-1].t:L.tIn,e0=b.notes[k].t;
+        hidden=S.vis==='shadow'||tau>s0+(S.vanish/100)*(e0-s0)}
+    }
+    if(S.trail&&S.vis==='always'){cx.strokeStyle='rgba(0,0,0,.18)';cx.lineWidth=2;cx.setLineDash([3,6]);cx.beginPath();
+      const n=Math.min(L.xs.length-1,Math.floor(tau/DT));for(let i=0;i<=n;i+=40){const X=PX(L.xs[i]),Y=PY(L.ys[i]);i?cx.lineTo(X,Y):cx.moveTo(X,Y)}cx.stroke();cx.setLineDash([])}
+    if((S.shadow||S.vis==='shadow')&&x>-R&&x<WW+R&&y>=R-0.001){const h=Math.max(0,y-R),k=Math.min(h/3.5,1);
+      cx.fillStyle=`rgba(0,0,0,${0.62-0.4*k})`;
+      cx.beginPath();cx.ellipse(PX(x),floorY-1,r*(1.35-k*0.55),Math.max(3,r*0.34*(1-k*0.4)),0,0,7);cx.fill()}
+    // held note: a red line runs along the floor while the ball rolls, and the hole flashes as it drops
+    if(L.rel>0&&b.notes.length){const n0=b.notes[0];
+      if(tau>n0.t){const a=tau<L.rel?1:Math.max(0,1-(tau-L.rel)/S.speed/0.5),xe=Math.min(tau<L.rel?x:b.hole,b.hole-HOLEW/2);
+        if(a>0){cx.fillStyle=red(a);cx.fillRect(PX(n0.x),floorY,PX(xe)-PX(n0.x),ft)}}
+      const age=(tau-L.rel)/S.speed;
+      if(age>=0&&age<0.35){cx.strokeStyle=red(1-age/0.35);cx.lineWidth=Math.max(2,r*0.2);cx.beginPath();cx.arc(PX(b.hole),floorY,r*(0.9+age*5),Math.PI,0);cx.stroke()}}
+    // impact flashes; their size follows the impact speed, so a run of bounces dies away
+    let hot=false;
+    for(const n of b.notes){const age=(tau-n.t)/S.speed;if(age<0||age>0.35)continue;const a=1-age/0.35,kv=Math.min(1.3,Math.max(0.45,n.v/5));
+      if(age<0.07)hot=true;
+      cx.strokeStyle=red(a);cx.lineWidth=Math.max(2.5,r*0.3*kv);cx.beginPath();cx.arc(PX(n.x),floorY,r*(1.2+age*9*kv),Math.PI,0);cx.stroke();
+      if(age<0.15){cx.fillStyle=RED;cx.fillRect(PX(n.x)-r*2.2*kv,floorY,r*4.4*kv,Math.max(5,r*0.35))}}
+    const fade=Math.min(1,Math.max(0,(b.end+0.35-tau)/0.35));
+    const grey=b.grey!==null&&tau>b.grey+0.02;
+    const Y=PY(y);
+    if(hidden&&!hot)continue;
+    cx.globalAlpha=fade;cx.fillStyle=hot?RED:grey?'#c4c4c0':'#111';
+    if(Y<-r){cx.beginPath();cx.moveTo(PX(x),4);cx.lineTo(PX(x)-r*0.6,4+r);cx.lineTo(PX(x)+r*0.6,4+r);cx.fill()}
+    else{cx.save();cx.beginPath();cx.rect(0,0,cw,floorY+0.5);cx.clip();   // the ball drops out of sight through the gap in the floor
+      
+      cx.beginPath();cx.arc(PX(x),Y,r,0,7);cx.fill();if(!hot)label(b.note,PX(x),Y);cx.restore()}
+    cx.globalAlpha=1;
+  }
+  // listening results, written on the ground under each landing
+  const pn=performance.now();marks=marks.filter(m=>m.until>pn);
+  if(marks.length){cx.font=`600 ${Math.round(fs*0.8)}px Archivo,sans-serif`;cx.textAlign='center';cx.textBaseline='middle';
+    for(const m of marks){cx.fillStyle=`rgba(80,80,78,${Math.min(1,(m.until-pn)/300)})`;cx.fillText(m.txt,Math.min(cw-40,Math.max(40,PX(m.x))),floorY+ft+(ch-floorY-ft)/2)}
+    cx.textBaseline='alphabetic'}
+  // top left: launch values, then the note and image word for the ball that's coming
+  let ty=10;
+  if(S.values&&lastVals&&running){cx.fillStyle='#777';cx.font=`600 ${fs}px Archivo,sans-serif`;cx.textAlign='left';
+    cx.fillText(`Angle ${Math.round(lastVals.ang)}°   Power ${lastVals.pl.toFixed(1)}   Bounce ${lastVals.bl.toFixed(1)}`,14,fs+10);ty=fs+18}
+  if(running){let cur=null;
+    for(const b of balls){const tau=sim-b.t0;if(b.notes.length&&tau<b.notes[0].t+0.3&&(!cur||b.t0<cur.t0))cur=b}
+    if(!cur&&pending&&sim>=pending.aimAt-0.01)cur=pending;
+    if(cur){const big=Math.round(Math.max(28,Math.min(64,ch*0.1)));
+      if(cur.note!=null){cx.fillStyle='#111';cx.font=`800 ${big}px Archivo,sans-serif`;cx.textAlign='left';const nm=nname(cur.note);cx.fillText(nm,14,ty+big*0.9);
+        const w=cx.measureText(nm).width;cx.fillStyle='#999';cx.font=`600 ${Math.round(big*0.4)}px Archivo,sans-serif`;cx.fillText(noct(cur.note),18+w,ty+big*0.9);ty+=big*1.05}
+      if(cur.word){cx.fillStyle='#555';cx.font=`italic 400 ${Math.round(fs*1.35)}px Archivo,sans-serif`;cx.textAlign='left';cx.fillText(cur.word,14,ty+fs*1.4)}}}
+  // top right: the pulse, as a row of beats ending on the landing beat
+  if(running&&S.flow==='pulse'){const N=S.beats,bs=beatSim(),ph=(sim-pulse.t0)/bs,kb=Math.floor(ph+1e-6),dr=Math.max(5,Math.min(13,cw/120)),gap=dr*3.4;
+    const nb=nextBall(),andLand=nb&&nb.off>0;
+    const x0=cw-16-dr*1.6-(andLand?gap*0.6:0)-(N-1)*gap,y0=16+dr*1.6;
+    const cur=kb>=0?(((kb%N)+N)%N+N-1)%N:-1,since=ph-kb;
+    for(let j=0;j<N;j++){const X=x0+j*gap,isLand=j===N-1;
+      cx.beginPath();cx.arc(X,y0,j===cur?dr*(1+0.35*Math.max(0,1-since*3)):dr*0.8,0,7);
+      cx.fillStyle=j===cur?'#111':'#dededa';cx.fill();
+      if(isLand&&!andLand){cx.strokeStyle='#111';cx.lineWidth=2;cx.beginPath();cx.arc(X,y0,dr*1.55,0,7);cx.stroke()}}
+    if(andLand){const X=x0+(N-1)*gap+gap*0.6;cx.strokeStyle='#111';cx.lineWidth=2;cx.beginPath();cx.arc(X,y0,dr*1.1,0,7);cx.stroke();
+      cx.fillStyle='#111';cx.font=`700 ${Math.round(dr*1.3)}px Archivo,sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('&',X,y0+1);cx.textBaseline='alphabetic'}}
+  if(!running){const lv=BUILTIN.find(p=>p.name===S.preset);
+    cx.textAlign='center';cx.fillStyle='#888';cx.font=`600 ${fs*1.3}px Archivo,sans-serif`;cx.fillText('Tap or press Space to start',cw/2,ch*0.38);
+    cx.fillStyle='#aaa';cx.font=`600 ${fs}px Archivo,sans-serif`;cx.fillText(S.preset||'Custom settings',cw/2,ch*0.38+fs*1.8);
+    if(lv){cx.font=`italic 400 ${fs}px Archivo,sans-serif`;cx.fillText(lv.notice,cw/2,ch*0.38+fs*3.3)}}
+}
+function nextBall(){for(const b of balls)if(b.cnt===0&&b.off!==undefined)return b;return pending}
+let fc=0;
+function frame(now){const dt=Math.min(0.25,Math.max(0,(now-(last||now))/1000));last=now;nowMs=now;if(running&&!window.__btFreeze)update(dt);draw();if(++fc%20===0)renderStats();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+function renderStats(){if(!stats.notes&&!stats.time){$('stats').textContent='';return}
+  const s=Math.floor(stats.time);$('stats').textContent=`${stats.notes} note${stats.notes===1?'':'s'} · ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} this session`}
+
+// ---------- screen wake lock (iPad on a music stand) ----------
+let wl=null;
+async function wake(on){try{if(on&&!wl&&navigator.wakeLock&&document.visibilityState==='visible'){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}
+  else if(!on&&wl){const w=wl;wl=null;await w.release()}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&running)stop()});
+
+// ---------- listening (microphone onset detection, in an AudioWorklet so timing is to the sample) ----------
+const WK=`class Onset extends AudioWorkletProcessor{
+constructor(){super();this.env=0;this.fl=0.001;this.hp=0;this.px=0;this.ring=new Float32Array(64);this.ri=0;this.cnt=0;this.arm=true;this.until=0;this.thr=0.01;this.pk=0;this.lc=0;
+this.port.onmessage=e=>{if(e.data.thr!==undefined)this.thr=e.data.thr}}
+process(inputs){const ch=inputs[0]&&inputs[0][0];if(!ch)return true;
+const sr=sampleRate,ca=1-Math.exp(-1/(0.0005*sr)),cr=1-Math.exp(-1/(0.02*sr)),cf=1-Math.exp(-1/(1.5*sr)),hp=Math.exp(-2*Math.PI*90/sr),step=Math.max(1,Math.round(sr/1000));
+for(let i=0;i<ch.length;i++){const x=ch[i];this.hp=hp*(this.hp+x-this.px);this.px=x;const a=Math.abs(this.hp);
+this.env+=(a-this.env)*(a>this.env?ca:cr);
+if(this.env<this.fl)this.fl+=(this.env-this.fl)*0.002;else this.fl+=(this.env-this.fl)*cf;
+if(++this.cnt>=step){this.cnt=0;this.ring[this.ri]=this.env;this.ri=(this.ri+1)&63}
+const t=(currentFrame+i)/sr;
+if(this.arm){const old=this.ring[(this.ri+64-25)&63];if(this.env>this.thr&&this.env>this.fl*4&&this.env>old*2.5){this.port.postMessage({t});this.arm=false;this.until=t+0.08}}
+else if(t>this.until)this.arm=true;
+if(this.env>this.pk)this.pk=this.env}
+if((this.lc+=ch.length)>=sr/20){this.port.postMessage({lvl:this.pk});this.pk=0;this.lc=0}
+return true}}
+registerProcessor('onset',Onset);`;
+const LS={on:false,sens:6,lat:null};
+try{const l=JSON.parse(localStorage.getItem('bounceTrainer2Listen')||'{}');if(typeof l.sens==='number')LS.sens=l.sens;if(typeof l.lat==='number')LS.lat=l.lat}catch(e){}
+const saveLS=()=>{try{localStorage.setItem('bounceTrainer2Listen',JSON.stringify({sens:LS.sens,lat:LS.lat}))}catch(e){}};
+const thr=()=>0.06*Math.pow(0.62,LS.sens-1);
+let mic=null,wkLoaded=false,expect=[],marks=[],hits=[],cal=null;
+const lat=()=>LS.lat!=null?LS.lat/1000:(ac.outputLatency||0.01)+(ac.baseLatency||0.01)+0.01;
+async function listenOn(){
+  ensureAudio();
+  if(!ac||!ac.audioWorklet||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){calNote("This browser can't listen. Try a recent Chrome, Edge, Firefox or Safari.");return false}
+  try{
+    if(!wkLoaded){const u=URL.createObjectURL(new Blob([WK],{type:'application/javascript'}));await ac.audioWorklet.addModule(u);wkLoaded=true}
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const src=ac.createMediaStreamSource(stream),node=new AudioWorkletNode(ac,'onset',{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1]}),sink=ac.createGain();
+    sink.gain.value=0;src.connect(node).connect(sink).connect(ac.destination);
+    node.port.onmessage=e=>{const d=e.data;if(d.t!==undefined)onOnset(d.t);else if(d.lvl!==undefined)showLevel(d.lvl)};
+    node.port.postMessage({thr:thr()});
+    mic={stream,src,node,sink};LS.on=true;return true;
+  }catch(e){calNote("The microphone isn't available. Check that this page is allowed to use it.");return false}
+}
+function listenOff(){if(mic){try{mic.stream.getTracks().forEach(t=>t.stop());mic.src.disconnect();mic.node.disconnect();mic.sink.disconnect()}catch(e){}mic=null}
+  LS.on=false;expect=[];showLevel(0)}
+async function toggleListen(){if(LS.on)listenOff();else await listenOn();renderListen()}
+function showLevel(v){const db=v>0?20*Math.log10(v):-90,p=Math.max(0,Math.min(100,(db+60)/60*100));$('meter').style.width=p+'%';$('listenBtn').style.setProperty('--lv',LS.on?p+'%':'0%')}
+function onOnset(t){
+  if(cal){cal.hits.push(t);return}
+  if(!running||!ac)return;
+  const tt=t-lat();let best=null,bd=0;
+  for(const n of expect){if(n.hit)continue;const d=tt-n.ctx;if(Math.abs(d)<0.2&&(!best||Math.abs(d)<Math.abs(bd))){best=n;bd=d}}
+  if(!best)return;
+  best.hit=true;const ms=Math.round(bd*1000);hits.push(ms);if(hits.length>40)hits.shift();
+  marks.push({x:best.x,txt:Math.abs(ms)<=8?'together':ms<0?`${-ms} ms early`:`${ms} ms late`,until:performance.now()+1800});
+  renderStrip();
+}
+function median(a){const s=[...a].sort((p,q)=>p-q),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2}
+function renderStrip(){
+  $('dots').innerHTML=hits.slice(-20).map((ms,i,a)=>{const l=Math.max(2,Math.min(98,50+ms/150*46)),o=(0.25+0.75*(i+1)/a.length).toFixed(2);
+    return `<span class="dot${i===a.length-1?' new':''}" style="left:${l}%;opacity:${o}"></span>`}).join('');
+  const h=hits.slice(-20);let s;
+  if(h.length<3)s=h.length?'Keep going. A summary appears after a few notes.':'Play along and your timing shows up here, one dot per note.';
+  else{const m=Math.round(median(h)),sp=Math.round(1.48*median(h.map(v=>Math.abs(v-m))));
+    s=`Last ${h.length} notes: ${Math.abs(m)<=8?'typically right with the ball':`typically ${Math.abs(m)} ms ${m<0?'early':'late'}`}, give or take ${Math.max(sp,1)} ms.`}
+  if(LS.lat==null)s+=' Not calibrated yet, so the numbers may be shifted. Calibrate under Settings → Listen.';
+  $('stripSum').textContent=s;
+}
+function calNote(t){$('calNote').textContent=t}
+async function calibrate(){
+  if(!LS.on){if(!(await listenOn()))return;renderListen()}
+  if(running)stop();
+  const btn=$('calBtn');btn.disabled=true;cal={hits:[],times:[]};calNote('Listening for 8 tocks through the speakers. Keep quiet…');
+  const t0=ac.currentTime+0.7;for(let i=0;i<8;i++){const t=t0+i*0.55;cal.times.push(t);tock(t,1)}
+  setTimeout(()=>{const ds=[];
+    for(const t of cal.times){const h=cal.hits.filter(x=>x>t-0.03&&x<t+0.35).sort((a,b)=>a-b)[0];if(h!==undefined)ds.push(h-t)}
+    cal=null;btn.disabled=false;
+    if(ds.length<5){calNote("Couldn't hear enough of the tocks. Use the speakers rather than headphones, turn the volume up, raise the sensitivity and try again.");return}
+    LS.lat=Math.round(median(ds)*1000);saveLS();calNote(`Calibrated: allowing ${LS.lat} ms for this device.`);renderStrip()},(0.7+8*0.55+0.6)*1000);
+}
+function renderListen(){
+  $('listenBtn').setAttribute('aria-pressed',String(LS.on));$('micBtn').textContent=LS.on?'Turn off the microphone':'Turn on the microphone';
+  $('strip').classList.toggle('hide',!LS.on);$('sens').value=LS.sens;$('sensO').textContent=LS.sens+'/10';
+  if(!$('calNote').textContent||/^(Calibrated|Not calibrated)/.test($('calNote').textContent))calNote(LS.lat!=null?`Calibrated: allowing ${LS.lat} ms for this device.`:'Not calibrated. With the speakers on, press Calibrate and stay quiet for 5 seconds.');
+  if(LS.on)renderStrip();
+}
+
+// ---------- controls ----------
+const goBtn=$('go');
+goBtn.addEventListener('click',toggle);
+stage.addEventListener('click',toggle);
+const fsOK=!!(stage.requestFullscreen||stage.webkitRequestFullscreen);
+if(!fsOK)$('fs').classList.add('hide');
+function fullscreen(){try{const d=document;if(d.fullscreenElement||d.webkitFullscreenElement)(d.exitFullscreen||d.webkitExitFullscreen).call(d);
+  else{const f=stage.requestFullscreen||stage.webkitRequestFullscreen;if(f){const p=f.call(stage);if(p&&p.catch)p.catch(()=>{})}}}catch(e){}}
+$('fs').addEventListener('click',fullscreen);
+$('listenBtn').addEventListener('click',toggleListen);
+$('micBtn').addEventListener('click',toggleListen);
+$('calBtn').addEventListener('click',calibrate);
+$('sens').addEventListener('input',e=>{LS.sens=+e.target.value;saveLS();if(mic)mic.node.port.postMessage({thr:thr()});renderListen()});
+const typing=t=>t.matches('textarea,input[type=text],input[type=number],select,input[type=range]');
+const modalOpen=()=>!!document.querySelector('dialog[open]');
+document.addEventListener('keydown',e=>{if(modalOpen()||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.code==='Space'){if(e.target.matches('textarea,input[type=text]'))return;e.preventDefault();if(!e.repeat)toggle();if(document.activeElement&&document.activeElement!==document.body)document.activeElement.blur()}
+  else if(typing(e.target))return;
+  else if(e.key==='f'||e.key==='F')fullscreen();
+  else if(e.key==='ArrowRight'){e.preventDefault();step(1)}
+  else if(e.key==='ArrowLeft'){e.preventDefault();step(-1)}
+  else if(e.key==='?'){openHelp()}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'&&!e.target.matches('textarea,input[type=text]'))e.preventDefault()});
+function openHelp(){const d=$('help');if(d.showModal)d.showModal();else d.setAttribute('open','')}
+$('helpBtn').addEventListener('click',openHelp);
+$('hClose').addEventListener('click',()=>$('help').close());
+
+const NOTES={first:'Play once, as the ball first lands. Later bounces stay quiet and the ball turns grey.',
+  every:'Play on every bounce up to this many. The gaps shrink as the ball loses energy, and the flashes get smaller.',
+  hold:'The ball lands without bouncing, rolls and drops into a hole. Hold the note from the landing until the ball disappears. The hole appears before launch, so you can see the note\'s length coming.'};
+function refresh(){
+  document.querySelectorAll('[data-k]').forEach(el=>{const v=getK(el.dataset.k);if(el.type==='checkbox')el.checked=!!v;else el.value=v});
+  document.querySelectorAll('[data-o]').forEach(o=>{const k=o.dataset.o,v=getK(k),f=fmt[k.split('.')[0]]||fmt[k];o.textContent=f?f(v):v});
+  document.querySelectorAll('.card[data-p]').forEach(c=>c.classList.toggle('rand',!!S[c.dataset.p].r));
+  document.querySelectorAll('[data-pm]').forEach(b=>b.setAttribute('aria-pressed',String(+S[b.dataset.pm].r===+b.dataset.v)));
+  document.querySelectorAll('[data-set]').forEach(b=>b.setAttribute('aria-pressed',String(String(S[b.dataset.set])===b.dataset.v)));
+  const tg=(sel,on)=>document.querySelectorAll(sel).forEach(el=>el.classList.toggle('hide',!on));
+  tg('#rowMax',S.noteMode==='every');tg('.hm',S.noteMode==='hold');
+  tg('#rowPause',S.flow==='single');tg('#rowEvery',S.flow==='stream');tg('.pu',S.flow==='pulse');
+  tg('#rowVanish',S.vis==='vanish');tg('#rowMinVis',!S.showChute);tg('#powerNote',!S.showChute);
+  tg('.p1',S.pitch==='one');tg('.p2',S.pitch==='change');tg('.pp',S.pitch!=='off');
+  $('notesNote').textContent=NOTES[S.noteMode];
+  $('bounceNote').textContent=S.noteMode==='hold'?'Not used while landing and holding: the ball lands dead and rolls.':'1 is a dead ball, 10 is a superball. Lower values make the bounces speed up and die away sooner.';
+  $('visNote').textContent={always:'The ball is visible for its whole flight.',
+    vanish:'You see the ball go up the chute, then it disappears partway through each flight it lands from. The shadow stays, and the ball reappears in red at the moment of impact.',
+    shadow:'You see the ball go up the chute, then only its shadow. The ball reappears just at impact, in red.'}[S.vis];
+  $('flowNote').textContent={single:'The next ball launches this long after the last one finishes.',stream:'A new ball launches at this interval, even if the last one is still bouncing.',
+    pulse:`Each launch is timed so the first landing falls on the last beat of every ${S.beats>1?S.beats+' beats':'beat'}, or just after it on the "and". The dots at the top right count the beats.`}[S.flow];
+  $('speedNote').textContent=S.flow==='pulse'?'Slow motion slows the flights. The pulse keeps its tempo, so the landings still fall on the beat.':'Slow motion slows the whole flight, gravity included, so the timing stays true, just stretched.';
+  $('pitchNote').textContent=S.pitch==='off'?'Choose a note and it sounds while the chute aims. Then the flight is silent and you carry the note in your ear to the landing.':
+    'The note name shows on the ball and at the top left. '+(S.cue?'It sounds while the chute aims, then the flight is silent: carry it in your ear to the landing.':'With the sound off, read the name and imagine the note before the landing.');
+  if(out)out.gain.value=S.vol/100;
+  renderPresets();renderLevels();
+}
+// ---------- levels and presets ----------
+const P=(id,name,desc,notice,o)=>({id,name,desc,notice,o});
+const BUILTIN=[
+  P('first-steps','1 · First steps','Half speed, the same high arc each time, landing spot marked','Notice the moment the ball stops rising.',{angle:{r:0,v:60},power:{r:0,v:5},bounce:{r:0,v:5},pause:2,speed:0.5,marker:true}),
+  P('start-here','2 · Start here','¾ speed, high arcs that vary, plenty of time','Notice where the ball meets its shadow.',{angle:{r:1,min:50,max:68},power:{r:1,min:4,max:6.5},bounce:{r:0,v:5},pause:2,speed:0.75}),
+  P('steady','3 · Steady','Real speed, high arcs that vary','Notice the note in your ear before the ball lands.',{angle:{r:1,min:50,max:68},power:{r:1,min:4,max:6.5},bounce:{r:0,v:5},pause:2}),
+  P('varied','4 · Varied arcs','Angle and power change each launch','Notice how early you know where it will land.',{angle:{r:1,min:35,max:68},power:{r:1,min:4,max:7},bounce:{r:0,v:6},pause:1.5}),
+  P('pulse','5 · On the pulse','Every landing falls on beat 4 of a slow pulse','Notice the ball and the beat arriving together.',{angle:{r:1,min:45,max:68},power:{r:1,min:4,max:6.5},bounce:{r:0,v:5},flow:'pulse',bpm:66,beats:4,land:'beat'}),
+  P('bounce-run','6 · Bounce runs','Every bounce, so the notes speed up and fade','Notice the bounces drawing closer together.',{angle:{r:1,min:62,max:70},power:{r:1,min:4,max:5},bounce:{r:1,min:5,max:8},noteMode:'every',maxNotes:6,pause:2}),
+  P('hold','7 · Land and hold','Hold the note until the ball drops into the hole','Notice the length of the note as the ball rolls.',{angle:{r:1,min:55,max:68},power:{r:1,min:4,max:6},bounce:{r:0,v:5},noteMode:'hold',holdMin:0.8,holdMax:1.8,pause:1.5}),
+  P('vanish','8 · Read the flight','The ball vanishes at 60%, so you predict the landing','Notice the arc carrying on after the ball has gone.',{angle:{r:1,min:35,max:68},power:{r:1,min:4,max:8},bounce:{r:0,v:6},pause:1.5,vis:'vanish',vanish:60}),
+  P('pitches','9 · Changing notes','A new note each launch, heard while the chute aims','Notice the new pitch before the ball leaves the chute.',{angle:{r:1,min:45,max:68},power:{r:1,min:4,max:6.5},bounce:{r:0,v:5},pause:2,pitch:'change',pool:'five',cue:true}),
+  P('nowhere','10 · Ball from nowhere','Hidden chute: you hear the launch, then the ball flies in from the left','Notice the sound of the launch before you see anything.',{angle:{r:1,min:40,max:68},power:{r:1,min:4.5,max:8},bounce:{r:0,v:6},pause:2,showChute:false,minVis:0.8}),
+  P('shadow','11 · Shadow only','Play from the shadow alone','Notice the shadow sharpening as it falls.',{angle:{r:1,min:35,max:68},power:{r:1,min:4,max:7},bounce:{r:0,v:6},pause:1.8,vis:'shadow'}),
+  P('offbeat','12 · Off the beat','Landings fall on the beat or the "and", at random','Notice the space between the beat and the landing.',{angle:{r:1,min:40,max:68},power:{r:1,min:4,max:7},bounce:{r:0,v:6},flow:'pulse',bpm:80,beats:4,land:'either'}),
+  P('flat-fast','13 · Flat and fast','Low, quick launches. A reaction drill for well-trained players','Notice what changes when there is no time to wait.',{angle:{r:1,min:0,max:25},power:{r:1,min:6,max:9},bounce:{r:0,v:6},pause:1.2}),
+  P('advanced','14 · Advanced stream','Everything random, overlapping balls, vanishing','Notice which ball your ear follows.',{angle:{r:1,min:15,max:68},power:{r:1,min:3,max:9},bounce:{r:1,min:3,max:9},noteMode:'every',maxNotes:4,flow:'stream',every:1.6,vis:'vanish',vanish:70})
+];
+let MINE=[];try{MINE=JSON.parse(localStorage.getItem('bounceTrainer2Presets')||localStorage.getItem('bounceTrainerPresets')||'[]')||[]}catch(e){}
+if(!Array.isArray(MINE))MINE=[];
+const saveMine=()=>{try{localStorage.setItem('bounceTrainer2Presets',JSON.stringify(MINE))}catch(e){}};
+function applySettings(o,name){
+  const keep={};DISPLAY.forEach(k=>keep[k]=S[k]);
+  const n=JSON.parse(JSON.stringify(DEF));
+  for(const k in o){if(!(k in DEF))continue;n[k]=typeof DEF[k]==='object'?Object.assign({},DEF[k],o[k]):o[k]}
+  Object.assign(S,n,keep);S.preset=name||'';save();
+  restart();refresh();
+}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function renderPresets(){
+  $('builtin').innerHTML=BUILTIN.map(p=>`<button class="chip" data-b="${p.id}" aria-pressed="${S.preset===p.name}">${esc(p.name)}<small>${esc(p.desc)}</small></button>`).join('');
+  $('mine').innerHTML=MINE.length?MINE.map((p,i)=>`<span class="mine"><button class="chip" data-m="${i}" aria-pressed="${S.preset===p.name}">${esc(p.name)}</button><button class="del" data-d="${i}" aria-label="Delete ${esc(p.name)}">×</button></span>`).join('')
+    :'<span class="note">None yet. Set things up below, then name and save them.</span>';
+  $('sumActive').textContent=S.preset?'Using: '+S.preset:'Custom settings';
+}
+const curLevel=()=>BUILTIN.findIndex(p=>p.name===S.preset);
+function renderLevels(){
+  const sel=$('lvl'),ci=curLevel(),mi=ci<0?MINE.findIndex(p=>p.name===S.preset):-1;let h='';
+  if(ci<0&&mi<0)h+=`<option value="" selected>${esc(S.preset||'Custom settings')}</option>`;
+  h+='<optgroup label="Levels">'+BUILTIN.map((p,i)=>`<option value="b:${p.id}"${i===ci?' selected':''}>${esc(p.name)}</option>`).join('')+'</optgroup>';
+  if(MINE.length)h+='<optgroup label="Yours">'+MINE.map((p,i)=>`<option value="m:${i}"${i===mi?' selected':''}>${esc(p.name)}</option>`).join('')+'</optgroup>';
+  sel.innerHTML=h;
+  $('prev').disabled=ci===0;$('next').disabled=ci===BUILTIN.length-1;
+  const lv=BUILTIN[ci];
+  $('notice').innerHTML=lv?`${esc(lv.desc)}. <b>Notice</b> <i>${esc(lv.notice.replace(/^Notice /,''))}</i>`:'<b>Notice</b> <i>the moment the ball meets the floor.</i>';
+}
+function useLevel(p){applySettings(p.o,p.name);setHash(p.id);hideLink()}
+function step(d){const ci=curLevel();const i=ci<0?(d>0?0:-1):ci+d;if(i>=0&&i<BUILTIN.length)useLevel(BUILTIN[i])}
+$('prev').addEventListener('click',()=>step(-1));$('next').addEventListener('click',()=>step(1));
+$('lvl').addEventListener('change',e=>{const v=e.target.value;if(v.startsWith('b:'))useLevel(BUILTIN.find(p=>p.id===v.slice(2)));
+  else if(v.startsWith('m:')){const p=MINE[+v.slice(2)];if(p){applySettings(p.s,p.name);clearHash();hideLink()}}e.target.blur()});
+// settings <-> link code (letters, digits and hyphens only). Append new settings to the END of ENC; v1 codes (s1-) still decode.
+const ENC=[['angle.r',1,0],['angle.v',1,10],['angle.min',1,10],['angle.max',1,10],['power.r',1,0],['power.v',2,0],['power.min',2,0],['power.max',2,0],
+  ['bounce.r',1,0],['bounce.v',2,0],['bounce.min',2,0],['bounce.max',2,0],['noteMode',['first','every','hold']],['maxNotes',1,0],['flow',['single','stream','pulse']],
+  ['pause',4,0],['every',10,0],['speed',4,0],['shadow',1,0],['walls',1,0],['vis',['always','vanish','shadow']],['vanish',1,0],['showChute',1,0],['minVis',10,0],['highBias',1,0],
+  ['holdMin',10,0],['holdMax',10,0],['bpm',1,0],['beats',1,0],['land',['beat','and','either']],['marker',1,0],['pitch',['off','one','change']],['pool',Object.keys(POOLS)],['cue',1,0]];
+const BOOL=['shadow','walls','showChute','highBias','marker','cue'];
+function encode(){return 's2-'+ENC.map(([k,a,b])=>{const v=getK(k);return Array.isArray(a)?Math.max(0,a.indexOf(v)):Math.round((+v+b)*a)}).join('-')}
+function decode(code){
+  const parts=code.slice(3).split('-').map(Number);if(parts.length<22||parts.length>ENC.length||parts.some(n=>!Number.isFinite(n)))return null;
+  const o=JSON.parse(JSON.stringify(DEF));
+  ENC.forEach(([k,a,b],i)=>{if(i>=parts.length)return;const n=parts[i];let v;if(Array.isArray(a)){v=a[n];if(v===undefined)return}else v=n/a-b;
+    if(BOOL.includes(k))v=!!v;const p=k.split('.');if(p.length>1)o[p[0]][p[1]]=v;else o[k]=v});
+  const cl=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
+  ['v','min','max'].forEach(q=>{o.angle[q]=cl(o.angle[q],0,70);o.power[q]=cl(o.power[q],1,10);o.bounce[q]=cl(o.bounce[q],1,10)});
+  o.maxNotes=cl(o.maxNotes,2,16);o.pause=cl(o.pause,0.5,6);o.every=cl(o.every,0.8,6);o.vanish=cl(o.vanish,20,90);o.minVis=cl(o.minVis,0.4,1.6);
+  o.holdMin=cl(o.holdMin,0.4,3);o.holdMax=cl(o.holdMax,0.4,3);o.bpm=cl(Math.round(o.bpm),40,160);o.beats=cl(Math.round(o.beats),1,8);
+  if(![1,0.75,0.5,0.25].includes(o.speed))o.speed=1;
+  return o;
+}
+let selfHash=false,hashApplied=false;
+function readHash(){
+  if(selfHash){selfHash=false;return}
+  const h=decodeURIComponent(location.hash.slice(1));if(!h)return;
+  const b=BUILTIN.find(p=>p.id===(h==='beginner'?'first-steps':h));
+  if(b){applySettings(b.o,b.name);hashApplied=true}
+  else if(/^s[12]-/.test(h)){const o=decode(h);if(o){applySettings(o,'Shared settings');hashApplied=true}}
+}
+function setHash(h){selfHash=true;location.hash=h;setTimeout(()=>{selfHash=false},50)}
+function clearHash(){if(!location.hash)return;try{history.replaceState(null,'',location.href.split('#')[0])}catch(e){}}
+window.addEventListener('hashchange',readHash);
+
+$('presets').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.b)useLevel(BUILTIN.find(x=>x.id===b.dataset.b));
+  else if(b.dataset.m){const p=MINE[+b.dataset.m];applySettings(p.s,p.name);clearHash();hideLink()}
+  else if(b.dataset.d){MINE.splice(+b.dataset.d,1);saveMine();refresh()}
+  else if(b.id==='resetBtn')useLevel(BUILTIN[0]);
+  else if(b.id==='linkBtn'){const c=encode();setHash(c);const lc=$('linkCode');lc.value='#'+c;
+    $('linkNote').classList.remove('hide');$('linkRow').classList.remove('hide');
+    try{navigator.clipboard.writeText('#'+c).catch(()=>{})}catch(err){}}
+});
+$('saveForm').addEventListener('submit',e=>{e.preventDefault();const inp=$('pname');
+  const name=inp.value.trim();if(!name){inp.focus();return}
+  const s=JSON.parse(JSON.stringify(S));delete s.preset;DISPLAY.forEach(k=>delete s[k]);
+  const i=MINE.findIndex(p=>p.name===name);if(i>=0)MINE[i].s=s;else MINE.push({name,s});
+  saveMine();S.preset=name;save();inp.value='';refresh()});
+$('linkCode').addEventListener('focus',e=>e.target.select());
+function hideLink(){$('linkNote').classList.add('hide');$('linkRow').classList.add('hide')}
+function edited(){S.preset='';clearHash();hideLink()}
+
+// pitch selects
+$('homeSel').innerHTML=Array.from({length:31},(_,i)=>54+i).map(m=>`<option value="${m}">${nname(m)}${noct(m)}</option>`).join('');
+$('poolSel').innerHTML=Object.entries(POOLS).map(([k,v])=>`<option value="${k}">${esc(v[0])}</option>`).join('');
+
+const RESTART=['bpm','beats','maxNotes','holdMin','holdMax'];
+const panel=$('panel');
+panel.addEventListener('input',e=>{const el=e.target;if(!el.dataset.k)return;
+  setK(el.dataset.k,el.type==='checkbox'?el.checked:el.tagName==='SELECT'&&el.dataset.n===undefined?el.value:+el.value);
+  if(!DISPLAY.includes(el.dataset.k))edited();save();refresh()});
+panel.addEventListener('change',e=>{const k=e.target.dataset.k;if(k&&RESTART.includes(k)&&(S.flow==='pulse'||k!=='bpm'&&k!=='beats'))restart()});
+panel.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!b.dataset)return;
+  if(b.dataset.pm){S[b.dataset.pm].r=+b.dataset.v;edited()}
+  else if(b.dataset.set){const k=b.dataset.set;S[k]=k==='speed'?+b.dataset.v:b.dataset.v;edited();
+    if(k==='flow'||k==='noteMode'||(S.flow==='pulse'&&(k==='land'||k==='speed')))restart()}
+  else return;
+  save();refresh()});
+
+// ---------- first visit ----------
+refresh();
+readHash();
+renderListen();
+if(firstVisit){
+  if(!hashApplied)applySettings(BUILTIN[0].o,BUILTIN[0].name);
+  else document.querySelector('#welcome p:last-of-type').textContent="It's not a reaction test. There's always time to see it coming. Whoever sent you this link has already chosen the settings.";
+  const w=$('welcome');
+  const done=go=>{w.close();save();if(go&&!running)start()};
+  $('wGo').addEventListener('click',()=>done(true));$('wSkip').addEventListener('click',()=>done(false));
+  w.addEventListener('cancel',()=>save());
+  try{w.showModal()}catch(e){}
+}
+// test hook
+window.__bt={WK,hiddenLaunch,makeLaunch,withHole,pickAngle,simulate,lvlSpeed,lvlE,encode,decode,applySettings,BUILTIN,S,start,stop,update,draw,onOnset,
+  get state(){return{running,balls:balls.length,sim,pending:!!pending,stats:{...stats},expect:expect.length}},
+  _set(o){Object.assign(S,o);refresh()},_pulse:pulse,_balls:()=>balls,_pending:()=>pending};
+}
+</script>
+</body>
+</html>
