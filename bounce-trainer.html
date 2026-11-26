@@ -73,7 +73,7 @@ h4{margin:6px 0 0;font-size:14px;color:var(--mut);font-weight:600}
   <div class="bar">
     <button id="go" class="primary">Start</button>
     <button id="fs">Full screen</button>
-    <span class="hint">Space starts and stops · F for full screen · clicking the stage works too</span>
+    <span class="hint">Space starts and stops · F for full screen · [ ] sound delay · clicking the stage works too</span>
   </div>
 
   <details id="settings">
@@ -139,6 +139,8 @@ h4{margin:6px 0 0;font-size:14px;color:var(--mut);font-weight:600}
       <label class="tog"><input type="checkbox" data-k="whoosh"> Whoosh when the ball launches</label>
       <label class="tog"><input type="checkbox" data-k="click"> Tock on each note (for checking)</label>
       <label class="tog"><input type="checkbox" data-k="values"> Show launch values</label>
+      <label class="row"><span>Sound delay</span><input type="range" id="sync" min="-100" max="1000" step="5"><output id="syncO"></output></label>
+      <p class="note">If the sounds arrive after the picture (iPads often do this, as do Bluetooth speakers and headphones), turn on the tock and slide right until it lands with the red flash. [ and ] nudge it while playing. It's saved on this device, so you only set it once.</p>
     </div>
   </div>
   </details>
@@ -266,19 +268,27 @@ function queue(at){const L=makeLaunch();const aim=AIM();pending={L,aimAt:at,laun
 function noteLimit(){return S.noteMode==='first'?1:S.maxNotes}
 function launch(p){const L=p.L,lim=noteLimit(),notes=L.ev.slice(0,lim);
   let end=L.tEnd;const grey=notes.length?notes[notes.length-1].t:null;if(L.ev.length>lim)end=Math.min(end,grey+0.9);
-  balls.push({L,t0:p.launchAt,notes,grey,end,sched:0});lastVals=L;whoosh(L)}
-function whoosh(L){if(!ac||!S.whoosh)return;
+  balls.push({L,t0:p.launchAt,notes,grey,end,sched:0});lastVals=L;if(!p.wh){p.wh=1;whoosh(L,atSim(p.launchAt))}}
+// sound delay: wireless speakers/headphones play late, so sounds are scheduled this much early. Saved per device, shared with v2.
+let SYNC=0,nowMs=0,live=[];try{const v=+localStorage.getItem('bounceTrainerSync');if(Number.isFinite(v))SYNC=Math.max(-100,Math.min(1000,v))}catch(e){}
+const LA=()=>0.15+Math.max(0,SYNC/1000);
+// the audio-clock time to schedule a sound so it is heard at sim time t
+function atSim(t){const P=nowMs+(t-sim)/S.speed*1000;let c;
+  try{if(ac.getOutputTimestamp){const ts=ac.getOutputTimestamp();if(ts.contextTime>0&&ts.performanceTime>0)c=ts.contextTime+(P-ts.performanceTime)/1000}}catch(e){}
+  if(c===undefined)c=ac.currentTime+(P-performance.now())/1000;
+  return Math.max(c-SYNC/1000,ac.currentTime+0.003)}
+function whoosh(L,t){if(!ac||!S.whoosh)return;
   // a soft thump as the ball is released, then a rush that builds up the chute and peaks as it leaves the mouth
-  const t=ac.currentTime,k=Math.min(1,Math.max(0,(L.spd-3)/5.5)),up=L.tc/S.speed,tail=0.13,d=up+tail;
+  const k=Math.min(1,Math.max(0,(L.spd-3)/5.5)),up=L.tc/S.speed,tail=0.13,d=up+tail;
   const o=ac.createOscillator(),og=ac.createGain();o.type='sine';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(55,t+0.09);
   og.gain.setValueAtTime(0.0001,t);og.gain.exponentialRampToValueAtTime(0.38,t+0.004);og.gain.exponentialRampToValueAtTime(0.0001,t+0.1);
-  o.connect(og).connect(ac.destination);o.start(t);o.stop(t+0.12);
+  o.connect(og).connect(ac.destination);o.start(t);o.stop(t+0.12);live.push(o);
   const len=Math.floor(ac.sampleRate*d),buf=ac.createBuffer(1,len,ac.sampleRate),x=buf.getChannelData(0);
   for(let i=0;i<len;i++)x[i]=Math.random()*2-1;
   const n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();n.buffer=buf;
   f.type='bandpass';f.Q.value=0.9;f.frequency.setValueAtTime(260,t);f.frequency.exponentialRampToValueAtTime(1500+1300*k,t+up);f.frequency.exponentialRampToValueAtTime(700,t+d);
   g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.04,t+0.03);g.gain.exponentialRampToValueAtTime(0.24+0.17*k,t+up);g.gain.exponentialRampToValueAtTime(0.0001,t+d);
-  n.connect(f).connect(g).connect(ac.destination);n.start(t);n.stop(t+d)}
+  n.connect(f).connect(g).connect(ac.destination);n.start(t);n.stop(t+d);live.push(n)}
 let lastVals=null;
 function start(){
   if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){ac=null}}
@@ -286,19 +296,19 @@ function start(){
   running=true;balls=[];sim=0;queue(0.2);if(S.flow==='stream')nextAt=pending.launchAt+S.every;
   goBtn.textContent='Stop';
 }
-function stop(){running=false;balls=[];pending=null;goBtn.textContent='Start'}
+function stop(){running=false;balls=[];pending=null;goBtn.textContent='Start';for(const n of live){try{n.stop()}catch(e){}}live=[]}
 function toggle(){running?stop():start()}
 function click(when){if(!ac||!S.click)return;
   // woodblock-style "tock": a short pitched body that drops slightly, plus a tiny filtered knock
   const o=ac.createOscillator(),g=ac.createGain();o.type='sine';
   o.frequency.setValueAtTime(720,when);o.frequency.exponentialRampToValueAtTime(430,when+0.07);
   g.gain.setValueAtTime(0.0001,when);g.gain.exponentialRampToValueAtTime(0.8,when+0.002);g.gain.exponentialRampToValueAtTime(0.0001,when+0.11);
-  o.connect(g).connect(ac.destination);o.start(when);o.stop(when+0.12);
+  o.connect(g).connect(ac.destination);o.start(when);o.stop(when+0.12);live.push(o);
   const len=Math.floor(ac.sampleRate*0.02),buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);
   for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len)**3;
   const n=ac.createBufferSource(),bp=ac.createBiquadFilter(),ng=ac.createGain();n.buffer=buf;
   bp.type='bandpass';bp.frequency.value=1100;bp.Q.value=2;ng.gain.value=0.5;
-  n.connect(bp).connect(ng).connect(ac.destination);n.start(when)}
+  n.connect(bp).connect(ng).connect(ac.destination);n.start(when);live.push(n)}
 
 function update(dt){
   sim+=dt*S.speed;
@@ -309,8 +319,11 @@ function update(dt){
     queue(Math.max(nextAt-AIM()-HOLD,lp.launchAt+lp.L.tc+0.02));nextAt=pending.launchAt+S.every}}
   if(S.flow==='stream'&&pending&&sim>pending.launchAt){launch(pending);pending=null}
   // audio lookahead
-  if(ac)for(const b of balls)while(b.sched<b.notes.length){const te=b.t0+b.notes[b.sched].t;if(te>sim+0.15*S.speed)break;
-    click(ac.currentTime+Math.max(0,(te-sim)/S.speed));b.sched++}
+  if(ac){const la=sim+LA()*S.speed;
+    if(pending&&!pending.wh&&pending.launchAt<=la){pending.wh=1;whoosh(pending.L,atSim(pending.launchAt))}
+    for(const b of balls)while(b.sched<b.notes.length){const te=b.t0+b.notes[b.sched].t;if(te>la)break;
+      click(atSim(te));b.sched++}
+    if(live.length>60)live=live.slice(-30)}
   balls=balls.filter(b=>sim<b.t0+b.end+0.35);
   if(S.flow==='single'&&!pending&&running&&balls.length===0)queue(sim+S.pause);
 }
@@ -372,10 +385,11 @@ function draw(){
   const fs=Math.max(13,Math.min(20,cw/55));
   if(S.values&&lastVals&&running){cx.fillStyle='#777';cx.font=`600 ${fs}px Archivo,sans-serif`;cx.textAlign='left';
     cx.fillText(`Angle ${Math.round(lastVals.ang)}°   Power ${lastVals.pl.toFixed(1)}   Bounce ${lastVals.bl.toFixed(1)}`,14,fs+10)}
+  if(syncFlash>performance.now()){cx.fillStyle='#555';cx.font=`600 ${fs}px Archivo,sans-serif`;cx.textAlign='right';cx.fillText(`Sound delay ${SYNC>0?'+':''}${SYNC} ms`,cw-16,ch-8)}
   if(!running){cx.fillStyle='#888';cx.font=`600 ${fs*1.3}px Archivo,sans-serif`;cx.textAlign='center';
     cx.fillText('Press Start or Space',cw/2,ch*0.42)}
 }
-function frame(now){const dt=Math.min(0.05,(now-(last||now))/1000);last=now;if(running)update(dt);draw();requestAnimationFrame(frame)}
+function frame(now){const dt=Math.min(0.25,Math.max(0,(now-(last||now))/1000));last=now;nowMs=now;if(running)update(dt);draw();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 
 // ---------- controls ----------
@@ -387,7 +401,13 @@ document.getElementById('fs').addEventListener('click',fullscreen);
 const typing=t=>t.matches('textarea,input[type=text],input[type=number]');
 document.addEventListener('keydown',e=>{if(typing(e.target))return;
   if(e.code==='Space'){e.preventDefault();if(!e.repeat)toggle();if(document.activeElement&&document.activeElement!==document.body)document.activeElement.blur()}
-  else if(e.key==='f'||e.key==='F')fullscreen()});
+  else if(e.key==='f'||e.key==='F')fullscreen()
+  else if(e.key===']')setSync(SYNC+10);else if(e.key==='[')setSync(SYNC-10)});
+function setSync(v){SYNC=Math.max(-100,Math.min(1000,Math.round(v)));try{localStorage.setItem('bounceTrainerSync',String(SYNC))}catch(e){}
+  document.getElementById('sync').value=SYNC;document.getElementById('syncO').textContent=(SYNC>0?'+':'')+SYNC+' ms';syncFlash=performance.now()+1500}
+let syncFlash=0;
+document.getElementById('sync').addEventListener('input',e=>setSync(+e.target.value));
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&running)stop()});
 document.addEventListener('keyup',e=>{if(e.code==='Space'&&!typing(e.target))e.preventDefault()});
 
 function refresh(){
@@ -493,6 +513,7 @@ document.getElementById('panel').addEventListener('click',e=>{const b=e.target.c
   save();refresh()});
 refresh();
 readHash();
+setSync(SYNC);syncFlash=0;
 // test hook
 window.__bt={hiddenLaunch,makeLaunch,pickAngle,simulate,lvlSpeed,lvlE,get state(){return{running,balls:balls.length,sim}}};
 }

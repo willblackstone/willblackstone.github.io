@@ -53,6 +53,7 @@ One self-contained file: `bounce-trainer.html`. No build step and no dependencie
 
 - **Launch:** a soft low thump at release, then a band-passed noise rush that builds up the chute and peaks as the ball leaves the mouth. Stronger launches make it shorter and brighter. On by default.
 - **Tock:** an optional woodblock-style sound on each note, for checking sync. It's scheduled ahead with a 150 ms lookahead, so it's sample-accurate rather than tied to frame timing.
+- **Sound delay** (Display card, or `[` `]` while playing): on some setups the sound arrives late, so every sound (tock and whoosh) is scheduled that many ms early. Flights are pre-computed, so this is exact. Negative values are allowed. Saved per device in `bounceTrainerSync`, which v2 shares. Sounds are mapped to the screen with `getOutputTimestamp()` where available.
 
 ### Settings, presets and sharing
 

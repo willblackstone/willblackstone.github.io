@@ -31,6 +31,7 @@ v2 adds a path for beginners and builds most of the original's "Ideas for later"
 ### Timing and audio internals
 - All sounds are scheduled 250 ms ahead on the audio clock. `ctxAt()` uses `getOutputTimestamp()` to map screen time to the audio time that is *heard* at that moment, so tocks and the metronome line up with the flashes even on devices with output latency. Scheduled sounds are cut on Stop.
 - A master volume control is under *Sounds*.
+- **Sound delay** (*Sounds*, or `[` `]` while playing, with a readout on the stage): some setups play audio late, so every sound is scheduled that many ms early, and *Check the sync* turns on the tock and starts. Saved per device in `bounceTrainerSync`, shared with v1. Listen needs no change: expected note times already include the shift. (Measured: at +300 ms the tock is set to play 300 ms before the red flash appears; at 0 ms it's within about 6 ms.)
 
 ### Fixes over v1
 - **Bounce runs** used to fly off the right edge after the first landing (measured: one note per ball). The level now uses steeper, softer launches (about 5 bounces on screen), and in *Every bounce* mode `makeLaunch()` rerolls launches that leave the screen before 3 bounces.

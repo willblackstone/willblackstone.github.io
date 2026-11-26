@@ -223,6 +223,9 @@ kbd{font:600 13px ui-monospace,monospace;border:1px solid var(--line);border-bot
       <label class="row"><span>Volume</span><input type="range" data-k="vol" min="0" max="100" step="5"><output data-o="vol"></output></label>
       <label class="tog"><input type="checkbox" data-k="whoosh"> Whoosh when the ball launches</label>
       <label class="tog"><input type="checkbox" data-k="click"> Tock on each note (for checking)</label>
+      <label class="row"><span>Sound delay</span><input type="range" id="sync" min="-100" max="1000" step="5" aria-describedby="syncNote"><output id="syncO"></output></label>
+      <div class="saverow"><button type="button" id="syncCheck">Check the sync</button><button type="button" id="syncZero">Reset</button></div>
+      <p class="note" id="syncNote">If the sounds arrive after the picture (iPads often do this, as do Bluetooth speakers and headphones), press Check the sync, then slide right until the tock lands with the red flash. <kbd>[</kbd> and <kbd>]</kbd> nudge it while playing. It's saved on this device, so you only set it once.</p>
       <p class="note">The screen stays awake while the trainer runs, where the browser allows it.</p>
     </div>
     <div class="card" id="listenCard">
@@ -265,7 +268,8 @@ kbd{font:600 13px ui-monospace,monospace;border:1px solid var(--line);border-bot
   </ul>
   <h3>Keys</h3>
   <p><kbd>Space</kbd> start and stop · <kbd>F</kbd> full screen · <kbd>←</kbd> <kbd>→</kbd> change level · <kbd>?</kbd> this help</p>
-  <p class="note">On an iPad on a music stand, use full screen and tap the stage to start and stop.</p>
+  <p><kbd>[</kbd> <kbd>]</kbd> sound delay, if the sounds lag behind the picture</p>
+  <p class="note">On an iPad on a music stand, use full screen and tap the stage to start and stop. If sounds lag behind the ball (common on iPads), set Sound delay under Settings → Sounds once and it's remembered.</p>
   <div class="dbtns"><button class="primary" id="hClose">Close</button></div>
 </dialog>
 
@@ -438,7 +442,10 @@ const PX=x=>x*SC, PY=y=>floorY-y*SC;
 
 // ---------- audio ----------
 let ac=null,out=null,live=[];
-const LA=0.25;   // seconds of audio scheduled ahead
+// sound delay: wireless speakers/headphones play late, so sounds are scheduled this much early. Saved per device, shared with v1.
+let SYNC=0;try{const v=+localStorage.getItem('bounceTrainerSync');if(Number.isFinite(v))SYNC=Math.max(-100,Math.min(1000,v))}catch(e){}
+const saveSync=()=>{try{localStorage.setItem('bounceTrainerSync',String(SYNC))}catch(e){}};
+const LA=()=>0.25+Math.max(0,SYNC/1000);   // seconds of audio scheduled ahead
 function ensureAudio(){
   if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});out=ac.createGain();out.connect(ac.destination)}catch(e){ac=null}}
   if(ac){out.gain.value=S.vol/100;if(ac.state==='suspended')ac.resume().catch(()=>{})}
@@ -447,7 +454,7 @@ function ensureAudio(){
 function ctxAt(P){let c;
   try{if(ac.getOutputTimestamp){const ts=ac.getOutputTimestamp();if(ts.contextTime>0&&ts.performanceTime>0)c=ts.contextTime+(P-ts.performanceTime)/1000}}catch(e){}
   if(c===undefined)c=ac.currentTime+(P-performance.now())/1000;
-  return Math.max(c,ac.currentTime+0.003)}
+  return Math.max(c-SYNC/1000,ac.currentTime+0.003)}
 const track=(n,end)=>live.push({n,end});
 function hush(){if(!ac)return;for(const l of live){try{l.n.stop()}catch(e){}}live=[]}
 function noise(len,shape){const b=ac.createBuffer(1,Math.max(1,Math.floor(ac.sampleRate*len)),ac.sampleRate),d=b.getChannelData(0);
@@ -498,7 +505,7 @@ const pulse={t0:0.3,next:4,sk:0};
 const beatSim=()=>60/S.bpm*S.speed;
 const AIM=()=>S.flow==='stream'?Math.min(0.5,S.every*0.35):0.6, HOLD=0.3;
 const Pof=t=>nowMs+(t-sim)/S.speed*1000;            // sim time -> performance time (ms)
-const due=t=>t<=sim+LA*S.speed;
+const due=t=>t<=sim+LA()*S.speed;
 function noteLimit(){return S.noteMode==='first'||S.noteMode==='hold'?1:S.maxNotes}
 function prep(){return {L:makeLaunch(),note:pickNote(),word:pickWord()}}
 function setChute(p){chute.from=chute.a;chute.to=p.L.ang;chute.t0=p.aimAt;chute.t1=p.aimAt+AIM()}
@@ -554,7 +561,7 @@ function schedule(){
     if(b.L.rel>0&&!b.relDone&&due(b.t0+b.L.rel)){b.relDone=1;if(S.click&&!LS.on)relTick(ctxAt(Pof(b.t0+b.L.rel)))}
   }
   if(S.flow==='pulse'){const bs=beatSim();
-    while(pulse.t0+pulse.sk*bs<=sim+LA*S.speed){const k=pulse.sk++,bt=pulse.t0+k*bs;if(bt<sim-0.01||!S.metro)continue;beatClick(ctxAt(Pof(bt)),S.beats>1&&k%S.beats===1)}}
+    while(pulse.t0+pulse.sk*bs<=sim+LA()*S.speed){const k=pulse.sk++,bt=pulse.t0+k*bs;if(bt<sim-0.01||!S.metro)continue;beatClick(ctxAt(Pof(bt)),S.beats>1&&k%S.beats===1)}}
   const now=ac.currentTime;
   if(live.length>60)live=live.filter(l=>l.end>now);
   if(expect.length>40)expect=expect.filter(n=>n.ctx>now-1);
@@ -663,6 +670,7 @@ function draw(){
       if(isLand&&!andLand){cx.strokeStyle='#111';cx.lineWidth=2;cx.beginPath();cx.arc(X,y0,dr*1.55,0,7);cx.stroke()}}
     if(andLand){const X=x0+(N-1)*gap+gap*0.6;cx.strokeStyle='#111';cx.lineWidth=2;cx.beginPath();cx.arc(X,y0,dr*1.1,0,7);cx.stroke();
       cx.fillStyle='#111';cx.font=`700 ${Math.round(dr*1.3)}px Archivo,sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('&',X,y0+1);cx.textBaseline='alphabetic'}}
+  if(syncFlash>performance.now()){cx.fillStyle='#555';cx.font=`600 ${fs}px Archivo,sans-serif`;cx.textAlign='right';cx.fillText(`Sound delay ${SYNC>0?'+':''}${SYNC} ms`,cw-16,ch-(ch-floorY)/2+fs*0.35)}
   if(!running){const lv=BUILTIN.find(p=>p.name===S.preset);
     cx.textAlign='center';cx.fillStyle='#888';cx.font=`600 ${fs*1.3}px Archivo,sans-serif`;cx.fillText('Tap or press Space to start',cw/2,ch*0.38);
     cx.fillStyle='#aaa';cx.font=`600 ${fs}px Archivo,sans-serif`;cx.fillText(S.preset||'Custom settings',cw/2,ch*0.38+fs*1.8);
@@ -773,6 +781,13 @@ $('fs').addEventListener('click',fullscreen);
 $('listenBtn').addEventListener('click',toggleListen);
 $('micBtn').addEventListener('click',toggleListen);
 $('calBtn').addEventListener('click',calibrate);
+function renderSync(){$('sync').value=SYNC;$('syncO').textContent=(SYNC>0?'+':'')+SYNC+' ms'}
+function setSync(v){SYNC=Math.max(-100,Math.min(1000,Math.round(v)));saveSync();renderSync();syncFlash=performance.now()+1500}
+let syncFlash=0;
+$('sync').addEventListener('input',e=>setSync(+e.target.value));
+$('syncZero').addEventListener('click',()=>setSync(0));
+$('syncCheck').addEventListener('click',()=>{S.click=true;save();refresh();if(!running)start();stage.scrollIntoView({behavior:'smooth',block:'center'})});
+renderSync();
 $('sens').addEventListener('input',e=>{LS.sens=+e.target.value;saveLS();if(mic)mic.node.port.postMessage({thr:thr()});renderListen()});
 const typing=t=>t.matches('textarea,input[type=text],input[type=number],select,input[type=range]');
 const modalOpen=()=>!!document.querySelector('dialog[open]');
@@ -782,7 +797,9 @@ document.addEventListener('keydown',e=>{if(modalOpen()||e.metaKey||e.ctrlKey||e.
   else if(e.key==='f'||e.key==='F')fullscreen();
   else if(e.key==='ArrowRight'){e.preventDefault();step(1)}
   else if(e.key==='ArrowLeft'){e.preventDefault();step(-1)}
-  else if(e.key==='?'){openHelp()}});
+  else if(e.key==='?'){openHelp()}
+  else if(e.key===']')setSync(SYNC+10);
+  else if(e.key==='[')setSync(SYNC-10)});
 document.addEventListener('keyup',e=>{if(e.code==='Space'&&!e.target.matches('textarea,input[type=text]'))e.preventDefault()});
 function openHelp(){const d=$('help');if(d.showModal)d.showModal();else d.setAttribute('open','')}
 $('helpBtn').addEventListener('click',openHelp);
